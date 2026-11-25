@@ -1,6 +1,6 @@
 /**
  * main.jsx — Frontend Entry Point & Provider Composition
- * Loads global CSS layers in cascade order (`tokens` -> `global` -> `shell`)
+ * Loads global CSS layers in cascade order (`tokens` -> `global` -> `header` -> `shell`)
  * and mounts `<App />` inside React Router, `ThemeProvider`, and `LangProvider`.
  */
 
@@ -8,9 +8,10 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 
-// Modular stylesheets ordered from design tokens to base primitives and shell layout
+// Modular stylesheets ordered from design tokens to base primitives, header, and shell layout
 import './styles/tokens.css';
 import './styles/global.css';
+import './styles/header.css';
 import './styles/shell.css';
 
 import { ThemeProvider } from './context/ThemeContext.jsx';

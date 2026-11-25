@@ -1,18 +1,25 @@
 /**
  * i18n.js — Bilingual UI String Dictionary (English & Turkish)
  * Centralizes all user-facing copy grouped by feature namespace (`nav`, `theme`,
- * `lang`, `landing`, `dashboard`, `common`) and consumed via `useLang().t(key)`.
+ * `lang`, `profile`, `landing`, `dashboard`, `common`) and consumed via `useLang().t(key)`.
  */
 export const translations = {
   // English (default fallback language)
   en: {
     brand: 'ESN Console',
 
-    // Navigation & shell toolbar labels
+    // Persistent global header & dashboard-only navigation controls
     nav: {
       allProjects: 'All Projects',
-      testBarLabel: 'Phase 1 preview controls',
-      speakingClubSample: 'Speaking Club',
+      switchProject: 'Switch project',
+      toggleSidebar: 'Toggle prediction sidebar',
+      sidebarShort: 'Predictor',
+      controlsLabel: 'Workspace controls',
+      sampleProjects: {
+        speakingClub: 'Speaking Club',
+        cappadociaTrip: 'Cappadocia Trip',
+        buddySystem: 'Buddy System',
+      },
     },
 
     // Theme switcher labels & accessible descriptions
@@ -34,15 +41,32 @@ export const translations = {
       switchToTr: 'Switch language to Turkish',
     },
 
+    // Layout-only account overview popover (wired to Supabase Auth in Phase 4)
+    profile: {
+      triggerLabel: 'Account overview — ESN Coordinator',
+      monogram: 'EC',
+      name: 'ESN Coordinator',
+      email: 'coordinator@esn.org',
+      roleAdmin: 'Admin',
+      statusLabel: 'Status',
+      statusActive: 'Active',
+      accessLabel: 'Access',
+      accessFull: 'Full Console',
+      accountSettings: 'Account Settings',
+      sectionWorkspace: 'Section Workspace',
+      signOut: 'Sign Out',
+      authPreviewTag: 'Phase 4',
+    },
+
     // Landing page (`/`) hero & sample route preview copy
     landing: {
-      kicker: 'Phase 1 · Shell & Routing',
+      kicker: 'Phase 1 · Global Shell Ready',
       title: 'ESN Console',
       subtitle:
-        'Bento Modular × Swiss International workspace for ESN sections. Bilingual context and client-side routing are active.',
+        'Bento Modular × Swiss International workspace for ESN sections. Persistent header, bilingual context, and routing are active.',
       sampleTag: 'Sample Route',
       sampleTitle: 'Speaking Club',
-      sampleDesc: 'Preview the dynamic project dashboard route with live URL parameters.',
+      sampleDesc: 'Open a sample project route to test the dashboard header controls.',
       openProject: 'Open Project',
       pageTitle: 'Projects | ESN Console',
     },
@@ -52,7 +76,7 @@ export const translations = {
       kicker: 'Project Route Preview',
       placeholderTitle: 'Project Dashboard',
       placeholderSubtitle:
-        'This placeholder verifies dynamic routing and bilingual context before the full analytics workspace is built.',
+        'Use the top header to switch sample projects, return to All Projects, or toggle the predictor state.',
       projectIdLabel: 'Active project ID',
       pageTitle: '{id} | ESN Console',
     },
@@ -61,7 +85,7 @@ export const translations = {
     common: {
       backHome: 'Back to All Projects',
       activeTheme: 'Active theme',
-      ready: 'Routing Ready',
+      ready: 'Shell Ready',
     },
   },
 
@@ -69,11 +93,18 @@ export const translations = {
   tr: {
     brand: 'ESN Console',
 
-    // Navigation & shell toolbar labels
+    // Persistent global header & dashboard-only navigation controls
     nav: {
       allProjects: 'Tüm Projeler',
-      testBarLabel: 'Faz 1 önizleme kontrolleri',
-      speakingClubSample: 'Konuşma Kulübü',
+      switchProject: 'Proje değiştir',
+      toggleSidebar: 'Tahmin panelini aç veya kapat',
+      sidebarShort: 'Tahminleyici',
+      controlsLabel: 'Çalışma alanı kontrolleri',
+      sampleProjects: {
+        speakingClub: 'Konuşma Kulübü',
+        cappadociaTrip: 'Kapadokya Gezisi',
+        buddySystem: 'Buddy Sistemi',
+      },
     },
 
     // Theme switcher labels & accessible descriptions
@@ -95,15 +126,32 @@ export const translations = {
       switchToTr: 'Dili Türkçe yap',
     },
 
+    // Layout-only account overview popover (wired to Supabase Auth in Phase 4)
+    profile: {
+      triggerLabel: 'Hesap özeti — ESN Coordinator',
+      monogram: 'EC',
+      name: 'ESN Coordinator',
+      email: 'coordinator@esn.org',
+      roleAdmin: 'Yönetici',
+      statusLabel: 'Durum',
+      statusActive: 'Aktif',
+      accessLabel: 'Erişim',
+      accessFull: 'Tam Konsol',
+      accountSettings: 'Hesap Ayarları',
+      sectionWorkspace: 'Şube Çalışma Alanı',
+      signOut: 'Çıkış Yap',
+      authPreviewTag: 'Faz 4',
+    },
+
     // Landing page (`/`) hero & sample route preview copy
     landing: {
-      kicker: 'Faz 1 · Kabuk ve Yönlendirme',
+      kicker: 'Faz 1 · Küresel Kabuk Hazır',
       title: 'ESN Console',
       subtitle:
-        'ESN şubeleri için Bento Modular × Swiss International çalışma alanı. İki dilli içerik ve istemci yönlendirmesi etkin.',
+        'ESN şubeleri için Bento Modular × Swiss International çalışma alanı. Kalıcı üst bar, iki dilli bağlam ve yönlendirme etkin.',
       sampleTag: 'Örnek Rota',
       sampleTitle: 'Konuşma Kulübü',
-      sampleDesc: 'Canlı URL parametreleriyle dinamik proje paneli rotasını önizleyin.',
+      sampleDesc: 'Panel üst bar kontrollerini test etmek için örnek proje rotasını açın.',
       openProject: 'Projeyi Aç',
       pageTitle: 'Projeler | ESN Console',
     },
@@ -113,7 +161,7 @@ export const translations = {
       kicker: 'Proje Rotası Önizlemesi',
       placeholderTitle: 'Proje Paneli',
       placeholderSubtitle:
-        'Bu yer tutucu, tam analiz çalışma alanı kurulmadan önce dinamik yönlendirme ve iki dilli bağlamı doğrular.',
+        'Örnek projeler arasında geçiş yapmak, Tüm Projelere dönmek veya tahmin panelini değiştirmek için üst barı kullanın.',
       projectIdLabel: 'Aktif proje kimliği',
       pageTitle: '{id} | ESN Console',
     },
@@ -122,7 +170,7 @@ export const translations = {
     common: {
       backHome: 'Tüm Projelere Dön',
       activeTheme: 'Aktif tema',
-      ready: 'Yönlendirme Hazır',
+      ready: 'Kabuk Hazır',
     },
   },
 };
