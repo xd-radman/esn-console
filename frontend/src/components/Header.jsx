@@ -3,7 +3,7 @@
  * Renders across every view:
  * - Left: ESN Star logo + Brand button (`/`), plus dashboard-only controls when
  *   viewing `/project/:projectId` (`All Projects` back button, Project Switcher
- *   dropdown, and Prediction Sidebar toggle).
+ *   dropdown populated from `projects`, and Prediction Sidebar toggle).
  * - Right: `EN | TR` segmented language switcher, Light/Dark theme button, and
  *   the circular Profile button toggling `ProfilePopover`.
  */
@@ -13,16 +13,14 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ChevronDown, Moon, PanelRight, Sun } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useLang } from '../context/LangContext.jsx';
+import { INITIAL_PROJECTS } from '../lib/initialProjects.js';
 import ProfilePopover from './ProfilePopover.jsx';
 
-// Sample project options used in the header switcher until Phase 2/4 project state is wired
-const SAMPLE_PROJECTS = [
-  { id: 'speaking-club', labelKey: 'nav.sampleProjects.speakingClub' },
-  { id: 'cappadocia-trip', labelKey: 'nav.sampleProjects.cappadociaTrip' },
-  { id: 'buddy-system', labelKey: 'nav.sampleProjects.buddySystem' },
-];
-
-export default function Header({ isSidebarOpen = false, onToggleSidebar }) {
+export default function Header({
+  projects = INITIAL_PROJECTS,
+  isSidebarOpen = false,
+  onToggleSidebar,
+}) {
   const location = useLocation();
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
@@ -43,7 +41,7 @@ export default function Header({ isSidebarOpen = false, onToggleSidebar }) {
   const activeProjectId = projectMatch ? decodeURIComponent(projectMatch[1]) : null;
 
   // Include any custom `:projectId` URL slug in the select list so controlled value stays valid
-  const hasKnownSample = SAMPLE_PROJECTS.some((item) => item.id === activeProjectId);
+  const hasKnownProject = projects.some((item) => item.id === activeProjectId);
 
   const closeProfile = useCallback(() => {
     setIsProfileOpen(false);
@@ -55,7 +53,7 @@ export default function Header({ isSidebarOpen = false, onToggleSidebar }) {
     navigate('/');
   };
 
-  // Navigate to the newly selected sample project route
+  // Navigate to the newly selected project route
   const handleProjectSwitch = (event) => {
     const nextProjectId = event.target.value;
     if (nextProjectId) {
@@ -101,7 +99,7 @@ export default function Header({ isSidebarOpen = false, onToggleSidebar }) {
                 <span>{t('nav.allProjects')}</span>
               </button>
 
-              {/* Accessible native Project Switcher select */}
+              {/* Accessible native Project Switcher select bound to active projects */}
               <div className="project-switcher-wrap">
                 <label htmlFor={switcherId} className="visually-hidden">
                   {t('nav.switchProject')}
@@ -113,12 +111,15 @@ export default function Header({ isSidebarOpen = false, onToggleSidebar }) {
                   value={activeProjectId}
                   onChange={handleProjectSwitch}
                 >
-                  {SAMPLE_PROJECTS.map((project) => (
-                    <option key={project.id} value={project.id}>
-                      {t(project.labelKey)}
-                    </option>
-                  ))}
-                  {!hasKnownSample && (
+                  {projects.map((project) => {
+                    const copy = project[lang] ?? project.en;
+                    return (
+                      <option key={project.id} value={project.id}>
+                        {copy.title}
+                      </option>
+                    );
+                  })}
+                  {!hasKnownProject && (
                     <option value={activeProjectId}>{activeProjectId}</option>
                   )}
                 </select>

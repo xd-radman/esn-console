@@ -99,7 +99,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   Base Layer — document canvas, default copy, selection & keyboard focus
+  Base Layer — document canvas, default copy, selection & keyboard focus
    -------------------------------------------------------------------------- */
 @layer base {
   /* Full-viewport warm paper / carbon canvas with Inter UI typography */

@@ -1,7 +1,8 @@
 /**
  * i18n.js — Bilingual UI String Dictionary (English & Turkish)
  * Centralizes all user-facing copy grouped by feature namespace (`nav`, `theme`,
- * `lang`, `profile`, `landing`, `dashboard`, `common`) and consumed via `useLang().t(key)`.
+ * `lang`, `profile`, `status`, `card`, `landing`, `dashboard`, `common`) and
+ * consumed via `useLang().t(key, params)`.
  */
 export const translations = {
   // English (default fallback language)
@@ -58,16 +59,33 @@ export const translations = {
       authPreviewTag: 'Phase 4',
     },
 
-    // Landing page (`/`) hero & sample route preview copy
+    // Synchronized project status pill labels (`StatusSelect.jsx`)
+    status: {
+      active: 'Active',
+      inactive: 'Inactive',
+      changeFor: 'Project status for {project}',
+    },
+
+    // Project directory card metrics & actions (`ProjectCard.jsx`)
+    card: {
+      sessions: 'Sessions',
+      responses: 'Responses',
+      openProject: 'Open workspace',
+    },
+
+    // Landing page (`/`) hero & directory copy (`LandingPage.jsx`)
     landing: {
-      kicker: 'Phase 1 · Global Shell Ready',
-      title: 'ESN Console',
+      kicker: 'Erasmus Student Network · Analytics Hub',
+      title: 'Section Project Directory',
       subtitle:
-        'Bento Modular × Swiss International workspace for ESN sections. Persistent header, bilingual context, and routing are active.',
-      sampleTag: 'Sample Route',
-      sampleTitle: 'Speaking Club',
-      sampleDesc: 'Open a sample project route to test the dashboard header controls.',
-      openProject: 'Open Project',
+        'Monitor participation trends, session feedback, and retention signals across every recurring initiative in your ESN section.',
+      newProject: 'New Project',
+      newProjectSoon:
+        'Project creation modal arrives in Step 2.2 — select any card below to inspect its route.',
+      dismissNotice: 'Dismiss',
+      directoryLabel: 'ESN section projects',
+      totalProjects: '{count} Projects',
+      activeCount: '{count} Active',
       pageTitle: 'Projects | ESN Console',
     },
 
@@ -76,7 +94,7 @@ export const translations = {
       kicker: 'Project Route Preview',
       placeholderTitle: 'Project Dashboard',
       placeholderSubtitle:
-        'Use the top header to switch sample projects, return to All Projects, or toggle the predictor state.',
+        'Use the top header to switch projects, return to All Projects, or toggle the predictor state.',
       projectIdLabel: 'Active project ID',
       pageTitle: '{id} | ESN Console',
     },
@@ -143,16 +161,33 @@ export const translations = {
       authPreviewTag: 'Faz 4',
     },
 
-    // Landing page (`/`) hero & sample route preview copy
+    // Synchronized project status pill labels (`StatusSelect.jsx`)
+    status: {
+      active: 'Aktif',
+      inactive: 'Pasif',
+      changeFor: '{project} proje durumu',
+    },
+
+    // Project directory card metrics & actions (`ProjectCard.jsx`)
+    card: {
+      sessions: 'Oturum',
+      responses: 'Yanıt',
+      openProject: 'Çalışma alanını aç',
+    },
+
+    // Landing page (`/`) hero & directory copy (`LandingPage.jsx`)
     landing: {
-      kicker: 'Faz 1 · Küresel Kabuk Hazır',
-      title: 'ESN Console',
+      kicker: 'Erasmus Student Network · Analitik Merkezi',
+      title: 'Şube Proje Dizini',
       subtitle:
-        'ESN şubeleri için Bento Modular × Swiss International çalışma alanı. Kalıcı üst bar, iki dilli bağlam ve yönlendirme etkin.',
-      sampleTag: 'Örnek Rota',
-      sampleTitle: 'Konuşma Kulübü',
-      sampleDesc: 'Panel üst bar kontrollerini test etmek için örnek proje rotasını açın.',
-      openProject: 'Projeyi Aç',
+        'ESN şubenizdeki tüm süreklilik projelerinde katılım eğilimlerini, oturum geri bildirimlerini ve bağlılık sinyallerini izleyin.',
+      newProject: 'Yeni Proje',
+      newProjectSoon:
+        'Yeni proje oluşturma penceresi Adım 2.2’de eklenecek — rotasını incelemek için aşağıdan bir kart seçin.',
+      dismissNotice: 'Kapat',
+      directoryLabel: 'ESN şube projeleri',
+      totalProjects: '{count} Proje',
+      activeCount: '{count} Aktif',
       pageTitle: 'Projeler | ESN Console',
     },
 
@@ -161,7 +196,7 @@ export const translations = {
       kicker: 'Proje Rotası Önizlemesi',
       placeholderTitle: 'Proje Paneli',
       placeholderSubtitle:
-        'Örnek projeler arasında geçiş yapmak, Tüm Projelere dönmek veya tahmin panelini değiştirmek için üst barı kullanın.',
+        'Projeler arasında geçiş yapmak, Tüm Projelere dönmek veya tahmin panelini değiştirmek için üst barı kullanın.',
       projectIdLabel: 'Aktif proje kimliği',
       pageTitle: '{id} | ESN Console',
     },

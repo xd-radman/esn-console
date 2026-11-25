@@ -72,55 +72,6 @@
     }
   }
 
-  /* Interactive sample card on `/` linking to `/project/speaking-club` */
-  .sample-route-card {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 1.125rem 1.25rem;
-    border-radius: var(--radius-bento);
-    border: 1px solid var(--border-hairline);
-    background-color: var(--bg-elevated);
-    transition: var(--transition-theme), border-color 160ms ease, transform 140ms ease;
-
-    &:hover {
-      border-color: var(--accent-primary);
-      transform: translateY(-1px);
-    }
-
-    & .sample-route-meta {
-      display: flex;
-      flex-direction: column;
-      gap: 0.35rem;
-      max-inline-size: 24rem;
-    }
-
-    & .sample-route-kicker {
-      color: var(--accent-primary-ink);
-    }
-
-    & h2 {
-      font-size: 1.25rem;
-      color: var(--ink-primary);
-    }
-
-    & p {
-      font-size: 0.875rem;
-      color: var(--ink-secondary);
-    }
-
-    & .sample-route-action {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.375rem;
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: var(--accent-primary-ink);
-    }
-  }
-
   /* Key/value definition strip showing the active `:projectId` URL parameter */
   .route-param-row {
     display: flex;
@@ -144,16 +95,8 @@
     }
   }
 
-  /* Disable hover/theme transitions when reduced motion is requested */
-  @media (prefers-reduced-motion: reduce) {
-    :where(.sample-route-card) {
-      transition: none;
-    }
-  }
-
   /* Ensure borders remain visible in Forced Colors mode */
   @media (forced-colors: active) {
-    .sample-route-card,
     .route-param-row {
       border-color: CanvasText;
     }
