@@ -1,8 +1,8 @@
 /**
  * App.jsx — Root Application Shell, Shared Project State & Route Table
  * Holds the in-memory `projects` array (seeded from `initialProjects.js` until
- * Phase 4 Supabase persistence) so status updates made via `StatusSelect` stay
- * synchronized across `LandingPage`, `Header`, and `ProjectDashboard`.
+ * Phase 4 Supabase persistence) so newly created projects and status updates
+ * stay synchronized across `LandingPage`, `Header`, and `ProjectDashboard`.
  */
 
 import { useCallback, useState } from 'react';
@@ -32,6 +32,11 @@ export default function App() {
     );
   }, []);
 
+  // Append a newly created (or deep-cloned) project to shared state
+  const handleCreateProject = useCallback((newProject) => {
+    setProjects((prev) => [...prev, newProject]);
+  }, []);
+
   return (
     <div className="app-shell">
       {/* Persistent global navigation bar across landing and project routes */}
@@ -49,6 +54,7 @@ export default function App() {
             <LandingPage
               projects={projects}
               onStatusChange={handleStatusChange}
+              onCreateProject={handleCreateProject}
             />
           }
         />

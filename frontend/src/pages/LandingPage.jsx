@@ -1,21 +1,23 @@
 /**
- * LandingPage.jsx — ESN Section Project Directory (`/`)
+ * LandingPage.jsx — ESN Section Project Directory (`/`) & New Project Flow
  * Renders the Swiss × Bento landing hero (64px ESN Star logo, kicker, editorial
- * title, subtitle, and `+ New Project` trigger) followed by chunked 3-card rows.
- * Incomplete rows (1 or 2 cards) are padded with invisible `.project-spacer`
- * items so cards in partial rows stay the exact same width as full 3-card rows.
+ * title, subtitle, and `+ New Project` button), manages `isModalOpen` + project
+ * directory state (seeded from `initialProjects.js` when standalone or synced
+ * with `App.jsx`), and chunks cards into 3-slot rows padded with invisible spacers.
  */
 
-import { useEffect, useMemo, useState } from 'react';
-import { Info, Plus, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Plus } from 'lucide-react';
 import { useLang } from '../context/LangContext.jsx';
+import { INITIAL_PROJECTS } from '../lib/initialProjects.js';
 import ProjectCard from '../components/ProjectCard.jsx';
+import NewProjectModal from '../components/modals/NewProjectModal.jsx';
 
 const CARDS_PER_ROW = 3;
 
 /**
  * Splits a flat array of projects into rows of at most `size` items (default 3)
- * so CSS flexbox X-axis hover expansion operates independently within each row.
+ * so partial rows can be padded with invisible flex spacers for equal card widths.
  */
 function chunkIntoRows(items, size = CARDS_PER_ROW) {
   const rows = [];
@@ -25,11 +27,18 @@ function chunkIntoRows(items, size = CARDS_PER_ROW) {
   return rows;
 }
 
-export default function LandingPage({ projects = [], onStatusChange, onOpenNewProject }) {
+export default function LandingPage({
+  projects: externalProjects,
+  onStatusChange: externalOnStatusChange,
+  onCreateProject: externalOnCreateProject,
+}) {
   const { t } = useLang();
 
-  // Temporary Step 2.1 placeholder notice state until NewProjectModal is built in Step 2.2
-  const [showModalPlaceholder, setShowModalPlaceholder] = useState(false);
+  // Fallback local project state when `LandingPage` is rendered without parent state props
+  const [localProjects, setLocalProjects] = useState(INITIAL_PROJECTS);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const projects = externalProjects ?? localProjects;
 
   // Keep browser tab title localized on `/`
   useEffect(() => {
@@ -43,14 +52,38 @@ export default function LandingPage({ projects = [], onStatusChange, onOpenNewPr
     [projects]
   );
 
-  // Trigger parent modal handler if provided (Step 2.2), otherwise toggle Step 2.1 preview banner
-  const handleNewProjectClick = () => {
-    if (onOpenNewProject) {
-      onOpenNewProject();
-      return;
-    }
-    setShowModalPlaceholder((prev) => !prev);
-  };
+  // Update project status locally or delegate to shared `App.jsx` state
+  const handleStatusChange = useCallback(
+    (projectId, nextStatus) => {
+      if (externalOnStatusChange) {
+        externalOnStatusChange(projectId, nextStatus);
+        return;
+      }
+      setLocalProjects((prev) =>
+        prev.map((project) =>
+          project.id === projectId ? { ...project, status: nextStatus } : project
+        )
+      );
+    },
+    [externalOnStatusChange]
+  );
+
+  // Append newly created project card to the directory grid and close the modal
+  const handleCreateProject = useCallback(
+    (newProject) => {
+      if (externalOnCreateProject) {
+        externalOnCreateProject(newProject);
+      } else {
+        setLocalProjects((prev) => [...prev, newProject]);
+      }
+      setIsModalOpen(false);
+    },
+    [externalOnCreateProject]
+  );
+
+  const handleCloseModal = useCallback(() => {
+    setIsModalOpen(false);
+  }, []);
 
   return (
     <main className="landing-main">
@@ -85,29 +118,13 @@ export default function LandingPage({ projects = [], onStatusChange, onOpenNewPr
             <button
               type="button"
               className="btn primary landing-new-btn"
-              onClick={handleNewProjectClick}
+              onClick={() => setIsModalOpen(true)}
             >
               <Plus size={16} strokeWidth={1.5} aria-hidden="true" />
               <span>{t('landing.newProject')}</span>
             </button>
           </div>
         </div>
-
-        {/* Dismissible placeholder banner shown until Step 2.2 wires NewProjectModal.jsx */}
-        {showModalPlaceholder && (
-          <div className="landing-placeholder-notice bento-card" role="status">
-            <Info size={16} strokeWidth={1.5} aria-hidden="true" />
-            <span>{t('landing.newProjectSoon')}</span>
-            <button
-              type="button"
-              className="btn ghost landing-notice-close"
-              aria-label={t('landing.dismissNotice')}
-              onClick={() => setShowModalPlaceholder(false)}
-            >
-              <X size={15} strokeWidth={1.5} aria-hidden="true" />
-            </button>
-          </div>
-        )}
       </section>
 
       {/* Chunked 3-card project directory rows with invisible flex spacers */}
@@ -124,11 +141,11 @@ export default function LandingPage({ projects = [], onStatusChange, onOpenNewPr
                 <ProjectCard
                   key={project.id}
                   project={project}
-                  onStatusChange={onStatusChange}
+                  onStatusChange={handleStatusChange}
                 />
               ))}
 
-              {/* Pad partial rows to 3 items so rest & hover widths match full rows */}
+              {/* Pad partial rows to 3 items so partial-row cards match full-row widths */}
               {Array.from({ length: spacerCount }, (_, idx) => (
                 <div
                   key={`spacer-${rowIndex}-${idx}`}
@@ -140,6 +157,14 @@ export default function LandingPage({ projects = [], onStatusChange, onOpenNewPr
           );
         })}
       </section>
+
+      {/* Accessible native `<dialog>` modal for creating or duplicating a project */}
+      <NewProjectModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onCreate={handleCreateProject}
+        projects={projects}
+      />
     </main>
   );
 }

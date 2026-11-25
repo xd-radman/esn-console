@@ -1,8 +1,8 @@
 /**
  * ThemeContext.jsx — Global Light / Dark Theme State Provider
- * Manages `"light"` ("Swiss Studio") and `"dark"` ("Warm Carbon Ink") themes,
- * reflects the active scheme onto `<html data-theme="...">` so CSS tokens in
- * `tokens.css` switch immediately, and persists user preference in localStorage.
+ * Manages `"dark"` ("Warm Carbon Ink", default) and `"light"` ("Swiss Studio")
+ * themes, reflects the active scheme onto `<html data-theme="...">` so CSS tokens
+ * in `tokens.css` apply immediately, and persists user preference in localStorage.
  */
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
@@ -14,12 +14,12 @@ const VALID_THEMES = new Set(['light', 'dark']);
 const ThemeContext = createContext(null);
 
 /**
- * Reads the saved theme from localStorage on startup, safely falling back
- * to `"light"` during SSR or when storage access is restricted.
+ * Reads the saved theme from localStorage on startup, defaulting to `"dark"`
+ * ("Warm Carbon Ink") when no saved preference exists or storage is restricted.
  */
 function getInitialTheme() {
   if (typeof window === 'undefined') {
-    return 'light';
+    return 'dark';
   }
   try {
     const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
@@ -29,14 +29,14 @@ function getInitialTheme() {
   } catch {
     // Ignore storage access errors in restricted environments
   }
-  return 'light';
+  return 'dark';
 }
 
 /**
  * Wraps the application with theme state and cross-tab synchronization.
  */
 export function ThemeProvider({ children }) {
-  // Active theme identifier (`"light"` | `"dark"`)
+  // Active theme identifier (`"dark"` | `"light"`, defaulting to `"dark"`)
   const [theme, setThemeState] = useState(getInitialTheme);
 
   // Sync `<html data-theme>` for CSS selectors and persist changes to localStorage
@@ -63,7 +63,7 @@ export function ThemeProvider({ children }) {
         return;
       }
       const next = event.newValue;
-      setThemeState(next && VALID_THEMES.has(next) ? next : 'light');
+      setThemeState(next && VALID_THEMES.has(next) ? next : 'dark');
     };
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);

@@ -11,22 +11,30 @@
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowUpRight,
+  Award,
   CalendarRange,
   Compass,
   FolderKanban,
+  Globe,
+  HeartHandshake,
   MessagesSquare,
+  Music,
   Sparkles,
   Users,
 } from 'lucide-react';
 import { useLang } from '../context/LangContext.jsx';
 import StatusSelect from './StatusSelect.jsx';
 
-// Maps `project.iconKey` values from `initialProjects.js` / Supabase to 1.5px Lucide icons
+// Maps `project.iconKey` values from `initialProjects.js` / `NewProjectModal` to 1.5px Lucide icons
 const PROJECT_ICONS = {
   'messages-square': MessagesSquare,
   compass: Compass,
   users: Users,
   sparkles: Sparkles,
+  globe: Globe,
+  music: Music,
+  award: Award,
+  'heart-handshake': HeartHandshake,
 };
 
 export default function ProjectCard({ project, onStatusChange }) {

@@ -1,8 +1,8 @@
 /**
  * i18n.js — Bilingual UI String Dictionary (English & Turkish)
  * Centralizes all user-facing copy grouped by feature namespace (`nav`, `theme`,
- * `lang`, `profile`, `status`, `card`, `landing`, `dashboard`, `common`) and
- * consumed via `useLang().t(key, params)`.
+ * `lang`, `profile`, `status`, `card`, `modal`, `landing`, `dashboard`, `common`)
+ * and consumed via `useLang().t(key, params)`.
  */
 export const translations = {
   // English (default fallback language)
@@ -16,11 +16,6 @@ export const translations = {
       toggleSidebar: 'Toggle prediction sidebar',
       sidebarShort: 'Predictor',
       controlsLabel: 'Workspace controls',
-      sampleProjects: {
-        speakingClub: 'Speaking Club',
-        cappadociaTrip: 'Cappadocia Trip',
-        buddySystem: 'Buddy System',
-      },
     },
 
     // Theme switcher labels & accessible descriptions
@@ -73,6 +68,41 @@ export const translations = {
       openProject: 'Open workspace',
     },
 
+    // `+ New Project` modal dialog (`NewProjectModal.jsx`)
+    modal: {
+      newProjectKicker: 'Project Directory',
+      newProjectTitle: 'Create New Project',
+      newProjectSubtitle:
+        'Set up a blank ESN workspace or deep-clone default chart layouts from an existing initiative.',
+      closeLabel: 'Close dialog',
+      requiredBadge: 'Required',
+      optionalBadge: 'Optional',
+      titleLabel: 'Project Title',
+      titlePlaceholder: 'e.g. Erasmus Welcome Dinner',
+      descLabel: 'Description',
+      descPlaceholder: 'Brief overview of sessions, participants, or section goals...',
+      duplicateLabel: 'Duplicate From',
+      blankOption: 'Blank Project (Standard KPI & Chart Layout)',
+      statusLabel: 'Initial Status',
+      iconLabel: 'Project Icon',
+      cancel: 'Cancel',
+      create: 'Create Project',
+      titleRequired: 'Please enter a project title.',
+      defaultSubtitle:
+        'ESN section workspace tracking recurring session attendance, satisfaction scores, and student feedback.',
+      defaultCategory: 'Section Initiative',
+      icons: {
+        messagesSquare: 'Conversation',
+        compass: 'Trip & Mobility',
+        users: 'Buddy & Community',
+        sparkles: 'Welcome & Orientation',
+        globe: 'International Exchange',
+        music: 'Culture & Social Night',
+        award: 'Workshop & Training',
+        heartHandshake: 'Social Impact',
+      },
+    },
+
     // Landing page (`/`) hero & directory copy (`LandingPage.jsx`)
     landing: {
       kicker: 'Erasmus Student Network · Analytics Hub',
@@ -80,9 +110,6 @@ export const translations = {
       subtitle:
         'Monitor participation trends, session feedback, and retention signals across every recurring initiative in your ESN section.',
       newProject: 'New Project',
-      newProjectSoon:
-        'Project creation modal arrives in Step 2.2 — select any card below to inspect its route.',
-      dismissNotice: 'Dismiss',
       directoryLabel: 'ESN section projects',
       totalProjects: '{count} Projects',
       activeCount: '{count} Active',
@@ -118,11 +145,6 @@ export const translations = {
       toggleSidebar: 'Tahmin panelini aç veya kapat',
       sidebarShort: 'Tahminleyici',
       controlsLabel: 'Çalışma alanı kontrolleri',
-      sampleProjects: {
-        speakingClub: 'Konuşma Kulübü',
-        cappadociaTrip: 'Kapadokya Gezisi',
-        buddySystem: 'Buddy Sistemi',
-      },
     },
 
     // Theme switcher labels & accessible descriptions
@@ -175,6 +197,41 @@ export const translations = {
       openProject: 'Çalışma alanını aç',
     },
 
+    // `+ New Project` modal dialog (`NewProjectModal.jsx`)
+    modal: {
+      newProjectKicker: 'Proje Dizini',
+      newProjectTitle: 'Yeni Proje Oluştur',
+      newProjectSubtitle:
+        'Boş bir ESN çalışma alanı kurun veya mevcut bir girişimin varsayılan grafik yerleşimini kopyalayın.',
+      closeLabel: 'Pencereyi kapat',
+      requiredBadge: 'Zorunlu',
+      optionalBadge: 'İsteğe bağlı',
+      titleLabel: 'Proje Başlığı',
+      titlePlaceholder: 'Örn. Erasmus Tanışma Yemeği',
+      descLabel: 'Açıklama',
+      descPlaceholder: 'Oturumlar, katılımcılar veya şube hedefleri hakkında kısa özet...',
+      duplicateLabel: 'Şuradan Kopyala',
+      blankOption: 'Boş Proje (Standart KPI ve Grafik Yerleşimi)',
+      statusLabel: 'Başlangıç Durumu',
+      iconLabel: 'Proje İkonu',
+      cancel: 'İptal',
+      create: 'Proje Oluştur',
+      titleRequired: 'Lütfen bir proje başlığı girin.',
+      defaultSubtitle:
+        'Oturum katılımını, memnuniyet puanlarını ve öğrenci geri bildirimlerini izleyen ESN şube çalışma alanı.',
+      defaultCategory: 'Şube Girişimi',
+      icons: {
+        messagesSquare: 'Sohbet',
+        compass: 'Gezi ve Hareketlilik',
+        users: 'Buddy ve Topluluk',
+        sparkles: 'Oryantasyon ve Sosyal',
+        globe: 'Uluslararası Değişim',
+        music: 'Kültür ve Sosyal Gece',
+        award: 'Atölye ve Eğitim',
+        heartHandshake: 'Sosyal Etki',
+      },
+    },
+
     // Landing page (`/`) hero & directory copy (`LandingPage.jsx`)
     landing: {
       kicker: 'Erasmus Student Network · Analitik Merkezi',
@@ -182,9 +239,6 @@ export const translations = {
       subtitle:
         'ESN şubenizdeki tüm süreklilik projelerinde katılım eğilimlerini, oturum geri bildirimlerini ve bağlılık sinyallerini izleyin.',
       newProject: 'Yeni Proje',
-      newProjectSoon:
-        'Yeni proje oluşturma penceresi Adım 2.2’de eklenecek — rotasını incelemek için aşağıdan bir kart seçin.',
-      dismissNotice: 'Kapat',
       directoryLabel: 'ESN şube projeleri',
       totalProjects: '{count} Proje',
       activeCount: '{count} Aktif',

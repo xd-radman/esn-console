@@ -106,35 +106,6 @@
     font-weight: 600;
   }
 
-  /* Temporary Step 2.1 status notice beneath hero when `+ New Project` is clicked */
-  .landing-placeholder-notice {
-    inline-size: 100%;
-    max-inline-size: 82rem;
-    margin-inline: auto;
-    margin-block-start: 1.25rem;
-    padding-block: 0.625rem;
-    padding-inline: 0.875rem;
-    display: flex;
-    align-items: center;
-    gap: 0.625rem;
-    background-color: var(--bg-elevated);
-    border-color: var(--accent-primary-border);
-    color: var(--ink-secondary);
-    font-size: 0.875rem;
-
-    & > svg {
-      color: var(--accent-primary-ink);
-      flex-shrink: 0;
-    }
-
-    & > .landing-notice-close {
-      margin-inline-start: auto;
-      min-block-size: 1.875rem;
-      min-inline-size: 1.875rem;
-      padding: 0.25rem;
-    }
-  }
-
   /* ------------------------------------------------------------------------
      Chunked 3-Card Directory Rows (Strictly Equal Width)
      ------------------------------------------------------------------------ */
@@ -502,6 +473,108 @@
     }
   }
 
+  /* ------------------------------------------------------------------------
+     NewProjectModal — Initial Status Radio Pills & 8-Icon Lucide Picker
+     Uses `:has(> input:checked)` with constant 1px border width so selection
+     never shifts neighboring cells.
+     ------------------------------------------------------------------------ */
+  .status-choice-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.625rem;
+  }
+
+  .status-choice {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    min-block-size: 2.5rem;
+    padding-block: 0.45rem;
+    padding-inline: 0.75rem;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--border-hairline);
+    background-color: var(--bg-elevated);
+    color: var(--ink-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition-theme);
+
+    &:hover {
+      border-color: var(--border-strong);
+      color: var(--ink-primary);
+    }
+
+    &.active-option:has(> input:checked) {
+      color: var(--status-active);
+      background-color: var(--status-active-bg);
+      border-color: var(--status-active-border);
+    }
+
+    &.inactive-option:has(> input:checked) {
+      color: var(--status-inactive);
+      background-color: var(--status-inactive-bg);
+      border-color: var(--status-inactive-border);
+    }
+
+    &:has(> input:focus-visible) {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 2px;
+    }
+  }
+
+  .icon-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  @media (max-width: 32rem) {
+    .icon-picker-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .icon-choice {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-block-size: 4.1rem;
+    padding: 0.55rem 0.4rem;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--border-hairline);
+    background-color: var(--bg-elevated);
+    color: var(--ink-secondary);
+    text-align: center;
+    cursor: pointer;
+    transition: var(--transition-theme);
+
+    &:hover {
+      border-color: var(--border-strong);
+      color: var(--ink-primary);
+    }
+
+    &:has(> input:checked) {
+      background-color: var(--accent-primary-soft);
+      border-color: var(--esn-cyan);
+      color: var(--accent-primary-ink);
+    }
+
+    &:has(> input:focus-visible) {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 2px;
+    }
+
+    & .icon-choice-label {
+      font-size: 0.6875rem;
+      font-weight: 500;
+      line-height: 1.2;
+    }
+  }
+
   /* High-contrast / Forced Colors Mode support (replaces gradient border with solid CanvasText/Highlight) */
   @media (forced-colors: active) {
     .project-card {
@@ -516,8 +589,16 @@
     }
 
     .status-select,
-    .landing-placeholder-notice {
+    .status-choice,
+    .icon-choice {
       border-color: CanvasText;
+    }
+
+    .status-choice:has(> input:checked),
+    .icon-choice:has(> input:checked) {
+      border-color: Highlight;
+      outline: 2px solid Highlight;
+      outline-offset: -2px;
     }
 
     .project-card:has(a.card-link:focus-visible),
