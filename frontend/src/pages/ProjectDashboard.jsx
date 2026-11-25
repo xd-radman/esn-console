@@ -1,30 +1,131 @@
 /**
- * ProjectDashboard.jsx — Step 3.1 CSV Data Verification Workspace (`/project/:projectId`)
- * Reads `:projectId` from React Router, retrieves the matching project definition
- * and normalized CSV sessions/responses from `DataContext`, and renders a Swiss × Bento
- * verification summary (KPI counts, parsed session pills, and a responsive sample rows
- * table) before Steps 3.2–3.4 add toolbar modals, Chart.js tiles, and the sidebar.
+ * ProjectDashboard.jsx — Step 3.2 Dashboard Header & Session Management Toolbar
+ * Renders:
+ * 1. Dashboard Header: project code, Newsreader title, Inter subtitle, and synchronized `StatusSelect`.
+ * 2. Session Toolbar: `All Sessions (Combined)` + individual session dropdown,
+ *    `+ Add Session` (`AddSessionModal`), `Delete Session` (`DeleteSessionModal`),
+ *    `+ Add Demo Response`, and `Upload CSV` (`replaceCsvData`).
+ * 3. Step 3.2 Filter Preview: shows the active filter's response count and table
+ *    before Step 3.3 adds the KPI strip and customizable Chart.js Bento grid.
  */
 
-import { useEffect, useId, useMemo } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   AlertCircle,
   ArrowLeft,
-  CalendarRange,
+  ChevronDown,
+  CircleCheck,
   Database,
-  FileSpreadsheet,
-  Star,
+  Plus,
+  Sparkles,
+  Trash2,
+  Upload,
 } from 'lucide-react';
 import { useLang } from '../context/LangContext.jsx';
 import { useData } from '../context/DataContext.jsx';
 import StatusSelect from '../components/StatusSelect.jsx';
+import AddSessionModal from '../components/modals/AddSessionModal.jsx';
+import DeleteSessionModal from '../components/modals/DeleteSessionModal.jsx';
+
+// Sample pools used by `+ Add Demo Response` for realistic live chart/table testing
+const DEMO_CAT1 = ['erasmus', 'local', 'both'];
+const DEMO_CAT2 = ['social', 'language', 'culture', 'mix', 'support'];
+const DEMO_COMFORT = ['high', 'high', 'medium', 'low'];
+const DEMO_SCORES = [5, 5, 4, 4, 3];
+const DEMO_OUTCOMES = ['yes', 'yes', 'yes', 'maybe', 'no'];
+const DEMO_HIGHLIGHTS = [
+  'Camaraderie',
+  'Serendipity',
+  'Belonging',
+  'Warmth',
+  'Discovery',
+  'Harmony',
+];
+const DEMO_SUGGESTIONS = [
+  'Great pacing — keep the icebreaker prompt cards on each table',
+  'Share the meetup reminder earlier on the ESN WhatsApp group',
+  'Add 15 extra minutes for open mingling at the end',
+  'Loved the balance between Erasmus newcomers and local volunteers',
+  'Include a quick group photo before wrapping up',
+];
+
+function pickRandom(list) {
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+/**
+ * Formats an ISO `YYYY-MM-DD` date range without timezone drift using UTC formatting.
+ */
+function formatDateRange(startDate, endDate, lang) {
+  if (!startDate) {
+    return '';
+  }
+  const locale = lang === 'tr' ? 'tr-TR' : 'en-US';
+  const formatter = new Intl.DateTimeFormat(locale, {
+    timeZone: 'UTC',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+
+  const parseUtc = (iso) => {
+    const [y, m, d] = iso.split('-').map(Number);
+    if (!y || !m || !d) {
+      return null;
+    }
+    return new Date(Date.UTC(y, m - 1, d));
+  };
+
+  const startObj = parseUtc(startDate);
+  if (!startObj) {
+    return startDate;
+  }
+
+  const endObj = endDate ? parseUtc(endDate) : null;
+  if (!endObj || endDate === startDate) {
+    return formatter.format(startObj);
+  }
+
+  const shortFormatter = new Intl.DateTimeFormat(locale, {
+    timeZone: 'UTC',
+    month: 'short',
+    day: 'numeric',
+  });
+
+  if (startObj.getUTCFullYear() === endObj.getUTCFullYear()) {
+    return `${shortFormatter.format(startObj)} – ${formatter.format(endObj)}`;
+  }
+
+  return `${formatter.format(startObj)} – ${formatter.format(endObj)}`;
+}
 
 export default function ProjectDashboard() {
   const { projectId } = useParams();
   const { lang, t } = useLang();
-  const { projects, responsesByProject, isLoading, loadError, updateProjectStatus } = useData();
+  const {
+    projects,
+    responsesByProject,
+    isLoading,
+    loadError,
+    updateProjectStatus,
+    addSession,
+    deleteSession,
+    addResponse,
+    replaceCsvData,
+  } = useData();
+
+  // Active session filter (`"all"` or a specific `session.id`)
+  const [selectedSessionId, setSelectedSessionId] = useState('all');
+
+  // Modal & status feedback banner states
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [toolbarNotice, setToolbarNotice] = useState(null);
+
+  const sessionSelectId = useId();
   const tableCaptionId = useId();
+  const fileInputRef = useRef(null);
 
   // Resolve active project metadata and its grouped CSV data bucket
   const activeProject = useMemo(
@@ -34,27 +135,125 @@ export default function ProjectDashboard() {
 
   const projectData = responsesByProject[projectId] ?? { sessions: [], responses: [] };
   const { sessions, responses } = projectData;
-
   const projectCopy = activeProject ? activeProject[lang] ?? activeProject.en : null;
 
-  // Compute mean numeric satisfaction score across loaded responses
-  const averageScore = useMemo(() => {
-    const validScores = responses
-      .map((row) => row.score)
-      .filter((score) => typeof score === 'number' && Number.isFinite(score));
-
-    if (validScores.length === 0) {
-      return '—';
+  // Automatically fall back to `"all"` if the user switches projects and the previous session ID doesn't exist
+  const effectiveSessionId = useMemo(() => {
+    if (selectedSessionId === 'all') {
+      return 'all';
     }
-    const sum = validScores.reduce((acc, value) => acc + value, 0);
-    return (sum / validScores.length).toFixed(2);
-  }, [responses]);
+    return sessions.some((session) => session.id === selectedSessionId)
+      ? selectedSessionId
+      : 'all';
+  }, [selectedSessionId, sessions]);
 
-  // Keep the browser tab title synchronized with the active project title and language
+  const activeSession = useMemo(
+    () => sessions.find((session) => session.id === effectiveSessionId) ?? null,
+    [sessions, effectiveSessionId]
+  );
+
+  // Filtered response list based on `effectiveSessionId`
+  const filteredResponses = useMemo(() => {
+    if (effectiveSessionId === 'all') {
+      return responses;
+    }
+    return activeSession?.responses ?? [];
+  }, [effectiveSessionId, responses, activeSession]);
+
+  // Toolbar button disabled rules per Step 3.2 spec
+  const canDeleteSession = effectiveSessionId !== 'all' && sessions.length > 1;
+  const canAddDemoResponse = effectiveSessionId !== 'all' && Boolean(activeSession);
+
+  // Keep browser tab title synchronized with the active project title and language
   useEffect(() => {
     const label = projectCopy?.title ?? projectId ?? '';
     document.title = t('dashboard.pageTitle', { id: label });
   }, [projectCopy, projectId, t]);
+
+  // Add a new session and immediately select it in the toolbar dropdown
+  const handleAddSession = useCallback(
+    ({ title, startDate, endDate }) => {
+      if (!activeProject) {
+        return;
+      }
+      const newSessionId = addSession(activeProject.id, {
+        title,
+        startDate,
+        endDate,
+      });
+      setSelectedSessionId(newSessionId);
+      setToolbarNotice(null);
+    },
+    [activeProject, addSession]
+  );
+
+  // Delete the selected session and reset selection back to `"all"`
+  const handleConfirmDeleteSession = useCallback(
+    (sessionIdToDelete) => {
+      if (!activeProject) {
+        return;
+      }
+      deleteSession(activeProject.id, sessionIdToDelete);
+      setSelectedSessionId('all');
+      setToolbarNotice(null);
+    },
+    [activeProject, deleteSession]
+  );
+
+  // Inject a realistic randomized demo response into the currently selected session
+  const handleAddDemoResponse = useCallback(() => {
+    if (!activeProject || !activeSession) {
+      return;
+    }
+    const demoRow = {
+      id: `demo_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+      projectId: activeProject.id,
+      sessionId: activeSession.id,
+      sessionTitle: activeSession.title,
+      startDate: activeSession.startDate,
+      endDate: activeSession.endDate,
+      cat1: pickRandom(DEMO_CAT1),
+      cat2: pickRandom(DEMO_CAT2),
+      comfort: pickRandom(DEMO_COMFORT),
+      score: pickRandom(DEMO_SCORES),
+      outcome: pickRandom(DEMO_OUTCOMES),
+      note1: pickRandom(DEMO_HIGHLIGHTS),
+      note2: pickRandom(DEMO_SUGGESTIONS),
+    };
+    addResponse(activeProject.id, activeSession.id, demoRow);
+    setToolbarNotice({
+      type: 'success',
+      text: t('dashboard.demoAdded', { session: activeSession.title }),
+    });
+  }, [activeProject, activeSession, addResponse, t]);
+
+  // Parse a user-selected local `.csv` file and live-update `DataContext`
+  const handleCsvUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+    try {
+      const csvText = await file.text();
+      const parsed = replaceCsvData(csvText);
+      setSelectedSessionId('all');
+      setToolbarNotice({
+        type: 'success',
+        text: t('dashboard.csvUploaded', {
+          count: parsed.rows.length,
+          file: file.name,
+        }),
+      });
+    } catch {
+      setToolbarNotice({
+        type: 'error',
+        text: t('dashboard.csvUploadError'),
+      });
+    } finally {
+      // Clear file input so uploading the same filename twice still fires `onChange`
+      event.target.value = '';
+    }
+  };
 
   // Unknown `:projectId` fallback view
   if (!activeProject) {
@@ -81,14 +280,14 @@ export default function ProjectDashboard() {
 
   return (
     <main className="dashboard-main">
-      {/* Top project summary header with synchronized StatusSelect */}
+      {/* Dashboard Header: Project title, subtitle, and synchronized StatusSelect */}
       <section className="dashboard-header hairline-bottom">
         <div className="dashboard-header-inner">
           <div className="dashboard-header-copy">
             <div className="dashboard-header-tags">
               <span className="mono-tag">{activeProject.code}</span>
               <span className="font-mono-label dashboard-kicker">
-                {t('dashboard.kicker')}
+                {projectCopy.category}
               </span>
             </div>
 
@@ -107,7 +306,103 @@ export default function ProjectDashboard() {
       </section>
 
       <div className="dashboard-content">
-        {/* Loading / error status banner */}
+        {/* Session Management Toolbar */}
+        <section
+          className="bento-card session-toolbar"
+          aria-label={t('dashboard.toolbarLabel')}
+        >
+          {/* Left: Session dropdown (`All Sessions` + each session with dates & response count) */}
+          <div className="session-select-group">
+            <label htmlFor={sessionSelectId} className="visually-hidden">
+              {t('dashboard.sessionSelectLabel')}
+            </label>
+            <div className="session-select-wrap">
+              <select
+                id={sessionSelectId}
+                name="session-filter"
+                className="session-select"
+                value={effectiveSessionId}
+                onChange={(event) => {
+                  setSelectedSessionId(event.target.value);
+                  setToolbarNotice(null);
+                }}
+              >
+                <option value="all">
+                  {t('dashboard.allSessions')} ({responses.length})
+                </option>
+                {sessions.map((session) => {
+                  const dateLabel = formatDateRange(
+                    session.startDate,
+                    session.endDate,
+                    lang
+                  );
+                  return (
+                    <option key={session.id} value={session.id}>
+                      {session.title}
+                      {dateLabel ? ` · ${dateLabel}` : ''} ({session.responses.length})
+                    </option>
+                  );
+                })}
+              </select>
+              <ChevronDown
+                size={15}
+                strokeWidth={1.5}
+                aria-hidden="true"
+                className="session-select-chevron"
+              />
+            </div>
+          </div>
+
+          {/* Right: Add Session, Delete Session, Add Demo Response, and Upload CSV actions */}
+          <div className="session-toolbar-actions">
+            <button
+              type="button"
+              className="btn primary"
+              onClick={() => setIsAddModalOpen(true)}
+            >
+              <Plus size={15} strokeWidth={1.5} aria-hidden="true" />
+              <span>{t('dashboard.addSession')}</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn"
+              disabled={!canDeleteSession}
+              onClick={() => setIsDeleteModalOpen(true)}
+            >
+              <Trash2 size={15} strokeWidth={1.5} aria-hidden="true" />
+              <span>{t('dashboard.deleteSession')}</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn"
+              disabled={!canAddDemoResponse}
+              onClick={handleAddDemoResponse}
+            >
+              <Sparkles size={15} strokeWidth={1.5} aria-hidden="true" />
+              <span>{t('dashboard.addDemoResponse')}</span>
+            </button>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="visually-hidden"
+              onChange={handleCsvUpload}
+            />
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload size={15} strokeWidth={1.5} aria-hidden="true" />
+              <span>{t('dashboard.uploadCsv')}</span>
+            </button>
+          </div>
+        </section>
+
+        {/* Loading, error, or live action confirmation banners */}
         {isLoading && (
           <div className="bento-card dashboard-banner" role="status">
             <Database size={16} strokeWidth={1.5} aria-hidden="true" />
@@ -124,83 +419,43 @@ export default function ProjectDashboard() {
           </div>
         )}
 
-        {/* 3-tile verification KPI strip confirming parsed CSV counts */}
-        <section className="dashboard-kpi-strip" aria-label={t('dashboard.kicker')}>
-          <article className="bento-card dashboard-kpi-tile">
-            <span className="font-mono-label dashboard-kpi-label">
-              <CalendarRange size={14} strokeWidth={1.5} aria-hidden="true" />
-              <span>{t('dashboard.sessionsLoaded')}</span>
-            </span>
-            <p className="font-editorial dashboard-kpi-value tabular-nums">
-              {sessions.length}
-            </p>
-          </article>
+        {toolbarNotice && (
+          <div
+            className={`bento-card dashboard-banner ${toolbarNotice.type}`}
+            role={toolbarNotice.type === 'error' ? 'alert' : 'status'}
+          >
+            {toolbarNotice.type === 'error' ? (
+              <AlertCircle size={16} strokeWidth={1.5} aria-hidden="true" />
+            ) : (
+              <CircleCheck size={16} strokeWidth={1.5} aria-hidden="true" />
+            )}
+            <span>{toolbarNotice.text}</span>
+          </div>
+        )}
 
-          <article className="bento-card dashboard-kpi-tile">
-            <span className="font-mono-label dashboard-kpi-label">
-              <FileSpreadsheet size={14} strokeWidth={1.5} aria-hidden="true" />
-              <span>{t('dashboard.responsesLoaded')}</span>
-            </span>
-            <p className="font-editorial dashboard-kpi-value tabular-nums">
-              {responses.length}
-            </p>
-          </article>
-
-          <article className="bento-card dashboard-kpi-tile">
-            <span className="font-mono-label dashboard-kpi-label">
-              <Star size={14} strokeWidth={1.5} aria-hidden="true" />
-              <span>{t('dashboard.avgScore')}</span>
-            </span>
-            <p className="font-editorial dashboard-kpi-value tabular-nums">
-              {averageScore}
-              <span className="dashboard-kpi-unit">/ 5</span>
-            </p>
-          </article>
-        </section>
-
-        {/* Parsed sessions overview card */}
+        {/* Step 3.2 Filtered Response Preview Card (replaced by KPI Strip + Charts in Step 3.3) */}
         <section className="bento-card dashboard-section">
           <header className="dashboard-section-header">
-            <h2 className="font-editorial">{t('dashboard.parsedSessionsTitle')}</h2>
-            <span className="font-mono-label dashboard-section-count tabular-nums">
-              {sessions.length}
+            <div className="filter-preview-heading">
+              <span className="font-mono-label filter-preview-kicker">
+                {t('dashboard.activeFilterLabel')}:{' '}
+                {activeSession
+                  ? `${activeSession.title} · ${formatDateRange(
+                      activeSession.startDate,
+                      activeSession.endDate,
+                      lang
+                    )}`
+                  : t('dashboard.allSessions')}
+              </span>
+              <h2 className="font-editorial">{t('dashboard.latestRowsTitle')}</h2>
+            </div>
+
+            <span className="font-mono-label status-badge active tabular-nums">
+              {t('dashboard.filteredResponses', { count: filteredResponses.length })}
             </span>
           </header>
 
-          {sessions.length === 0 ? (
-            <p className="dashboard-empty-text">{t('dashboard.noResponsesYet')}</p>
-          ) : (
-            <ul className="parsed-sessions-list">
-              {sessions.map((session) => (
-                <li key={session.id} className="parsed-session-item hairline">
-                  <div className="parsed-session-info">
-                    <span className="parsed-session-title">{session.title}</span>
-                    <span className="font-mono-label parsed-session-dates tabular-nums">
-                      {session.startDate}
-                      {session.endDate && session.endDate !== session.startDate
-                        ? ` — ${session.endDate}`
-                        : ''}
-                    </span>
-                  </div>
-                  <span className="font-mono-label status-badge active tabular-nums">
-                    {session.responses.length} {t('card.responses')}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        {/* Responsive parsed CSV preview table verifying all normalized columns */}
-        <section className="bento-card dashboard-section">
-          <header className="dashboard-section-header">
-            <h2 className="font-editorial">{t('dashboard.sampleRowsTitle')}</h2>
-            <span className="font-mono-label dashboard-section-count tabular-nums">
-              {responses.length}
-            </span>
-          </header>
-
-          {responses.length === 0 ? (
+          {filteredResponses.length === 0 ? (
             <p className="dashboard-empty-text">{t('dashboard.noResponsesYet')}</p>
           ) : (
             <div
@@ -225,11 +480,11 @@ export default function ProjectDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {responses.map((row) => (
+                  {[...filteredResponses].reverse().map((row) => (
                     <tr key={row.id}>
                       <th scope="row">{row.sessionTitle}</th>
                       <td className="tabular-nums cell-mono">
-                        {row.startDate}
+                        {formatDateRange(row.startDate, row.endDate, lang)}
                       </td>
                       <td className="cell-mono">
                         {row.cat1} / {row.cat2}
@@ -257,6 +512,25 @@ export default function ProjectDashboard() {
           )}
         </section>
       </div>
+
+      {/* Step 3.2 Session Management Modals */}
+      <AddSessionModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onAdd={handleAddSession}
+      />
+
+      <DeleteSessionModal
+        isOpen={isDeleteModalOpen}
+        session={activeSession}
+        formattedDateRange={
+          activeSession
+            ? formatDateRange(activeSession.startDate, activeSession.endDate, lang)
+            : ''
+        }
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleConfirmDeleteSession}
+      />
     </main>
   );
 }

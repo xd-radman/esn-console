@@ -85,10 +85,127 @@
     font-size: 0.875rem;
     color: var(--ink-secondary);
 
+    &.success {
+      border-color: var(--status-positive-border);
+      background-color: var(--status-positive-bg);
+      color: var(--status-positive);
+    }
+
     &.error {
       border-color: var(--status-danger-border);
       background-color: var(--status-danger-bg);
       color: var(--status-danger);
+    }
+  }
+
+  /* ------------------------------------------------------------------------
+     Session Management Toolbar
+     ------------------------------------------------------------------------ */
+  .session-toolbar {
+    padding: 0.85rem 1.1rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+  }
+
+  .session-select-group {
+    flex: 1 1 18rem;
+    min-inline-size: 0;
+    max-inline-size: 28rem;
+  }
+
+  .session-select-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .session-select {
+    appearance: none;
+    inline-size: 100%;
+    min-block-size: 2.35rem;
+    padding-block: 0.45rem;
+    padding-inline: 0.85rem 2.25rem;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--border-strong);
+    background-color: var(--bg-elevated);
+    color: var(--ink-primary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition-theme);
+
+    &:hover {
+      background-color: var(--bg-hover);
+    }
+  }
+
+  .session-select-chevron {
+    position: absolute;
+    inset-inline-end: 0.75rem;
+    pointer-events: none;
+    color: var(--ink-muted);
+  }
+
+  .session-toolbar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .filter-preview-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .filter-preview-kicker {
+    color: var(--ink-muted);
+  }
+
+  /* DeleteSessionModal inset confirmation summary box */
+  .delete-session-summary {
+    padding: 0.95rem 1.05rem;
+    border-radius: var(--radius-control);
+    background-color: var(--bg-inset);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .delete-session-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--ink-primary);
+  }
+
+  .delete-session-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .delete-session-dates {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--ink-muted);
+    font-size: 0.7rem;
+  }
+
+  .delete-session-count {
+    color: var(--status-danger);
+    font-size: 0.7rem;
+  }
+
+  @media (pointer: coarse) {
+    .session-select {
+      min-block-size: 2.75rem;
     }
   }
 

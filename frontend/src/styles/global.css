@@ -220,6 +220,19 @@
         border-color: var(--border-hairline);
       }
     }
+
+    /* Destructive confirmation button tinted with ESN Magenta danger tokens */
+    &.danger {
+      background-color: var(--status-danger-bg);
+      border-color: var(--status-danger-border);
+      color: var(--status-danger);
+
+      &:hover:not(:disabled) {
+        background-color: var(--esn-magenta);
+        border-color: var(--esn-magenta);
+        color: #FFFFFF;
+      }
+    }
   }
 
   /* Expand touch targets to 44px minimum on coarse-pointer (touch) devices */
@@ -287,6 +300,29 @@
     &[open] {
       display: flex;
       flex-direction: column;
+    }
+
+    &.modal-dialog-compact {
+      inline-size: min(28rem, calc(100dvw - 1.5rem));
+    }
+  }
+
+  .danger-tag {
+    background-color: var(--status-danger-bg);
+    border-color: var(--status-danger-border);
+    color: var(--status-danger);
+  }
+
+  /* Side-by-side Start / End calendar date inputs inside session modals */
+  .form-date-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  @media (max-width: 30rem) {
+    .form-date-row {
+      grid-template-columns: 1fr;
     }
   }
 

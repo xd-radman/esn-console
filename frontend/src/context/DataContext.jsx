@@ -110,12 +110,16 @@ export function DataProvider({ children }) {
     );
   }, []);
 
-  // Add a new session (`{ id, title, startDate, endDate }`) to a project's timeline
+  // Add a new session (`{ id?, title, startDate, endDate }`) and return its unique ID
   const addSession = useCallback((projectId, session) => {
+    const sessionId =
+      session.id ||
+      `sess_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+
     setResponsesByProject((prev) => {
       const current = prev[projectId] ?? EMPTY_PROJECT_DATA;
       const nextSession = {
-        id: session.id,
+        id: sessionId,
         title: session.title,
         startDate: session.startDate,
         endDate: session.endDate,
@@ -132,6 +136,8 @@ export function DataProvider({ children }) {
         },
       };
     });
+
+    return sessionId;
   }, []);
 
   // Delete a session and cascade-remove its associated response rows
