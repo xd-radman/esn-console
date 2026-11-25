@@ -116,13 +116,32 @@ export const translations = {
       pageTitle: 'Projects | ESN Console',
     },
 
-    // Project dashboard (`/project/:projectId`) placeholder copy
+    // Project dashboard (`/project/:projectId`) Step 3.1 CSV verification copy
     dashboard: {
-      kicker: 'Project Route Preview',
+      kicker: 'Phase 3.1 · CSV Data Pipeline',
       placeholderTitle: 'Project Dashboard',
       placeholderSubtitle:
-        'Use the top header to switch projects, return to All Projects, or toggle the predictor state.',
+        'Live data verification backed by PapaParse and /dummy_data.csv before charts and toolbar modals are added.',
       projectIdLabel: 'Active project ID',
+      loadingData: 'Loading project dataset from dummy_data.csv...',
+      loadError: 'Could not load CSV dataset',
+      notFoundTitle: 'Project Not Found',
+      notFoundSubtitle:
+        'No project matches this URL slug. Return to the directory to choose an active ESN workspace.',
+      sessionsLoaded: 'Loaded Sessions',
+      responsesLoaded: 'Total Responses',
+      avgScore: 'Average Score',
+      parsedSessionsTitle: 'Parsed Sessions',
+      sampleRowsTitle: 'Sample Parsed Responses',
+      sampleRowsCaption: 'Normalized response rows loaded from dummy_data.csv for {project}',
+      noResponsesYet: 'No CSV responses found for this project yet.',
+      colSession: 'Session',
+      colDates: 'Date Range',
+      colCategories: 'Categories',
+      colComfort: 'Comfort',
+      colScore: 'Score',
+      colOutcome: 'Outcome',
+      colNotes: 'Notes & Suggestions',
       pageTitle: '{id} | ESN Console',
     },
 
@@ -245,13 +264,32 @@ export const translations = {
       pageTitle: 'Projeler | ESN Console',
     },
 
-    // Project dashboard (`/project/:projectId`) placeholder copy
+    // Project dashboard (`/project/:projectId`) Step 3.1 CSV verification copy
     dashboard: {
-      kicker: 'Proje Rotası Önizlemesi',
+      kicker: 'Faz 3.1 · CSV Veri Hattı',
       placeholderTitle: 'Proje Paneli',
       placeholderSubtitle:
-        'Projeler arasında geçiş yapmak, Tüm Projelere dönmek veya tahmin panelini değiştirmek için üst barı kullanın.',
+        'Grafikler ve araç çubuğu pencereleri eklenmeden önce PapaParse ve /dummy_data.csv ile canlı veri doğrulaması.',
       projectIdLabel: 'Aktif proje kimliği',
+      loadingData: 'Proje veri seti dummy_data.csv dosyasından yükleniyor...',
+      loadError: 'CSV veri seti yüklenemedi',
+      notFoundTitle: 'Proje Bulunamadı',
+      notFoundSubtitle:
+        'Bu URL kimliğiyle eşleşen bir proje yok. Aktif bir ESN çalışma alanı seçmek için dizine dönün.',
+      sessionsLoaded: 'Yüklenen Oturum',
+      responsesLoaded: 'Toplam Yanıt',
+      avgScore: 'Ortalama Puan',
+      parsedSessionsTitle: 'Ayrıştırılan Oturumlar',
+      sampleRowsTitle: 'Örnek Ayrıştırılan Yanıtlar',
+      sampleRowsCaption: '{project} için dummy_data.csv dosyasından yüklenen normalleştirilmiş yanıt satırları',
+      noResponsesYet: 'Bu proje için henüz CSV yanıtı bulunmuyor.',
+      colSession: 'Oturum',
+      colDates: 'Tarih Aralığı',
+      colCategories: 'Kategoriler',
+      colComfort: 'Konfor',
+      colScore: 'Puan',
+      colOutcome: 'Sonuç',
+      colNotes: 'Notlar ve Öneriler',
       pageTitle: '{id} | ESN Console',
     },
 

@@ -1,0 +1,43 @@
+project_id,session_id,session_title,start_date,end_date,cat1,cat2,comfort,score,outcome,note1,note2
+speaking-club,sc_w1,Week 1 — Icebreaker Tables,2026-10-05,2026-10-11,erasmus,social,high,5,yes,Serendipity,More bilingual prompt cards on each table
+speaking-club,sc_w1,Week 1 — Icebreaker Tables,2026-10-05,2026-10-11,local,language,high,4,yes,Hospitality,Slightly quieter background music would help
+speaking-club,sc_w1,Week 1 — Icebreaker Tables,2026-10-05,2026-10-11,both,mix,medium,4,yes,Wanderlust,Rotate table partners every 20 minutes
+speaking-club,sc_w1,Week 1 — Icebreaker Tables,2026-10-05,2026-10-11,erasmus,language,medium,3,maybe,Threshold,Add a beginner Turkish corner next week
+speaking-club,sc_w2,Week 2 — Travel & Culture,2026-10-12,2026-10-18,both,culture,high,5,yes,Bosphorus,Loved the photo storytelling round
+speaking-club,sc_w2,Week 2 — Travel & Culture,2026-10-12,2026-10-18,erasmus,mix,high,5,yes,Camaraderie,Keep the 15-minute tea break in the middle
+speaking-club,sc_w2,Week 2 — Travel & Culture,2026-10-12,2026-10-18,local,social,high,4,yes,Mosaic,Share the topic list on Instagram earlier
+speaking-club,sc_w2,Week 2 — Travel & Culture,2026-10-12,2026-10-18,erasmus,culture,low,3,no,Sonder,Venue felt a bit crowded near the entrance
+speaking-club,sc_w3,Week 3 — Intercultural Night,2026-10-19,2026-10-25,both,mix,high,5,yes,Euphoria,More speed-friending rounds before trivia
+speaking-club,sc_w3,Week 3 — Intercultural Night,2026-10-19,2026-10-25,erasmus,social,high,5,yes,Belonging,Best atmosphere of the semester so far
+speaking-club,sc_w3,Week 3 — Intercultural Night,2026-10-19,2026-10-25,local,language,high,4,yes,Fluency,Add Spanish and German mini-tables too
+speaking-club,sc_w3,Week 3 — Intercultural Night,2026-10-19,2026-10-25,both,culture,medium,4,yes,Harmony,Include a short closing group photo
+istanbul-cultural-trip,ict_s1,Day 1 — Historic Peninsula,2026-10-24,2026-10-24,erasmus,culture,high,5,yes,Sultanahmet,Audio headsets worked cleanly in crowded halls
+istanbul-cultural-trip,ict_s1,Day 1 — Historic Peninsula,2026-10-24,2026-10-24,erasmus,logistics,medium,4,yes,Cistern,Give 15 extra minutes at the Spice Bazaar
+istanbul-cultural-trip,ict_s1,Day 1 — Historic Peninsula,2026-10-24,2026-10-24,both,culture,high,5,yes,Architecture,Local guide explanations were engaging and clear
+istanbul-cultural-trip,ict_s1,Day 1 — Historic Peninsula,2026-10-24,2026-10-24,erasmus,logistics,low,3,maybe,Tramway,Share the meeting pin 24 hours in advance
+istanbul-cultural-trip,ict_s2,Day 2 — Bosphorus & Kadikoy,2026-10-25,2026-10-25,both,social,high,5,yes,Ferry,Sunset crossing back to Karakoy was unforgettable
+istanbul-cultural-trip,ict_s2,Day 2 — Bosphorus & Kadikoy,2026-10-25,2026-10-25,erasmus,culture,high,5,yes,Moda,Vegetarian lunch options were well organized
+istanbul-cultural-trip,ict_s2,Day 2 — Bosphorus & Kadikoy,2026-10-25,2026-10-25,local,mix,high,4,yes,StreetArt,Add a short coffee stop near Moda pier
+istanbul-cultural-trip,ict_s3,Autumn Encore — Balat Walk,2026-11-07,2026-11-08,erasmus,culture,high,5,yes,Balat,Smaller group size made photos much easier
+istanbul-cultural-trip,ict_s3,Autumn Encore — Balat Walk,2026-11-07,2026-11-08,both,mix,medium,4,yes,GoldenHorn,Mention uphill walking shoes in the packing note
+istanbul-cultural-trip,ict_s3,Autumn Encore — Balat Walk,2026-11-07,2026-11-08,erasmus,social,high,5,yes,Warmth,Would gladly join another weekend cultural trip
+buddy-system,bd_m1,Arrival Check-In,2026-09-14,2026-09-20,erasmus,support,high,5,yes,AirportPickup,Buddy helped set up transit card on day one
+buddy-system,bd_m1,Arrival Check-In,2026-09-14,2026-09-20,local,mentoring,high,4,yes,Onboarding,Share a checklist for residence permit steps
+buddy-system,bd_m1,Arrival Check-In,2026-09-14,2026-09-20,erasmus,support,medium,4,yes,SIMCard,Faster matching before flight arrival would help
+buddy-system,bd_m1,Arrival Check-In,2026-09-14,2026-09-20,erasmus,logistics,low,2,no,Housing,Needed clearer guidance on dorm registration
+buddy-system,bd_m2,Midterm Coffee Meetup,2026-10-26,2026-11-01,both,social,high,5,yes,Friendship,Great chance to meet other buddy pairs
+buddy-system,bd_m2,Midterm Coffee Meetup,2026-10-26,2026-11-01,local,mentoring,high,5,yes,Community,Host another casual meetup before finals
+buddy-system,bd_m2,Midterm Coffee Meetup,2026-10-26,2026-11-01,erasmus,mix,medium,4,yes,StudyTips,Campus library tour was surprisingly useful
+buddy-system,bd_m3,Semester Wrap-Up,2026-11-16,2026-11-22,both,social,high,5,yes,Gratitude,Still staying in touch with my buddy next term
+buddy-system,bd_m3,Semester Wrap-Up,2026-11-16,2026-11-22,erasmus,support,high,5,yes,Family,Would recommend the buddy program to newcomers
+buddy-system,bd_m3,Semester Wrap-Up,2026-11-16,2026-11-22,local,mentoring,medium,4,maybe,Reflection,Offer a short volunteer orientation at the start
+welcome-week,ww_d1,Campus Orientation Tour,2026-09-21,2026-09-21,erasmus,logistics,high,5,yes,CampusMap,Student ID and cafeteria walkthrough saved hours
+welcome-week,ww_d1,Campus Orientation Tour,2026-09-21,2026-09-21,both,social,high,4,yes,FirstDay,Split into smaller tour groups of 15 students
+welcome-week,ww_d1,Campus Orientation Tour,2026-09-21,2026-09-21,erasmus,support,medium,4,yes,Library,Provide a printable QR map at check-in
+welcome-week,ww_d2,City Survival Workshop,2026-09-23,2026-09-23,erasmus,support,high,5,yes,Transport,Transit card and healthcare slides were super clear
+welcome-week,ww_d2,City Survival Workshop,2026-09-23,2026-09-23,erasmus,logistics,medium,4,yes,Budgeting,Share the PDF deck right after the workshop
+welcome-week,ww_d2,City Survival Workshop,2026-09-23,2026-09-23,local,mix,medium,3,maybe,QA,Leave 10 more minutes for open Q&A at the end
+welcome-week,ww_d3,ESN Welcome Night,2026-09-25,2026-09-26,both,social,high,5,yes,Icebreaker,Name-tag bingo made starting conversations effortless
+welcome-week,ww_d3,ESN Welcome Night,2026-09-25,2026-09-26,erasmus,social,high,5,yes,Energy,Met four friends I still travel with every weekend
+welcome-week,ww_d3,ESN Welcome Night,2026-09-25,2026-09-26,both,culture,high,4,yes,Playlist,Great mix of international tracks and local classics
+welcome-week,ww_d3,ESN Welcome Night,2026-09-25,2026-09-26,erasmus,mix,medium,4,yes,CheckIn,Add a second wristband desk to shorten the queue

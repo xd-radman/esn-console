@@ -3,7 +3,7 @@
  * Renders across every view:
  * - Left: ESN Star logo + Brand button (`/`), plus dashboard-only controls when
  *   viewing `/project/:projectId` (`All Projects` back button, Project Switcher
- *   dropdown populated from `projects`, and Prediction Sidebar toggle).
+ *   dropdown populated live from `DataContext`, and Prediction Sidebar toggle).
  * - Right: `EN | TR` segmented language switcher, Light/Dark theme button, and
  *   the circular Profile button toggling `ProfilePopover`.
  */
@@ -13,18 +13,15 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ChevronDown, Moon, PanelRight, Sun } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useLang } from '../context/LangContext.jsx';
-import { INITIAL_PROJECTS } from '../lib/initialProjects.js';
+import { useData } from '../context/DataContext.jsx';
 import ProfilePopover from './ProfilePopover.jsx';
 
-export default function Header({
-  projects = INITIAL_PROJECTS,
-  isSidebarOpen = false,
-  onToggleSidebar,
-}) {
+export default function Header({ isSidebarOpen = false, onToggleSidebar }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
   const { lang, setLang, t } = useLang();
+  const { projects } = useData();
 
   // Open/closed state for the account ProfilePopover
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -99,7 +96,7 @@ export default function Header({
                 <span>{t('nav.allProjects')}</span>
               </button>
 
-              {/* Accessible native Project Switcher select bound to active projects */}
+              {/* Accessible native Project Switcher select bound to live DataContext projects */}
               <div className="project-switcher-wrap">
                 <label htmlFor={switcherId} className="visually-hidden">
                   {t('nav.switchProject')}

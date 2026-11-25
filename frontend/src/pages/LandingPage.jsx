@@ -1,15 +1,14 @@
 /**
  * LandingPage.jsx — ESN Section Project Directory (`/`) & New Project Flow
- * Renders the Swiss × Bento landing hero (64px ESN Star logo, kicker, editorial
- * title, subtitle, and `+ New Project` button), manages `isModalOpen` + project
- * directory state (seeded from `initialProjects.js` when standalone or synced
- * with `App.jsx`), and chunks cards into 3-slot rows padded with invisible spacers.
+ * Reads synchronized `projects` (with live CSV session & response counts) from
+ * `DataContext`, renders the Swiss × Bento landing hero and chunked 3-card rows
+ * padded with invisible flex spacers, and hosts `NewProjectModal`.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { useLang } from '../context/LangContext.jsx';
-import { INITIAL_PROJECTS } from '../lib/initialProjects.js';
+import { useData } from '../context/DataContext.jsx';
 import ProjectCard from '../components/ProjectCard.jsx';
 import NewProjectModal from '../components/modals/NewProjectModal.jsx';
 
@@ -27,18 +26,12 @@ function chunkIntoRows(items, size = CARDS_PER_ROW) {
   return rows;
 }
 
-export default function LandingPage({
-  projects: externalProjects,
-  onStatusChange: externalOnStatusChange,
-  onCreateProject: externalOnCreateProject,
-}) {
+export default function LandingPage() {
   const { t } = useLang();
+  const { projects, updateProjectStatus, addProject } = useData();
 
-  // Fallback local project state when `LandingPage` is rendered without parent state props
-  const [localProjects, setLocalProjects] = useState(INITIAL_PROJECTS);
+  // Controls open/closed state for the `+ New Project` modal dialog
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const projects = externalProjects ?? localProjects;
 
   // Keep browser tab title localized on `/`
   useEffect(() => {
@@ -52,33 +45,13 @@ export default function LandingPage({
     [projects]
   );
 
-  // Update project status locally or delegate to shared `App.jsx` state
-  const handleStatusChange = useCallback(
-    (projectId, nextStatus) => {
-      if (externalOnStatusChange) {
-        externalOnStatusChange(projectId, nextStatus);
-        return;
-      }
-      setLocalProjects((prev) =>
-        prev.map((project) =>
-          project.id === projectId ? { ...project, status: nextStatus } : project
-        )
-      );
-    },
-    [externalOnStatusChange]
-  );
-
-  // Append newly created project card to the directory grid and close the modal
+  // Append newly created project card to shared DataContext and close modal
   const handleCreateProject = useCallback(
     (newProject) => {
-      if (externalOnCreateProject) {
-        externalOnCreateProject(newProject);
-      } else {
-        setLocalProjects((prev) => [...prev, newProject]);
-      }
+      addProject(newProject);
       setIsModalOpen(false);
     },
-    [externalOnCreateProject]
+    [addProject]
   );
 
   const handleCloseModal = useCallback(() => {
@@ -141,7 +114,7 @@ export default function LandingPage({
                 <ProjectCard
                   key={project.id}
                   project={project}
-                  onStatusChange={handleStatusChange}
+                  onStatusChange={updateProjectStatus}
                 />
               ))}
 
