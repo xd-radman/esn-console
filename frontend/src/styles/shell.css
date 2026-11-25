@@ -1,0 +1,261 @@
+/* ==========================================================================
+   shell.css — Application Shell, Segmented Controls & Route Preview Layouts
+   Modular stylesheet for the outer viewport frame, temporary Step 1.2 top
+   test bar (`EN | TR` + theme switcher), and placeholder route cards.
+   ========================================================================== */
+
+@layer components {
+  /* Full-height flex column keeping the top bar pinned above active route content */
+  .app-shell {
+    min-block-size: 100vh;
+    min-block-size: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Temporary Step 1.2 sticky header bar (to be replaced by Header.jsx in Step 1.3) */
+  .dev-topbar {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 10;
+    background-color: var(--bg-surface);
+    border-block-end: 1px solid var(--border-hairline);
+    transition: var(--transition-theme);
+
+    & > .dev-topbar-inner {
+      inline-size: 100%;
+      max-inline-size: 72rem;
+      margin-inline: auto;
+      padding-block: 0.65rem;
+      padding-inline: clamp(1rem, 3vw, 2rem);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem 1rem;
+    }
+  }
+
+  /* Editorial brand link returning to `/` */
+  .dev-topbar-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-serif);
+    font-size: 1.15rem;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--ink-primary);
+  }
+
+  /* Right-aligned cluster holding language and theme toggles */
+  .dev-topbar-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* Inset pill/segmented button group for `EN | TR` switching */
+  .segmented-control {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.1875rem;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--border-hairline);
+    background-color: var(--bg-inset);
+    gap: 0.1875rem;
+
+    & > .segmented-icon {
+      display: inline-flex;
+      align-items: center;
+      padding-inline: 0.4rem 0.25rem;
+      color: var(--ink-muted);
+    }
+
+    & > button {
+      min-block-size: 1.875rem;
+      min-inline-size: 2.35rem;
+      padding-block: 0.25rem;
+      padding-inline: 0.6rem;
+      border-radius: calc(var(--radius-control) - 2px);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      color: var(--ink-muted);
+      transition: var(--transition-theme);
+
+      &:hover:not([aria-pressed="true"]) {
+        color: var(--ink-primary);
+        background-color: var(--bg-hover);
+      }
+
+      /* Active segment pill highlighted via `aria-pressed="true"` */
+      &[aria-pressed="true"] {
+        background-color: var(--bg-elevated);
+        color: var(--ink-primary);
+        box-shadow: 0 1px 2px rgba(24, 23, 21, 0.08);
+      }
+    }
+  }
+
+  /* Enlarge segmented buttons on touch screens */
+  @media (pointer: coarse) {
+    .segmented-control > button {
+      min-block-size: 2.5rem;
+      min-inline-size: 2.75rem;
+    }
+  }
+
+  /* Centered main viewport region for placeholder route views */
+  .page-stage {
+    flex: 1 0 auto;
+    display: grid;
+    place-items: center;
+    padding: clamp(1rem, 3vw, 2rem);
+  }
+
+  /* Shared Bento card layout used by LandingPage and ProjectDashboard placeholders */
+  .placeholder-card {
+    inline-size: 100%;
+    max-inline-size: 38rem;
+    padding: clamp(1.25rem, 1rem + 1.5vw, 2rem);
+    display: flex;
+    flex-direction: column;
+    gap: 1.35rem;
+
+    & > header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem 1rem;
+    }
+
+    & .placeholder-body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.625rem;
+    }
+
+    & h1 {
+      font-size: clamp(1.75rem, 1.4rem + 1.5vw, 2.25rem);
+      color: var(--ink-primary);
+    }
+
+    & .placeholder-subtitle {
+      color: var(--ink-secondary);
+      font-size: 0.95rem;
+      max-inline-size: 60ch;
+    }
+
+    & > footer {
+      padding-block-start: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem 1rem;
+      color: var(--ink-muted);
+      font-size: 0.8125rem;
+
+      & strong {
+        color: var(--ink-primary);
+        font-weight: 600;
+      }
+    }
+  }
+
+  /* Interactive sample card on `/` linking to `/project/speaking-club` */
+  .sample-route-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.125rem 1.25rem;
+    border-radius: var(--radius-bento);
+    border: 1px solid var(--border-hairline);
+    background-color: var(--bg-elevated);
+    transition: var(--transition-theme), border-color 160ms ease, transform 140ms ease;
+
+    &:hover {
+      border-color: var(--accent-primary);
+      transform: translateY(-1px);
+    }
+
+    & .sample-route-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      max-inline-size: 24rem;
+    }
+
+    & .sample-route-kicker {
+      color: var(--accent-primary-ink);
+    }
+
+    & h2 {
+      font-size: 1.25rem;
+      color: var(--ink-primary);
+    }
+
+    & p {
+      font-size: 0.875rem;
+      color: var(--ink-secondary);
+    }
+
+    & .sample-route-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--accent-primary-ink);
+    }
+  }
+
+  /* Key/value definition strip showing the active `:projectId` URL parameter */
+  .route-param-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    padding: 0.875rem 1rem;
+    border-radius: var(--radius-control);
+    background-color: var(--bg-inset);
+
+    & dt {
+      color: var(--ink-muted);
+    }
+
+    & dd {
+      font-family: var(--font-mono);
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--ink-primary);
+    }
+  }
+
+  /* Disable hover/theme transitions when reduced motion is requested */
+  @media (prefers-reduced-motion: reduce) {
+    :where(.dev-topbar, .segmented-control > button, .sample-route-card) {
+      transition: none;
+    }
+  }
+
+  /* Ensure borders and active segment state remain clear in Forced Colors mode */
+  @media (forced-colors: active) {
+    .segmented-control,
+    .sample-route-card,
+    .route-param-row {
+      border-color: CanvasText;
+    }
+
+    .segmented-control > button[aria-pressed="true"] {
+      border: 1px solid Highlight;
+    }
+  }
+}

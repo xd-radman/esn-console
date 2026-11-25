@@ -1,19 +1,22 @@
 /* ==========================================================================
-   ESN Console — Global Base Styles & Swiss × Bento Primitives
-   Organized via CSS Cascade Layers (@layer) with zero global `*` resets.
+  global.css — Element Resets, Base Typography, Bento Primitives & Utilities
+  Shared foundation stylesheet layered after tokens.css (`@layer reset`,
+  `base`, `components`, `utilities`) without unlayered global `*` selectors.
    ========================================================================== */
 
 @layer reset, tokens, base, components, utilities;
 
 /* --------------------------------------------------------------------------
-   Reset Layer (targeted elements only — avoids global `*` reset)
+  Reset Layer — zero-specificity `:where()` resets for standard HTML elements
    -------------------------------------------------------------------------- */
 @layer reset {
+  /* Establish border-box sizing at the root while keeping user font-size preferences intact */
   html {
     box-sizing: border-box;
     -webkit-text-size-adjust: 100%;
   }
 
+  /* Inherit border-box across structural, typographic, form, and media elements */
   :where(
     body,
     main,
@@ -63,20 +66,24 @@
     box-sizing: inherit;
   }
 
+  /* Remove default browser outer margins on text and block containers */
   :where(body, h1, h2, h3, h4, h5, h6, p, figure, blockquote, dl, dd) {
     margin: 0;
   }
 
+  /* Prevent inline baseline gaps and horizontal overflow on embedded media */
   :where(img, picture, svg, canvas) {
     display: block;
     max-inline-size: 100%;
   }
 
+  /* Ensure form controls inherit typography and ink colors from their container */
   :where(button, input, select, textarea) {
     font: inherit;
     color: inherit;
   }
 
+  /* Neutralize native button chrome so `.btn` variants control appearance cleanly */
   :where(button) {
     background: transparent;
     border: 0;
@@ -84,6 +91,7 @@
     cursor: pointer;
   }
 
+  /* Default links to surrounding text color with no underline unless styled */
   :where(a) {
     color: inherit;
     text-decoration: none;
@@ -91,9 +99,10 @@
 }
 
 /* --------------------------------------------------------------------------
-   Base Layer
+   Base Layer — document canvas, default copy, selection & keyboard focus
    -------------------------------------------------------------------------- */
 @layer base {
+  /* Full-viewport warm paper / carbon canvas with Inter UI typography */
   body {
     min-block-size: 100vh;
     min-block-size: 100dvh;
@@ -109,15 +118,18 @@
     transition: var(--transition-theme);
   }
 
+  /* Avoid orphan words at the end of multi-line paragraphs */
   p {
     text-wrap: pretty;
   }
 
+  /* Branded text selection highlight */
   ::selection {
     background-color: var(--accent-primary-soft);
     color: var(--ink-primary);
   }
 
+  /* High-contrast keyboard focus ring across all interactive elements */
   :where(a:any-link, button, input, select, textarea, [tabindex]):focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 3px;
@@ -125,9 +137,10 @@
 }
 
 /* --------------------------------------------------------------------------
-   Components Layer — Swiss × Bento Primitives
+   Components Layer — reusable Bento cards, buttons, tags & status badges
    -------------------------------------------------------------------------- */
 @layer components {
+  /* Base Bento container with 14px radius and 1px Swiss hairline border */
   .bento-card {
     background-color: var(--bg-surface);
     border: 1px solid var(--border-hairline);
@@ -140,6 +153,7 @@
     }
   }
 
+  /* Base interactive button using `min-block-size` so zoomed text never clips */
   .btn {
     display: inline-flex;
     align-items: center;
@@ -172,6 +186,7 @@
       cursor: not-allowed;
     }
 
+    /* Primary action variant filled with ESN Cyan */
     &.primary {
       background-color: var(--accent-primary);
       border-color: var(--accent-primary);
@@ -183,6 +198,7 @@
       }
     }
 
+    /* Borderless subtle action button */
     &.ghost {
       background-color: transparent;
       border-color: transparent;
@@ -194,6 +210,7 @@
     }
   }
 
+  /* Expand touch targets to 44px minimum on coarse-pointer (touch) devices */
   @media (pointer: coarse) {
     .btn {
       min-block-size: 2.75rem;
@@ -201,6 +218,7 @@
     }
   }
 
+  /* JetBrains Mono uppercase kicker / category chip */
   .mono-tag {
     display: inline-flex;
     align-items: center;
@@ -219,6 +237,7 @@
     line-height: 1.25;
   }
 
+  /* Rounded pill indicator for Active / Inactive / system readiness states */
   .status-badge {
     display: inline-flex;
     align-items: center;
@@ -238,71 +257,14 @@
     }
   }
 
-  /* Phase 1.1 Preview Layout */
-  .preview-stage {
-    min-block-size: 100vh;
-    min-block-size: 100dvh;
-    display: grid;
-    place-items: center;
-    padding: 1.5rem;
-  }
-
-  .preview-card {
-    inline-size: 100%;
-    max-inline-size: 34rem;
-    padding: clamp(1.25rem, 1rem + 1.5vw, 2rem);
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-
-    & > header {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem 1rem;
-    }
-
-    & .preview-body {
-      display: flex;
-      flex-direction: column;
-      gap: 0.625rem;
-    }
-
-    & h1 {
-      font-size: clamp(1.75rem, 1.4rem + 1.5vw, 2.25rem);
-      color: var(--ink-primary);
-    }
-
-    & .preview-subtitle {
-      color: var(--ink-secondary);
-      font-size: 0.95rem;
-      max-inline-size: 60ch;
-
-      & strong {
-        color: var(--ink-primary);
-        font-weight: 600;
-      }
-    }
-
-    & > footer {
-      padding-block-start: 1rem;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem 1rem;
-      color: var(--ink-muted);
-      font-size: 0.8125rem;
-    }
-  }
-
+  /* Respect OS reduced-motion setting on interactive primitives */
   @media (prefers-reduced-motion: reduce) {
     :where(.bento-card, .btn) {
       transition: none;
     }
   }
 
+  /* Preserve visible component boundaries and focus rings in Windows High Contrast mode */
   @media (forced-colors: active) {
     .bento-card,
     .btn,
@@ -319,9 +281,10 @@
 }
 
 /* --------------------------------------------------------------------------
-   Utilities Layer
+  Utilities Layer — typography helpers, logical hairlines & screen-reader text
    -------------------------------------------------------------------------- */
 @layer utilities {
+  /* Newsreader serif display style for editorial headings and large KPI figures */
   .font-editorial {
     font-family: var(--font-serif);
     font-weight: 500;
@@ -330,6 +293,7 @@
     text-wrap: balance;
   }
 
+  /* JetBrains Mono compact uppercase metadata label */
   .font-mono-label {
     font-family: var(--font-mono);
     font-size: 0.75rem;
@@ -338,10 +302,12 @@
     text-transform: uppercase;
   }
 
+  /* Fixed-width numerals so KPI counters and table numbers align vertically */
   .tabular-nums {
     font-variant-numeric: tabular-nums;
   }
 
+  /* Logical 1px Swiss hairline border utilities */
   .hairline {
     border: 1px solid var(--border-hairline);
   }
@@ -362,6 +328,7 @@
     border-inline-end: 1px solid var(--border-hairline);
   }
 
+  /* Visually hides text while keeping it accessible to screen readers (unless focused) */
   .visually-hidden:where(:not(:focus-within, :active)) {
     position: absolute !important;
     clip-path: inset(50%) !important;

@@ -1,10 +1,22 @@
+/**
+ * ThemeContext.jsx — Global Light / Dark Theme State Provider
+ * Manages `"light"` ("Swiss Studio") and `"dark"` ("Warm Carbon Ink") themes,
+ * reflects the active scheme onto `<html data-theme="...">` so CSS tokens in
+ * `tokens.css` switch immediately, and persists user preference in localStorage.
+ */
+
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
+// localStorage key and allowlist of supported theme identifiers
 const THEME_STORAGE_KEY = 'esn-console-theme';
 const VALID_THEMES = new Set(['light', 'dark']);
 
 const ThemeContext = createContext(null);
 
+/**
+ * Reads the saved theme from localStorage on startup, safely falling back
+ * to `"light"` during SSR or when storage access is restricted.
+ */
 function getInitialTheme() {
   if (typeof window === 'undefined') {
     return 'light';
@@ -21,13 +33,13 @@ function getInitialTheme() {
 }
 
 /**
- * Manages Light ("Swiss Studio") and Dark ("Warm Carbon Ink") theme state,
- * syncing `data-theme` on `document.documentElement`, persisting to localStorage,
- * and staying synchronized across browser tabs via the `storage` event.
+ * Wraps the application with theme state and cross-tab synchronization.
  */
 export function ThemeProvider({ children }) {
+  // Active theme identifier (`"light"` | `"dark"`)
   const [theme, setThemeState] = useState(getInitialTheme);
 
+  // Sync `<html data-theme>` for CSS selectors and persist changes to localStorage
   useEffect(() => {
     if (typeof document !== 'undefined') {
       document.documentElement.dataset.theme = theme;
@@ -41,6 +53,7 @@ export function ThemeProvider({ children }) {
     }
   }, [theme]);
 
+  // Listen for `storage` events so toggling theme in one tab updates other open tabs
   useEffect(() => {
     if (typeof window === 'undefined') {
       return undefined;
@@ -56,16 +69,19 @@ export function ThemeProvider({ children }) {
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
+  // Explicitly set `"light"` or `"dark"`, ignoring unrecognized values
   const setTheme = useCallback((nextTheme) => {
     if (VALID_THEMES.has(nextTheme)) {
       setThemeState(nextTheme);
     }
   }, []);
 
+  // Flip between `"light"` and `"dark"` modes
   const toggleTheme = useCallback(() => {
     setThemeState((prev) => (prev === 'light' ? 'dark' : 'light'));
   }, []);
 
+  // Memoize context payload to avoid unnecessary re-renders in consumer components
   const value = useMemo(
     () => ({
       theme,
@@ -80,7 +96,7 @@ export function ThemeProvider({ children }) {
 }
 
 /**
- * Returns theme state and helpers (`theme`, `isDark`, `setTheme`, `toggleTheme`).
+ * Custom hook exposing `{ theme, isDark, setTheme, toggleTheme }` to components.
  */
 // eslint-disable-next-line react-refresh/only-export-components
 export function useTheme() {

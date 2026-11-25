@@ -1,27 +1,29 @@
 /* ==========================================================================
-   ESN Console — Design Tokens
-   Aesthetic: Bento Modular × Swiss International × Official ESN Palette
-   Light Theme: "Swiss Studio" (Warm Paper)
-   Dark Theme:  "Warm Carbon Ink"
+  tokens.css — Design System Custom Properties
+  Defines the Bento Modular × Swiss International token foundation for both
+  Light ("Swiss Studio" / Warm Paper) and Dark ("Warm Carbon Ink") themes,
+  paired with the official ESN brand palette.
    ========================================================================== */
 
+/* Global cascade priority order shared across all stylesheets */
 @layer reset, tokens, base, components, utilities;
 
 @layer tokens {
+  /* Light theme defaults ("Swiss Studio" / Warm Paper) */
   :root {
     color-scheme: light;
 
-    /* Typography */
+    /* Font stacks: Inter (UI), Newsreader (editorial headings/KPIs), JetBrains Mono (labels/tags) */
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     --font-serif: 'Newsreader', Georgia, 'Times New Roman', serif;
     --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-    /* Radii */
+    /* Corner radii for Bento tiles, interactive controls, and status pills */
     --radius-bento: 14px;
     --radius-control: 7px;
     --radius-pill: 9999px;
 
-    /* Surface / Background Layers — Swiss Studio (Warm Paper) */
+    /* Neutral surface layers from page canvas to elevated cards and inset wells */
     --bg-canvas: #F5F2EB;
     --bg-surface: #FAF9F5;
     --bg-elevated: #FFFFFF;
@@ -29,26 +31,26 @@
     --bg-hover: #E5E0D5;
     --bg-inset: #F0ECE3;
 
-    /* Ink / Text Hierarchy */
+    /* Text hierarchy from primary body copy down to muted metadata */
     --ink-primary: #181715;
     --ink-secondary: #4D4A44;
     --ink-muted: #69645C;
     --ink-faint: #8F897F;
     --ink-inverse: #FAF9F5;
 
-    /* Hairline Borders */
+    /* Swiss 1px hairline border intensities */
     --border-hairline: rgba(24, 23, 21, 0.12);
     --border-subtle: rgba(24, 23, 21, 0.07);
     --border-strong: rgba(24, 23, 21, 0.22);
 
-    /* Official ESN Brand Palette */
+    /* Official ESN (Erasmus Student Network) brand colors */
     --esn-cyan: #00AEEF;
     --esn-magenta: #EC008C;
     --esn-green: #7AC143;
     --esn-orange: #F47B20;
     --esn-dark-blue: #2E3192;
 
-    /* Brand Accent Tokens (ESN Cyan primary, ESN Magenta secondary, ESN Dark Blue deep) */
+    /* Semantic brand accents (primary = ESN Cyan, secondary = ESN Magenta, deep = ESN Dark Blue) */
     --accent-primary: var(--esn-cyan);
     --accent-primary-hover: #0095CE;
     --accent-primary-on: #141311;
@@ -65,17 +67,17 @@
     --accent-deep-soft: rgba(46, 49, 146, 0.09);
     --accent-deep-border: rgba(46, 49, 146, 0.28);
 
-    /* Focus ring guaranteed >= 3:1 non-text contrast in both themes */
+    /* Keyboard focus ring token (>= 3:1 contrast against light surfaces) */
     --focus-ring: var(--esn-dark-blue);
 
-    /* Semantic aliases retained for existing token consumers */
+    /* Backwards-compatible aliases mapping legacy accent names to primary ESN tokens */
     --accent-cobalt: var(--accent-primary);
     --accent-cobalt-hover: var(--accent-primary-hover);
     --accent-cobalt-soft: var(--accent-primary-soft);
     --accent-cobalt-border: var(--accent-primary-border);
     --accent-cobalt-ink: var(--accent-primary-ink);
 
-    /* Semantic Status Colors — Official ESN Palette (AA text contrast on soft tints) */
+    /* Semantic status tokens (active/positive = ESN Green, warning = ESN Orange, danger = ESN Magenta) */
     --status-active: #3B6B16;
     --status-active-bg: rgba(122, 193, 67, 0.14);
     --status-active-border: rgba(122, 193, 67, 0.44);
@@ -96,12 +98,12 @@
     --status-danger-bg: rgba(236, 0, 140, 0.09);
     --status-danger-border: rgba(236, 0, 140, 0.30);
 
-    /* Elevation & Motion */
+    /* Card/popover elevation shadows and theme switch transition */
     --shadow-card: 0 1px 2px rgba(24, 23, 21, 0.04), 0 6px 20px rgba(24, 23, 21, 0.03);
     --shadow-popover: 0 10px 30px rgba(24, 23, 21, 0.10), 0 1px 3px rgba(24, 23, 21, 0.06);
     --transition-theme: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
 
-    /* Chart.js Tokens — Official ESN Palette */
+    /* Chart.js axes, tooltip, and ESN data series palette (read dynamically on theme change) */
     --chart-grid: rgba(24, 23, 21, 0.07);
     --chart-tick: #69645C;
     --chart-tooltip-bg: #181715;
@@ -121,14 +123,15 @@
     --chart-series-4-soft: rgba(236, 0, 140, 0.14);
     --chart-series-5-soft: rgba(46, 49, 146, 0.14);
 
-    /* Native browser UI accent */
+    /* Tints native browser form controls with ESN Cyan */
     accent-color: var(--accent-primary);
   }
 
+  /* Dark theme overrides ("Warm Carbon Ink") — activated via <html data-theme="dark"> */
   [data-theme="dark"] {
     color-scheme: dark;
 
-    /* Surface / Background Layers — Warm Carbon Ink */
+    /* Dark warm carbon surfaces */
     --bg-canvas: #141311;
     --bg-surface: #1B1A17;
     --bg-elevated: #22201D;
@@ -136,26 +139,26 @@
     --bg-hover: #302D28;
     --bg-inset: #171614;
 
-    /* Ink / Text Hierarchy */
+    /* Light warm off-white ink hierarchy for dark backgrounds */
     --ink-primary: #F2EFE9;
     --ink-secondary: #BDB7AB;
     --ink-muted: #989286;
     --ink-faint: #6B655B;
     --ink-inverse: #141311;
 
-    /* Hairline Borders */
+    /* Translucent light hairlines for dark surfaces */
     --border-hairline: rgba(242, 239, 233, 0.12);
     --border-subtle: rgba(242, 239, 233, 0.07);
     --border-strong: rgba(242, 239, 233, 0.22);
 
-    /* Official ESN Brand Palette — Dark Surface Contrast Adjustments */
+    /* ESN brand palette slightly lifted in lightness for crisp contrast on dark carbon */
     --esn-cyan: #24C2FF;
     --esn-magenta: #F745AE;
     --esn-green: #8AD054;
     --esn-orange: #F79245;
     --esn-dark-blue: #7B7FE3;
 
-    /* Brand Accent Tokens */
+    /* Dark-mode semantic brand accents */
     --accent-primary: var(--esn-cyan);
     --accent-primary-hover: #4DD0FF;
     --accent-primary-on: #141311;
@@ -172,16 +175,17 @@
     --accent-deep-soft: rgba(123, 127, 227, 0.16);
     --accent-deep-border: rgba(123, 127, 227, 0.38);
 
+    /* Bright cyan focus ring for high visibility on dark surfaces */
     --focus-ring: var(--esn-cyan);
 
-    /* Semantic aliases retained for existing token consumers */
+    /* Backwards-compatible accent aliases */
     --accent-cobalt: var(--accent-primary);
     --accent-cobalt-hover: var(--accent-primary-hover);
     --accent-cobalt-soft: var(--accent-primary-soft);
     --accent-cobalt-border: var(--accent-primary-border);
     --accent-cobalt-ink: var(--accent-primary-ink);
 
-    /* Semantic Status Colors — Official ESN Palette */
+    /* Dark-mode semantic status tokens */
     --status-active: #8AD054;
     --status-active-bg: rgba(138, 208, 84, 0.14);
     --status-active-border: rgba(138, 208, 84, 0.36);
@@ -202,11 +206,11 @@
     --status-danger-bg: rgba(247, 69, 174, 0.14);
     --status-danger-border: rgba(247, 69, 174, 0.36);
 
-    /* Elevation */
+    /* Deeper shadows to separate elevated surfaces on dark backgrounds */
     --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.28), 0 8px 24px rgba(0, 0, 0, 0.24);
     --shadow-popover: 0 12px 32px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.30);
 
-    /* Chart.js Tokens — Official ESN Palette */
+    /* Dark-mode Chart.js grid, ticks, tooltip, and contrast-tuned ESN series */
     --chart-grid: rgba(242, 239, 233, 0.08);
     --chart-tick: #989286;
     --chart-tooltip-bg: #282622;
@@ -227,6 +231,7 @@
     --chart-series-5-soft: rgba(123, 127, 227, 0.20);
   }
 
+  /* Disable color-scheme transitions when the user prefers reduced motion */
   @media (prefers-reduced-motion: reduce) {
     :root {
       --transition-theme: none;
