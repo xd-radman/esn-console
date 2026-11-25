@@ -107,7 +107,10 @@
   }
 
   /* ------------------------------------------------------------------------
-     Chunked 3-Card Directory Rows (Strictly Equal Width)
+     Equal-Width 3-Column Project Directory Grid
+     Uses an explicit 3-track CSS Grid (`repeat(3, minmax(0, 1fr))`) on desktop
+     (`>= 640px`) so cards in incomplete rows (1 or 2 cards) occupy the exact
+     same column width as cards in full 3-card rows without stretching.
      ------------------------------------------------------------------------ */
   .landing-directory {
     inline-size: 100%;
@@ -115,40 +118,18 @@
     margin-inline: auto;
     padding-block: clamp(1.5rem, 3.5vw, 2.75rem);
     padding-inline: clamp(1rem, 2.5vw, 2rem);
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr;
     gap: 1.125rem;
   }
 
-  /* Mobile (< 640px): single-column stack with hidden spacers */
-  .project-row {
-    display: flex;
-    flex-direction: column;
-    gap: 1.125rem;
-  }
-
-  .project-spacer {
-    display: none;
-  }
-
-  /* Desktop (>= 640px): 3 strictly equal-width flex slots (`flex: 1 1 0px`) per row.
-     Cards and invisible spacers never change flex-grow or dimensions on hover. */
+  /* Desktop (>= 640px): 3 strictly equal-width tracks (`minmax(0, 1fr)`) */
   @media (min-width: 40rem) {
-    .project-row {
-      flex-direction: row;
-      align-items: stretch;
-    }
-
-    .project-spacer {
-      display: block;
-      flex: 1 1 0px;
-      min-inline-size: 0;
-      pointer-events: none;
-      visibility: hidden;
+    .landing-directory {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
     .project-card {
-      flex: 1 1 0px;
       min-inline-size: 0;
       block-size: 20rem; /* Consistent 320px card height across all rows */
     }

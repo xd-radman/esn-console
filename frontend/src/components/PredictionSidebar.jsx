@@ -1,10 +1,10 @@
 /**
  * PredictionSidebar.jsx — Collapsible 60fps Organizer Prediction Drawer
- * Slides in smoothly from the inline-end edge via CSS `transform: translateX(...)`
- * when toggled from `Header.jsx`. Uses `inert` while collapsed so hidden inputs
- * never enter keyboard focus order, routes predictions through `mlApi.js`, and
- * keeps the verdict hidden until first click while preserving the last verdict
- * across input edits until **Check Prediction** is clicked again.
+ * Slides in smoothly from the left edge (`transform: translateX(-100%)` -> `0`)
+ * when toggled from `Header.jsx`, locks background `<body>` scrolling while open
+ * via `body.sidebar-open`, uses `inert` while collapsed so hidden inputs never
+ * enter keyboard focus order, routes predictions through `mlApi.js`, and keeps
+ * the verdict hidden until first click while persisting it across input edits.
  */
 
 import { useEffect, useId, useState } from 'react';
@@ -68,6 +68,17 @@ export default function PredictionSidebar({
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
+
+  // Lock background page scroll while the sidebar is open and always restore on close/unmount
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return undefined;
+    }
+    document.body.classList.toggle('sidebar-open', isOpen);
+    return () => {
+      document.body.classList.remove('sidebar-open');
+    };
+  }, [isOpen]);
 
   // Call `mlApi.js` and store the returned verdict (replacing any prior verdict)
   const handleCheckPrediction = async (event) => {

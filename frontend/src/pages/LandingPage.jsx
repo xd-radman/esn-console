@@ -1,8 +1,9 @@
 /**
  * LandingPage.jsx — ESN Section Project Directory (`/`) & New Project Flow
  * Reads synchronized `projects` (with live CSV session & response counts) from
- * `DataContext`, renders the Swiss × Bento landing hero and chunked 3-card rows
- * padded with invisible flex spacers, and hosts `NewProjectModal`.
+ * `DataContext`, renders the Swiss × Bento landing hero and an explicit 3-column
+ * CSS Grid (`repeat(3, minmax(0, 1fr))` on desktop) so partial rows keep identical
+ * card widths to full 3-card rows, and hosts `NewProjectModal`.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -11,20 +12,6 @@ import { useLang } from '../context/LangContext.jsx';
 import { useData } from '../context/DataContext.jsx';
 import ProjectCard from '../components/ProjectCard.jsx';
 import NewProjectModal from '../components/modals/NewProjectModal.jsx';
-
-const CARDS_PER_ROW = 3;
-
-/**
- * Splits a flat array of projects into rows of at most `size` items (default 3)
- * so partial rows can be padded with invisible flex spacers for equal card widths.
- */
-function chunkIntoRows(items, size = CARDS_PER_ROW) {
-  const rows = [];
-  for (let i = 0; i < items.length; i += size) {
-    rows.push(items.slice(i, i + size));
-  }
-  return rows;
-}
 
 export default function LandingPage() {
   const { t } = useLang();
@@ -38,8 +25,7 @@ export default function LandingPage() {
     document.title = t('landing.pageTitle');
   }, [t]);
 
-  // Group projects into 3-column rows and count active initiatives for the hero meta strip
-  const projectRows = useMemo(() => chunkIntoRows(projects, CARDS_PER_ROW), [projects]);
+  // Count active initiatives for the hero metadata strip
   const activeCount = useMemo(
     () => projects.filter((project) => project.status === 'active').length,
     [projects]
@@ -100,35 +86,18 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Chunked 3-card project directory rows with invisible flex spacers */}
+      {/* Fixed 3-column desktop CSS Grid ensuring equal card widths across partial rows */}
       <section
         className="landing-directory"
         aria-label={t('landing.directoryLabel')}
       >
-        {projectRows.map((row, rowIndex) => {
-          const spacerCount = CARDS_PER_ROW - row.length;
-
-          return (
-            <div key={row[0]?.id ?? rowIndex} className="project-row">
-              {row.map((project) => (
-                <ProjectCard
-                  key={project.id}
-                  project={project}
-                  onStatusChange={updateProjectStatus}
-                />
-              ))}
-
-              {/* Pad partial rows to 3 items so partial-row cards match full-row widths */}
-              {Array.from({ length: spacerCount }, (_, idx) => (
-                <div
-                  key={`spacer-${rowIndex}-${idx}`}
-                  className="project-spacer"
-                  aria-hidden="true"
-                />
-              ))}
-            </div>
-          );
-        })}
+        {projects.map((project) => (
+          <ProjectCard
+            key={project.id}
+            project={project}
+            onStatusChange={updateProjectStatus}
+          />
+        ))}
       </section>
 
       {/* Accessible native `<dialog>` modal for creating or duplicating a project */}

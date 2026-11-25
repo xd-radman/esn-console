@@ -118,6 +118,11 @@
     transition: var(--transition-theme);
   }
 
+  /* Prevent underlying page scrolling while the PredictionSidebar drawer is open */
+  body.sidebar-open {
+    overflow: hidden;
+  }
+
   /* Avoid orphan words at the end of multi-line paragraphs */
   p {
     text-wrap: pretty;

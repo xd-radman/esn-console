@@ -945,7 +945,9 @@
   }
 
   /* ------------------------------------------------------------------------
-     Collapsible 60fps Organizer Prediction Sidebar (`PredictionSidebar.jsx`)
+     Collapsible 60fps Left-Anchored Organizer Prediction Sidebar (`PredictionSidebar.jsx`)
+     Anchored to `left: 0` with a hairline `border-right` and GPU-composited
+     `translateX(-100%)` -> `translateX(0)` slide transition.
      ------------------------------------------------------------------------ */
   .sidebar-backdrop {
     position: fixed;
@@ -953,6 +955,9 @@
     z-index: 70;
     background-color: rgba(12, 11, 10, 0.55);
     backdrop-filter: blur(2px);
+    overflow: hidden;
+    overscroll-behavior: contain;
+    touch-action: none;
     opacity: 0;
     pointer-events: none;
 
@@ -968,18 +973,19 @@
 
   .prediction-sidebar {
     position: fixed;
-    inset-block: 0;
-    inset-inline-end: 0;
+    top: 0;
+    bottom: 0;
+    left: 0;
     z-index: 80;
     inline-size: min(26rem, 92dvw);
     block-size: 100vh;
     block-size: 100dvh;
     background-color: var(--bg-surface);
-    border-inline-start: 1px solid var(--border-strong);
+    border-right: 1px solid var(--border-subtle);
     box-shadow: var(--shadow-popover);
     display: flex;
     flex-direction: column;
-    transform: translateX(100%);
+    transform: translateX(-100%);
     visibility: hidden;
     overscroll-behavior: contain;
 
