@@ -22,6 +22,8 @@ Thumbs.db
 
 # Local planning docs (kept locally for Antigravity, not pushed to GitHub)
 docs/
+.agents/
 
 # Local AI agent instructions
 AGENTS.md
+skills-lock.json
