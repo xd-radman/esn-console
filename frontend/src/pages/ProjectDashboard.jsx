@@ -26,6 +26,8 @@ import { useData } from '../context/DataContext.jsx';
 import StatusSelect from '../components/StatusSelect.jsx';
 import SummaryStrip from '../components/SummaryStrip.jsx';
 import ChartGrid from '../components/ChartGrid.jsx';
+import FeedbackTable from '../components/FeedbackTable.jsx';
+import PredictionSidebar from '../components/PredictionSidebar.jsx';
 import AddSessionModal from '../components/modals/AddSessionModal.jsx';
 import DeleteSessionModal from '../components/modals/DeleteSessionModal.jsx';
 
@@ -101,7 +103,10 @@ function formatDateRange(startDate, endDate, lang) {
   return `${formatter.format(startObj)} – ${formatter.format(endObj)}`;
 }
 
-export default function ProjectDashboard() {
+export default function ProjectDashboard({
+  isSidebarOpen = false,
+  onCloseSidebar,
+}) {
   const { projectId } = useParams();
   const { lang, t } = useLang();
   const {
@@ -477,7 +482,22 @@ export default function ProjectDashboard() {
           onRemoveGraph={handleRemoveGraph}
           onResetGraphs={handleResetGraphs}
         />
+
+        {/* Searchable Student Feedback & Suggestions Table */}
+        <FeedbackTable
+          responses={filteredResponses}
+          formatDateRange={formatDateRange}
+        />
       </div>
+
+      {/* Collapsible 60fps Organizer Prediction Sidebar (keyed by projectId for fresh defaults) */}
+      <PredictionSidebar
+        key={activeProject.id}
+        isOpen={isSidebarOpen}
+        onClose={onCloseSidebar}
+        projectId={activeProject.id}
+        projectTitle={projectCopy.title}
+      />
 
       {/* Session Management Modals */}
       <AddSessionModal

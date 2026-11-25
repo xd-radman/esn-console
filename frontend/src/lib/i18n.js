@@ -180,6 +180,73 @@ export const translations = {
       },
     },
 
+    // Searchable participant feedback table (`FeedbackTable.jsx`)
+    feedback: {
+      sectionTitle: 'Feedback & Suggestions',
+      searchLabel: 'Search feedback notes',
+      searchPlaceholder: 'Search highlights, suggestions, or sessions...',
+      clearSearch: 'Clear search',
+      sessionCol: 'Session',
+      dateCol: 'Date Range',
+      scoreCol: 'Score',
+      highlightCol: 'Highlight',
+      suggestionCol: 'Suggestion',
+      emptySearch: 'No feedback notes match your search query.',
+      emptyAll: 'No feedback notes recorded for this selection yet.',
+      tableCaption: 'Searchable student feedback highlights and suggestions',
+    },
+
+    // Collapsible organizer prediction sidebar (`PredictionSidebar.jsx` + `mlApi.js`)
+    sidebar: {
+      kicker: 'Organizer Intelligence',
+      title: 'Retention Predictor',
+      subtitle:
+        'Test upcoming session parameters to estimate repeat attendance before publishing.',
+      closeLabel: 'Close prediction sidebar',
+      toggleLabel: 'Toggle prediction sidebar',
+      sessionFormat: 'Session Format',
+      groupMix: 'Participant Mix',
+      comfortLevel: 'Expected Comfort Level',
+      expectedSize: 'Expected Group Size',
+      checkBtn: 'Check Prediction',
+      checking: 'Evaluating...',
+      verdictLabel: 'Predicted Verdict',
+      confidenceLabel: 'Confidence',
+      factorsLabel: 'Top Contributing Factors',
+      heuristicNote: 'Local heuristic mode · FastAPI /predict connects in Phase 6',
+      verdicts: {
+        high_retention: 'High Retention Likely',
+        moderate_retention: 'Moderate Retention',
+        at_risk: 'Retention At Risk',
+      },
+      formats: {
+        interactive: 'Interactive Tables & Icebreakers',
+        cultural: 'Guided Cultural Walk & Social',
+        workshop: 'Structured Workshop / Orientation',
+        mixer: 'Open Social Mixer',
+      },
+      mixes: {
+        balanced: 'Balanced Erasmus + Local',
+        erasmus_heavy: 'Mostly Incoming Erasmus',
+        local_heavy: 'Mostly Local Volunteers',
+      },
+      comforts: {
+        high: 'High — Welcoming & Guided',
+        medium: 'Medium — Casual Drop-In',
+        low: 'Low — Crowded / Unstructured',
+      },
+      factors: {
+        balancedMix: 'Balanced Erasmus & local volunteer mix boosts sense of belonging',
+        highComfort: 'High-comfort setting strongly correlates with repeat attendance',
+        interactiveFormat: 'Interactive format accelerates peer bonding in the first 30 min',
+        optimalGroupSize: 'Group size (15–45) keeps conversations personal and manageable',
+        largeGroupRisk: 'Large crowd (>60) may dilute interactions without extra facilitators',
+        lowComfortRisk: 'Low-comfort environment increases early drop-off risk',
+        skewedMixRisk: 'Skewed participant ratio limits cross-cultural exchange',
+        smallGroupNote: 'Small group (<12) works best in a cozy venue with an active host',
+      },
+    },
+
     // Landing page (`/`) hero & directory copy (`LandingPage.jsx`)
     landing: {
       kicker: 'Erasmus Student Network · Analytics Hub',
@@ -410,6 +477,73 @@ export const translations = {
         high: 'Yüksek',
         medium: 'Orta',
         low: 'Düşük',
+      },
+    },
+
+    // Searchable participant feedback table (`FeedbackTable.jsx`)
+    feedback: {
+      sectionTitle: 'Geri Bildirimler ve Öneriler',
+      searchLabel: 'Geri bildirim notlarında ara',
+      searchPlaceholder: 'Öne çıkanlar, öneriler veya oturumlarda ara...',
+      clearSearch: 'Aramayı temizle',
+      sessionCol: 'Oturum',
+      dateCol: 'Tarih Aralığı',
+      scoreCol: 'Puan',
+      highlightCol: 'Öne Çıkan',
+      suggestionCol: 'Öneri',
+      emptySearch: 'Arama sorgunuzla eşleşen geri bildirim notu bulunamadı.',
+      emptyAll: 'Bu seçim için henüz geri bildirim notu kaydedilmedi.',
+      tableCaption: 'Aranabilir öğrenci geri bildirimleri ve önerileri',
+    },
+
+    // Collapsible organizer prediction sidebar (`PredictionSidebar.jsx` + `mlApi.js`)
+    sidebar: {
+      kicker: 'Organizatör Zekası',
+      title: 'Bağlılık Tahminleyicisi',
+      subtitle:
+        'Yayınlamadan önce tekrar katılım olasılığını tahmin etmek için oturum parametrelerini test edin.',
+      closeLabel: 'Tahmin panelini kapat',
+      toggleLabel: 'Tahmin panelini aç veya kapat',
+      sessionFormat: 'Oturum Formatı',
+      groupMix: 'Katılımcı Dengesi',
+      comfortLevel: 'Beklenen Konfor Düzeyi',
+      expectedSize: 'Beklenen Grup Boyutu',
+      checkBtn: 'Tahmini Kontrol Et',
+      checking: 'Değerlendiriliyor...',
+      verdictLabel: 'Tahmin Sonucu',
+      confidenceLabel: 'Güven Oranı',
+      factorsLabel: 'Başlıca Etkenler',
+      heuristicNote: 'Yerel sezgisel mod · FastAPI /predict Faz 6’da bağlanacak',
+      verdicts: {
+        high_retention: 'Yüksek Bağlılık Bekleniyor',
+        moderate_retention: 'Orta Düzey Bağlılık',
+        at_risk: 'Bağlılık Risk Altında',
+      },
+      formats: {
+        interactive: 'Etkileşimli Masalar ve Buz Kırıcılar',
+        cultural: 'Rehberli Kültür Yürüyüşü ve Sosyal',
+        workshop: 'Yapılandırılmış Atölye / Oryantasyon',
+        mixer: 'Açık Sosyal Buluşma',
+      },
+      mixes: {
+        balanced: 'Dengeli Erasmus + Yerel',
+        erasmus_heavy: 'Ağırlıklı Erasmus Öğrencileri',
+        local_heavy: 'Ağırlıklı Yerel Gönüllüler',
+      },
+      comforts: {
+        high: 'Yüksek — Samimi ve Yönlendirmeli',
+        medium: 'Orta — Serbest Katılım',
+        low: 'Düşük — Kalabalık / Plansız',
+      },
+      factors: {
+        balancedMix: 'Dengeli Erasmus ve yerel gönüllü oranı aidiyet duygusunu artırıyor',
+        highComfort: 'Yüksek konfor ortamı tekrar katılımla güçlü biçimde ilişkili',
+        interactiveFormat: 'Etkileşimli format ilk 30 dakikada akran bağlarını hızlandırıyor',
+        optimalGroupSize: 'Grup boyutu (15–45) sohbetleri samimi ve yönetilebilir tutuyor',
+        largeGroupRisk: 'Kalabalık grup (>60) ek moderatör olmadan etkileşimi azaltabilir',
+        lowComfortRisk: 'Düşük konfor ortamı erken ayrılma riskini artırıyor',
+        skewedMixRisk: 'Tek taraflı katılımcı oranı kültürlerarası etkileşimi sınırlıyor',
+        smallGroupNote: 'Küçük grup (<12) samimi bir mekan ve aktif moderatörle en iyi sonucu verir',
       },
     },
 

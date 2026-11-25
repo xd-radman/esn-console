@@ -1,8 +1,8 @@
 /**
  * App.jsx — Root Application Shell & Client-Side Route Table
  * Renders the persistent `<Header />` above `<Routes>`. Shared project and CSV
- * data are supplied by `DataProvider` in `main.jsx`, while `App.jsx` holds the
- * shell-level prediction sidebar toggle state.
+ * data are supplied by `DataProvider` in `main.jsx`, while `App.jsx` coordinates
+ * the collapsible `PredictionSidebar` open/closed state between `Header` and `ProjectDashboard`.
  */
 
 import { useCallback, useState } from 'react';
@@ -12,11 +12,15 @@ import LandingPage from './pages/LandingPage.jsx';
 import ProjectDashboard from './pages/ProjectDashboard.jsx';
 
 export default function App() {
-  // Tracks open/closed state for the dashboard Prediction Sidebar (wired in Phase 3.4)
+  // Tracks open/closed state for the dashboard Prediction Sidebar
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const handleToggleSidebar = useCallback(() => {
     setIsSidebarOpen((prev) => !prev);
+  }, []);
+
+  const handleCloseSidebar = useCallback(() => {
+    setIsSidebarOpen(false);
   }, []);
 
   return (
@@ -30,7 +34,15 @@ export default function App() {
       {/* Client-side route table */}
       <Routes>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/project/:projectId" element={<ProjectDashboard />} />
+        <Route
+          path="/project/:projectId"
+          element={
+            <ProjectDashboard
+              isSidebarOpen={isSidebarOpen}
+              onCloseSidebar={handleCloseSidebar}
+            />
+          }
+        />
       </Routes>
     </div>
   );
