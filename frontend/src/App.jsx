@@ -1,4 +1,4 @@
-import { Moon, Sun } from 'lucide-react';
+import { CircleCheck, Moon, Sun } from 'lucide-react';
 import { useTheme } from './context/ThemeContext.jsx';
 
 export default function App() {
@@ -6,8 +6,8 @@ export default function App() {
 
   return (
     <main className="preview-stage">
-      <section className="bento-card preview-card">
-        <div className="preview-card__header">
+      <article className="bento-card preview-card">
+        <header>
           <span className="mono-tag">Phase 1 · Design Tokens</span>
 
           <button
@@ -16,30 +16,35 @@ export default function App() {
             onClick={toggleTheme}
             aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
           >
-            {isDark ? <Sun size={16} strokeWidth={1.5} /> : <Moon size={16} strokeWidth={1.5} />}
+            {isDark ? (
+              <Sun size={16} strokeWidth={1.5} aria-hidden="true" />
+            ) : (
+              <Moon size={16} strokeWidth={1.5} aria-hidden="true" />
+            )}
             <span>{isDark ? 'Light' : 'Dark'}</span>
           </button>
-        </div>
+        </header>
 
-        <div className="preview-card__body">
-          <h1 className="font-editorial preview-card__title">ESN Console</h1>
+        <div className="preview-body">
+          <h1 className="font-editorial">ESN Console</h1>
 
-          <p className="preview-card__subtitle">
-            Bento Modular x Swiss International foundation preview. Active surface theme:{' '}
-            <strong className="preview-card__emphasis">
+          <p className="preview-subtitle">
+            Bento Modular × Swiss International foundation preview. Active surface theme:{' '}
+            <strong>
               {theme === 'light' ? 'Swiss Studio (Warm Paper)' : 'Warm Carbon Ink'}
             </strong>
             .
           </p>
         </div>
 
-        <div className="hairline-top preview-card__footer">
+        <footer className="hairline-top">
           <span>Inter · Newsreader · JetBrains Mono</span>
-          <span className="font-mono-label status-badge status-badge--active">
-            Theme Ready
+          <span className="font-mono-label status-badge active">
+            <CircleCheck size={14} strokeWidth={1.5} aria-hidden="true" />
+            <span>Theme Ready</span>
           </span>
-        </div>
-      </section>
+        </footer>
+      </article>
     </main>
   );
 }

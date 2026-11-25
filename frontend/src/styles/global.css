@@ -1,290 +1,376 @@
 /* ==========================================================================
-   ESN Console — Global Base Styles & Swiss × Bento Utilities
+   ESN Console — Global Base Styles & Swiss × Bento Primitives
+   Organized via CSS Cascade Layers (@layer) with zero global `*` resets.
    ========================================================================== */
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
+@layer reset, tokens, base, components, utilities;
 
-html {
-  -webkit-text-size-adjust: 100%;
-  font-size: 16px;
-}
+/* --------------------------------------------------------------------------
+   Reset Layer (targeted elements only — avoids global `*` reset)
+   -------------------------------------------------------------------------- */
+@layer reset {
+  html {
+    box-sizing: border-box;
+    -webkit-text-size-adjust: 100%;
+  }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  background-color: var(--bg-canvas);
-  color: var(--ink-primary);
-  font-family: var(--font-sans);
-  font-size: 0.9375rem;
-  line-height: 1.55;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  transition: var(--transition-theme);
-}
+  :where(
+    body,
+    main,
+    section,
+    article,
+    aside,
+    header,
+    footer,
+    nav,
+    div,
+    span,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    p,
+    ul,
+    ol,
+    li,
+    figure,
+    figcaption,
+    blockquote,
+    dl,
+    dd,
+    table,
+    thead,
+    tbody,
+    tr,
+    th,
+    td,
+    form,
+    fieldset,
+    label,
+    input,
+    select,
+    textarea,
+    button,
+    a,
+    dialog,
+    img,
+    picture,
+    svg,
+    canvas
+  ) {
+    box-sizing: inherit;
+  }
 
-h1,
-h2,
-h3,
-h4,
-p,
-figure,
-blockquote,
-dl,
-dd {
-  margin: 0;
-}
+  :where(body, h1, h2, h3, h4, h5, h6, p, figure, blockquote, dl, dd) {
+    margin: 0;
+  }
 
-img,
-picture,
-svg,
-canvas {
-  display: block;
-  max-width: 100%;
-}
+  :where(img, picture, svg, canvas) {
+    display: block;
+    max-inline-size: 100%;
+  }
 
-button,
-input,
-select,
-textarea {
-  font: inherit;
-  color: inherit;
-}
+  :where(button, input, select, textarea) {
+    font: inherit;
+    color: inherit;
+  }
 
-button {
-  background: none;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-}
+  :where(button) {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+  }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-:focus-visible {
-  outline: 2px solid var(--accent-cobalt);
-  outline-offset: 2px;
+  :where(a) {
+    color: inherit;
+    text-decoration: none;
+  }
 }
 
 /* --------------------------------------------------------------------------
-   Editorial & Swiss Typography Helpers
+   Base Layer
    -------------------------------------------------------------------------- */
+@layer base {
+  body {
+    min-block-size: 100vh;
+    min-block-size: 100dvh;
+    background-color: var(--bg-canvas);
+    color: var(--ink-primary);
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    text-align: start;
+    overflow-wrap: break-word;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: var(--transition-theme);
+  }
 
-.font-editorial {
-  font-family: var(--font-serif);
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  line-height: 1.12;
-}
+  p {
+    text-wrap: pretty;
+  }
 
-.font-mono-label {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
+  ::selection {
+    background-color: var(--accent-primary-soft);
+    color: var(--ink-primary);
+  }
 
-.tabular-nums {
-  font-variant-numeric: tabular-nums;
+  :where(a:any-link, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 3px;
+  }
 }
 
 /* --------------------------------------------------------------------------
-   Hairline Border Utilities
+   Components Layer — Swiss × Bento Primitives
    -------------------------------------------------------------------------- */
+@layer components {
+  .bento-card {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-hairline);
+    border-radius: var(--radius-bento);
+    box-shadow: var(--shadow-card);
+    transition: var(--transition-theme), box-shadow 180ms ease;
 
-.hairline {
-  border: 1px solid var(--border-hairline);
-}
+    &.elevated {
+      background-color: var(--bg-elevated);
+    }
+  }
 
-.hairline-top {
-  border-top: 1px solid var(--border-hairline);
-}
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-block-size: 2.25rem;
+    min-inline-size: 2.25rem;
+    padding-block: 0.5rem;
+    padding-inline: 0.875rem;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--border-hairline);
+    background-color: var(--bg-elevated);
+    color: var(--ink-primary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.2;
+    transition: var(--transition-theme), transform 120ms ease;
 
-.hairline-bottom {
-  border-bottom: 1px solid var(--border-hairline);
-}
+    &:hover:not(:disabled) {
+      background-color: var(--bg-hover);
+      border-color: var(--border-strong);
+    }
 
-.hairline-left {
-  border-left: 1px solid var(--border-hairline);
-}
+    &:active:not(:disabled) {
+      transform: translateY(1px);
+    }
 
-.hairline-right {
-  border-right: 1px solid var(--border-hairline);
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    &.primary {
+      background-color: var(--accent-primary);
+      border-color: var(--accent-primary);
+      color: var(--accent-primary-on);
+
+      &:hover:not(:disabled) {
+        background-color: var(--accent-primary-hover);
+        border-color: var(--accent-primary-hover);
+      }
+    }
+
+    &.ghost {
+      background-color: transparent;
+      border-color: transparent;
+
+      &:hover:not(:disabled) {
+        background-color: var(--bg-subtle);
+        border-color: var(--border-hairline);
+      }
+    }
+  }
+
+  @media (pointer: coarse) {
+    .btn {
+      min-block-size: 2.75rem;
+      min-inline-size: 2.75rem;
+    }
+  }
+
+  .mono-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding-block: 0.25rem;
+    padding-inline: 0.55rem;
+    border-radius: var(--radius-control);
+    background-color: var(--accent-primary-soft);
+    border: 1px solid var(--accent-primary-border);
+    color: var(--accent-primary-ink);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1.25;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding-block: 0.25rem;
+    padding-inline: 0.6rem;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-hairline);
+    background-color: var(--bg-subtle);
+    color: var(--ink-secondary);
+    line-height: 1.25;
+
+    &.active {
+      color: var(--status-active);
+      background-color: var(--status-active-bg);
+      border-color: var(--status-active-border);
+    }
+  }
+
+  /* Phase 1.1 Preview Layout */
+  .preview-stage {
+    min-block-size: 100vh;
+    min-block-size: 100dvh;
+    display: grid;
+    place-items: center;
+    padding: 1.5rem;
+  }
+
+  .preview-card {
+    inline-size: 100%;
+    max-inline-size: 34rem;
+    padding: clamp(1.25rem, 1rem + 1.5vw, 2rem);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+
+    & > header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem 1rem;
+    }
+
+    & .preview-body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.625rem;
+    }
+
+    & h1 {
+      font-size: clamp(1.75rem, 1.4rem + 1.5vw, 2.25rem);
+      color: var(--ink-primary);
+    }
+
+    & .preview-subtitle {
+      color: var(--ink-secondary);
+      font-size: 0.95rem;
+      max-inline-size: 60ch;
+
+      & strong {
+        color: var(--ink-primary);
+        font-weight: 600;
+      }
+    }
+
+    & > footer {
+      padding-block-start: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem 1rem;
+      color: var(--ink-muted);
+      font-size: 0.8125rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :where(.bento-card, .btn) {
+      transition: none;
+    }
+  }
+
+  @media (forced-colors: active) {
+    .bento-card,
+    .btn,
+    .mono-tag,
+    .status-badge {
+      border-color: CanvasText;
+      box-shadow: none;
+    }
+
+    :where(a:any-link, button, input, select, textarea, [tabindex]):focus-visible {
+      outline: 2px solid Highlight;
+    }
+  }
 }
 
 /* --------------------------------------------------------------------------
-   Base Bento Card & Control Primitives
+   Utilities Layer
    -------------------------------------------------------------------------- */
+@layer utilities {
+  .font-editorial {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1.12;
+    text-wrap: balance;
+  }
 
-.bento-card {
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-hairline);
-  border-radius: var(--radius-bento);
-  box-shadow: var(--shadow-card);
-  transition: var(--transition-theme), border-color 180ms ease, box-shadow 180ms ease;
-}
+  .font-mono-label {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
 
-.bento-card--elevated {
-  background-color: var(--bg-elevated);
-}
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  height: 2.25rem;
-  padding: 0 0.875rem;
-  border-radius: var(--radius-control);
-  border: 1px solid var(--border-hairline);
-  background-color: var(--bg-elevated);
-  color: var(--ink-primary);
-  font-size: 0.875rem;
-  font-weight: 500;
-  line-height: 1;
-  white-space: nowrap;
-  transition: var(--transition-theme), transform 120ms ease, border-color 150ms ease;
-}
+  .hairline {
+    border: 1px solid var(--border-hairline);
+  }
 
-.btn:hover:not(:disabled) {
-  background-color: var(--bg-hover);
-  border-color: var(--border-strong);
-}
+  .hairline-top {
+    border-block-start: 1px solid var(--border-hairline);
+  }
 
-.btn:active:not(:disabled) {
-  transform: translateY(1px);
-}
+  .hairline-bottom {
+    border-block-end: 1px solid var(--border-hairline);
+  }
 
-.btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
+  .hairline-start {
+    border-inline-start: 1px solid var(--border-hairline);
+  }
 
-.btn-primary {
-  background-color: var(--accent-cobalt);
-  border-color: var(--accent-cobalt);
-  color: #FFFFFF;
-}
+  .hairline-end {
+    border-inline-end: 1px solid var(--border-hairline);
+  }
 
-.btn-primary:hover:not(:disabled) {
-  background-color: var(--accent-cobalt-hover);
-  border-color: var(--accent-cobalt-hover);
-}
-
-.btn-ghost {
-  background-color: transparent;
-  border-color: transparent;
-}
-
-.btn-ghost:hover:not(:disabled) {
-  background-color: var(--bg-subtle);
-  border-color: var(--border-hairline);
-}
-
-.mono-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: var(--radius-control);
-  background-color: var(--accent-cobalt-soft);
-  border: 1px solid var(--accent-cobalt-border);
-  color: var(--accent-cobalt-ink);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  line-height: 1.2;
-}
-
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.2rem 0.55rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--border-hairline);
-  background-color: var(--bg-subtle);
-  color: var(--ink-secondary);
-  line-height: 1.2;
-}
-
-.status-badge--active {
-  color: var(--status-active);
-  background-color: var(--status-active-bg);
-  border-color: var(--status-active-border);
-}
-
-/* --------------------------------------------------------------------------
-   Phase 1 Preview Layout
-   -------------------------------------------------------------------------- */
-
-.preview-stage {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 1.5rem;
-}
-
-.preview-card {
-  width: 100%;
-  max-width: 34rem;
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.preview-card__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.preview-card__body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
-}
-
-.preview-card__title {
-  font-size: 2.25rem;
-  color: var(--ink-primary);
-}
-
-.preview-card__subtitle {
-  color: var(--ink-secondary);
-  font-size: 0.95rem;
-}
-
-.preview-card__emphasis {
-  color: var(--ink-primary);
-  font-weight: 600;
-}
-
-.preview-card__footer {
-  padding-top: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  color: var(--ink-muted);
-  font-size: 0.8125rem;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
+  .visually-hidden:where(:not(:focus-within, :active)) {
+    position: absolute !important;
+    clip-path: inset(50%) !important;
+    overflow: hidden !important;
+    width: 1px !important;
+    height: 1px !important;
+    margin: -1px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    white-space: nowrap !important;
   }
 }

@@ -5,211 +5,231 @@
    Dark Theme:  "Warm Carbon Ink"
    ========================================================================== */
 
-:root {
-  color-scheme: light;
+@layer reset, tokens, base, components, utilities;
 
-  /* Typography */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-serif: 'Newsreader', Georgia, 'Times New Roman', serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+@layer tokens {
+  :root {
+    color-scheme: light;
 
-  /* Radii */
-  --radius-bento: 14px;
-  --radius-control: 7px;
-  --radius-pill: 9999px;
+    /* Typography */
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  /* Surface / Background Layers — Swiss Studio (Warm Paper) */
-  --bg-canvas: #F5F2EB;
-  --bg-surface: #FAF9F5;
-  --bg-elevated: #FFFFFF;
-  --bg-subtle: #ECE8DF;
-  --bg-hover: #E5E0D5;
-  --bg-inset: #F0ECE3;
+    /* Radii */
+    --radius-bento: 14px;
+    --radius-control: 7px;
+    --radius-pill: 9999px;
 
-  /* Ink / Text Hierarchy */
-  --ink-primary: #181715;
-  --ink-secondary: #4D4A44;
-  --ink-muted: #78736A;
-  --ink-faint: #A39D92;
-  --ink-inverse: #FAF9F5;
+    /* Surface / Background Layers — Swiss Studio (Warm Paper) */
+    --bg-canvas: #F5F2EB;
+    --bg-surface: #FAF9F5;
+    --bg-elevated: #FFFFFF;
+    --bg-subtle: #ECE8DF;
+    --bg-hover: #E5E0D5;
+    --bg-inset: #F0ECE3;
 
-  /* Hairline Borders */
-  --border-hairline: rgba(24, 23, 21, 0.10);
-  --border-subtle: rgba(24, 23, 21, 0.06);
-  --border-strong: rgba(24, 23, 21, 0.18);
+    /* Ink / Text Hierarchy */
+    --ink-primary: #181715;
+    --ink-secondary: #4D4A44;
+    --ink-muted: #69645C;
+    --ink-faint: #8F897F;
+    --ink-inverse: #FAF9F5;
 
-  /* Official ESN Brand Palette */
-  --esn-cyan: #00AEEF;
-  --esn-magenta: #EC008C;
-  --esn-green: #7AC143;
-  --esn-orange: #F47B20;
-  --esn-dark-blue: #2E3192;
+    /* Hairline Borders */
+    --border-hairline: rgba(24, 23, 21, 0.12);
+    --border-subtle: rgba(24, 23, 21, 0.07);
+    --border-strong: rgba(24, 23, 21, 0.22);
 
-  /* Brand Accent Tokens (ESN Cyan primary, ESN Magenta secondary, ESN Dark Blue deep) */
-  --accent-primary: var(--esn-cyan);
-  --accent-primary-hover: #0095CE;
-  --accent-primary-soft: rgba(0, 174, 239, 0.10);
-  --accent-primary-border: rgba(0, 174, 239, 0.36);
-  --accent-primary-ink: #0077A8;
+    /* Official ESN Brand Palette */
+    --esn-cyan: #00AEEF;
+    --esn-magenta: #EC008C;
+    --esn-green: #7AC143;
+    --esn-orange: #F47B20;
+    --esn-dark-blue: #2E3192;
 
-  --accent-secondary: var(--esn-magenta);
-  --accent-secondary-soft: rgba(236, 0, 140, 0.09);
-  --accent-secondary-border: rgba(236, 0, 140, 0.28);
-  --accent-secondary-ink: #BD0070;
+    /* Brand Accent Tokens (ESN Cyan primary, ESN Magenta secondary, ESN Dark Blue deep) */
+    --accent-primary: var(--esn-cyan);
+    --accent-primary-hover: #0095CE;
+    --accent-primary-on: #141311;
+    --accent-primary-soft: rgba(0, 174, 239, 0.10);
+    --accent-primary-border: rgba(0, 174, 239, 0.42);
+    --accent-primary-ink: #00668F;
 
-  --accent-deep: var(--esn-dark-blue);
-  --accent-deep-soft: rgba(46, 49, 146, 0.09);
-  --accent-deep-border: rgba(46, 49, 146, 0.26);
+    --accent-secondary: var(--esn-magenta);
+    --accent-secondary-soft: rgba(236, 0, 140, 0.09);
+    --accent-secondary-border: rgba(236, 0, 140, 0.30);
+    --accent-secondary-ink: #AD0066;
 
-  /* Semantic aliases retained for existing CSS class compatibility */
-  --accent-cobalt: var(--accent-primary);
-  --accent-cobalt-hover: var(--accent-primary-hover);
-  --accent-cobalt-soft: var(--accent-primary-soft);
-  --accent-cobalt-border: var(--accent-primary-border);
-  --accent-cobalt-ink: var(--accent-primary-ink);
+    --accent-deep: var(--esn-dark-blue);
+    --accent-deep-soft: rgba(46, 49, 146, 0.09);
+    --accent-deep-border: rgba(46, 49, 146, 0.28);
 
-  /* Semantic Status Colors — Official ESN Palette */
-  --status-active: #477D1B;
-  --status-active-bg: rgba(122, 193, 67, 0.14);
-  --status-active-border: rgba(122, 193, 67, 0.42);
+    /* Focus ring guaranteed >= 3:1 non-text contrast in both themes */
+    --focus-ring: var(--esn-dark-blue);
 
-  --status-inactive: #6B675F;
-  --status-inactive-bg: rgba(107, 103, 95, 0.10);
-  --status-inactive-border: rgba(107, 103, 95, 0.22);
+    /* Semantic aliases retained for existing token consumers */
+    --accent-cobalt: var(--accent-primary);
+    --accent-cobalt-hover: var(--accent-primary-hover);
+    --accent-cobalt-soft: var(--accent-primary-soft);
+    --accent-cobalt-border: var(--accent-primary-border);
+    --accent-cobalt-ink: var(--accent-primary-ink);
 
-  --status-positive: #477D1B;
-  --status-positive-bg: rgba(122, 193, 67, 0.14);
-  --status-positive-border: rgba(122, 193, 67, 0.42);
+    /* Semantic Status Colors — Official ESN Palette (AA text contrast on soft tints) */
+    --status-active: #3B6B16;
+    --status-active-bg: rgba(122, 193, 67, 0.14);
+    --status-active-border: rgba(122, 193, 67, 0.44);
 
-  --status-warning: #B8520A;
-  --status-warning-bg: rgba(244, 123, 32, 0.12);
-  --status-warning-border: rgba(244, 123, 32, 0.36);
+    --status-inactive: #59554E;
+    --status-inactive-bg: rgba(107, 103, 95, 0.10);
+    --status-inactive-border: rgba(107, 103, 95, 0.24);
 
-  --status-danger: #BD0070;
-  --status-danger-bg: rgba(236, 0, 140, 0.09);
-  --status-danger-border: rgba(236, 0, 140, 0.28);
+    --status-positive: #3B6B16;
+    --status-positive-bg: rgba(122, 193, 67, 0.14);
+    --status-positive-border: rgba(122, 193, 67, 0.44);
 
-  /* Elevation & Motion */
-  --shadow-card: 0 1px 2px rgba(24, 23, 21, 0.04), 0 6px 20px rgba(24, 23, 21, 0.03);
-  --shadow-popover: 0 10px 30px rgba(24, 23, 21, 0.10), 0 1px 3px rgba(24, 23, 21, 0.06);
-  --transition-theme: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
+    --status-warning: #A64806;
+    --status-warning-bg: rgba(244, 123, 32, 0.12);
+    --status-warning-border: rgba(244, 123, 32, 0.38);
 
-  /* Chart.js Tokens — Official ESN Palette */
-  --chart-grid: rgba(24, 23, 21, 0.07);
-  --chart-tick: #78736A;
-  --chart-tooltip-bg: #181715;
-  --chart-tooltip-text: #FAF9F5;
-  --chart-tooltip-border: rgba(250, 249, 245, 0.14);
+    --status-danger: #AD0066;
+    --status-danger-bg: rgba(236, 0, 140, 0.09);
+    --status-danger-border: rgba(236, 0, 140, 0.30);
 
-  --chart-series-1: #00AEEF; /* ESN Cyan */
-  --chart-series-2: #7AC143; /* ESN Green */
-  --chart-series-3: #F47B20; /* ESN Orange */
-  --chart-series-4: #EC008C; /* ESN Magenta */
-  --chart-series-5: #2E3192; /* ESN Dark Blue */
-  --chart-series-6: #78736A; /* Warm Neutral */
+    /* Elevation & Motion */
+    --shadow-card: 0 1px 2px rgba(24, 23, 21, 0.04), 0 6px 20px rgba(24, 23, 21, 0.03);
+    --shadow-popover: 0 10px 30px rgba(24, 23, 21, 0.10), 0 1px 3px rgba(24, 23, 21, 0.06);
+    --transition-theme: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
 
-  --chart-series-1-soft: rgba(0, 174, 239, 0.16);
-  --chart-series-2-soft: rgba(122, 193, 67, 0.16);
-  --chart-series-3-soft: rgba(244, 123, 32, 0.16);
-  --chart-series-4-soft: rgba(236, 0, 140, 0.14);
-  --chart-series-5-soft: rgba(46, 49, 146, 0.14);
-}
+    /* Chart.js Tokens — Official ESN Palette */
+    --chart-grid: rgba(24, 23, 21, 0.07);
+    --chart-tick: #69645C;
+    --chart-tooltip-bg: #181715;
+    --chart-tooltip-text: #FAF9F5;
+    --chart-tooltip-border: rgba(250, 249, 245, 0.14);
 
-[data-theme="dark"] {
-  color-scheme: dark;
+    --chart-series-1: #00AEEF; /* ESN Cyan */
+    --chart-series-2: #7AC143; /* ESN Green */
+    --chart-series-3: #F47B20; /* ESN Orange */
+    --chart-series-4: #EC008C; /* ESN Magenta */
+    --chart-series-5: #2E3192; /* ESN Dark Blue */
+    --chart-series-6: #69645C; /* Warm Neutral */
 
-  /* Surface / Background Layers — Warm Carbon Ink */
-  --bg-canvas: #141311;
-  --bg-surface: #1B1A17;
-  --bg-elevated: #22201D;
-  --bg-subtle: #282622;
-  --bg-hover: #302D28;
-  --bg-inset: #171614;
+    --chart-series-1-soft: rgba(0, 174, 239, 0.16);
+    --chart-series-2-soft: rgba(122, 193, 67, 0.16);
+    --chart-series-3-soft: rgba(244, 123, 32, 0.16);
+    --chart-series-4-soft: rgba(236, 0, 140, 0.14);
+    --chart-series-5-soft: rgba(46, 49, 146, 0.14);
 
-  /* Ink / Text Hierarchy */
-  --ink-primary: #F2EFE9;
-  --ink-secondary: #B8B2A6;
-  --ink-muted: #8B8579;
-  --ink-faint: #5E5950;
-  --ink-inverse: #141311;
+    /* Native browser UI accent */
+    accent-color: var(--accent-primary);
+  }
 
-  /* Hairline Borders */
-  --border-hairline: rgba(242, 239, 233, 0.10);
-  --border-subtle: rgba(242, 239, 233, 0.06);
-  --border-strong: rgba(242, 239, 233, 0.18);
+  [data-theme="dark"] {
+    color-scheme: dark;
 
-  /* Official ESN Brand Palette — Dark Surface Contrast Adjustments */
-  --esn-cyan: #24C2FF;
-  --esn-magenta: #F745AE;
-  --esn-green: #8AD054;
-  --esn-orange: #F79245;
-  --esn-dark-blue: #6C70DB;
+    /* Surface / Background Layers — Warm Carbon Ink */
+    --bg-canvas: #141311;
+    --bg-surface: #1B1A17;
+    --bg-elevated: #22201D;
+    --bg-subtle: #282622;
+    --bg-hover: #302D28;
+    --bg-inset: #171614;
 
-  /* Brand Accent Tokens */
-  --accent-primary: var(--esn-cyan);
-  --accent-primary-hover: #4DD0FF;
-  --accent-primary-soft: rgba(36, 194, 255, 0.14);
-  --accent-primary-border: rgba(36, 194, 255, 0.36);
-  --accent-primary-ink: #6CD5FF;
+    /* Ink / Text Hierarchy */
+    --ink-primary: #F2EFE9;
+    --ink-secondary: #BDB7AB;
+    --ink-muted: #989286;
+    --ink-faint: #6B655B;
+    --ink-inverse: #141311;
 
-  --accent-secondary: var(--esn-magenta);
-  --accent-secondary-soft: rgba(247, 69, 174, 0.14);
-  --accent-secondary-border: rgba(247, 69, 174, 0.34);
-  --accent-secondary-ink: #FF85CC;
+    /* Hairline Borders */
+    --border-hairline: rgba(242, 239, 233, 0.12);
+    --border-subtle: rgba(242, 239, 233, 0.07);
+    --border-strong: rgba(242, 239, 233, 0.22);
 
-  --accent-deep: var(--esn-dark-blue);
-  --accent-deep-soft: rgba(108, 112, 219, 0.16);
-  --accent-deep-border: rgba(108, 112, 219, 0.36);
+    /* Official ESN Brand Palette — Dark Surface Contrast Adjustments */
+    --esn-cyan: #24C2FF;
+    --esn-magenta: #F745AE;
+    --esn-green: #8AD054;
+    --esn-orange: #F79245;
+    --esn-dark-blue: #7B7FE3;
 
-  /* Semantic aliases retained for existing CSS class compatibility */
-  --accent-cobalt: var(--accent-primary);
-  --accent-cobalt-hover: var(--accent-primary-hover);
-  --accent-cobalt-soft: var(--accent-primary-soft);
-  --accent-cobalt-border: var(--accent-primary-border);
-  --accent-cobalt-ink: var(--accent-primary-ink);
+    /* Brand Accent Tokens */
+    --accent-primary: var(--esn-cyan);
+    --accent-primary-hover: #4DD0FF;
+    --accent-primary-on: #141311;
+    --accent-primary-soft: rgba(36, 194, 255, 0.14);
+    --accent-primary-border: rgba(36, 194, 255, 0.38);
+    --accent-primary-ink: #72D7FF;
 
-  /* Semantic Status Colors — Official ESN Palette */
-  --status-active: #8AD054;
-  --status-active-bg: rgba(138, 208, 84, 0.14);
-  --status-active-border: rgba(138, 208, 84, 0.34);
+    --accent-secondary: var(--esn-magenta);
+    --accent-secondary-soft: rgba(247, 69, 174, 0.14);
+    --accent-secondary-border: rgba(247, 69, 174, 0.36);
+    --accent-secondary-ink: #FF85CC;
 
-  --status-inactive: #9E988D;
-  --status-inactive-bg: rgba(158, 152, 141, 0.12);
-  --status-inactive-border: rgba(158, 152, 141, 0.26);
+    --accent-deep: var(--esn-dark-blue);
+    --accent-deep-soft: rgba(123, 127, 227, 0.16);
+    --accent-deep-border: rgba(123, 127, 227, 0.38);
 
-  --status-positive: #8AD054;
-  --status-positive-bg: rgba(138, 208, 84, 0.14);
-  --status-positive-border: rgba(138, 208, 84, 0.34);
+    --focus-ring: var(--esn-cyan);
 
-  --status-warning: #F79245;
-  --status-warning-bg: rgba(247, 146, 69, 0.14);
-  --status-warning-border: rgba(247, 146, 69, 0.34);
+    /* Semantic aliases retained for existing token consumers */
+    --accent-cobalt: var(--accent-primary);
+    --accent-cobalt-hover: var(--accent-primary-hover);
+    --accent-cobalt-soft: var(--accent-primary-soft);
+    --accent-cobalt-border: var(--accent-primary-border);
+    --accent-cobalt-ink: var(--accent-primary-ink);
 
-  --status-danger: #F745AE;
-  --status-danger-bg: rgba(247, 69, 174, 0.14);
-  --status-danger-border: rgba(247, 69, 174, 0.34);
+    /* Semantic Status Colors — Official ESN Palette */
+    --status-active: #8AD054;
+    --status-active-bg: rgba(138, 208, 84, 0.14);
+    --status-active-border: rgba(138, 208, 84, 0.36);
 
-  /* Elevation */
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.28), 0 8px 24px rgba(0, 0, 0, 0.24);
-  --shadow-popover: 0 12px 32px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.30);
+    --status-inactive: #A9A398;
+    --status-inactive-bg: rgba(158, 152, 141, 0.12);
+    --status-inactive-border: rgba(158, 152, 141, 0.28);
 
-  /* Chart.js Tokens — Official ESN Palette */
-  --chart-grid: rgba(242, 239, 233, 0.08);
-  --chart-tick: #8B8579;
-  --chart-tooltip-bg: #282622;
-  --chart-tooltip-text: #F2EFE9;
-  --chart-tooltip-border: rgba(242, 239, 233, 0.16);
+    --status-positive: #8AD054;
+    --status-positive-bg: rgba(138, 208, 84, 0.14);
+    --status-positive-border: rgba(138, 208, 84, 0.36);
 
-  --chart-series-1: #24C2FF; /* ESN Cyan (contrast-tuned) */
-  --chart-series-2: #8AD054; /* ESN Green (contrast-tuned) */
-  --chart-series-3: #F79245; /* ESN Orange (contrast-tuned) */
-  --chart-series-4: #F745AE; /* ESN Magenta (contrast-tuned) */
-  --chart-series-5: #6C70DB; /* ESN Dark Blue (contrast-tuned) */
-  --chart-series-6: #A8A29E; /* Warm Neutral */
+    --status-warning: #F79245;
+    --status-warning-bg: rgba(247, 146, 69, 0.14);
+    --status-warning-border: rgba(247, 146, 69, 0.36);
 
-  --chart-series-1-soft: rgba(36, 194, 255, 0.20);
-  --chart-series-2-soft: rgba(138, 208, 84, 0.20);
-  --chart-series-3-soft: rgba(247, 146, 69, 0.20);
-  --chart-series-4-soft: rgba(247, 69, 174, 0.18);
-  --chart-series-5-soft: rgba(108, 112, 219, 0.20);
+    --status-danger: #F745AE;
+    --status-danger-bg: rgba(247, 69, 174, 0.14);
+    --status-danger-border: rgba(247, 69, 174, 0.36);
+
+    /* Elevation */
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.28), 0 8px 24px rgba(0, 0, 0, 0.24);
+    --shadow-popover: 0 12px 32px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.30);
+
+    /* Chart.js Tokens — Official ESN Palette */
+    --chart-grid: rgba(242, 239, 233, 0.08);
+    --chart-tick: #989286;
+    --chart-tooltip-bg: #282622;
+    --chart-tooltip-text: #F2EFE9;
+    --chart-tooltip-border: rgba(242, 239, 233, 0.16);
+
+    --chart-series-1: #24C2FF; /* ESN Cyan (contrast-tuned) */
+    --chart-series-2: #8AD054; /* ESN Green (contrast-tuned) */
+    --chart-series-3: #F79245; /* ESN Orange (contrast-tuned) */
+    --chart-series-4: #F745AE; /* ESN Magenta (contrast-tuned) */
+    --chart-series-5: #7B7FE3; /* ESN Dark Blue (contrast-tuned) */
+    --chart-series-6: #A8A29E; /* Warm Neutral */
+
+    --chart-series-1-soft: rgba(36, 194, 255, 0.20);
+    --chart-series-2-soft: rgba(138, 208, 84, 0.20);
+    --chart-series-3-soft: rgba(247, 146, 69, 0.20);
+    --chart-series-4-soft: rgba(247, 69, 174, 0.18);
+    --chart-series-5-soft: rgba(123, 127, 227, 0.20);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :root {
+      --transition-theme: none;
+    }
+  }
 }
