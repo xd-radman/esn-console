@@ -5,7 +5,7 @@
  * - `id` / `code` / `status` / `iconKey` -> `projects` table columns (`slug`, `code`, `status`, `icon_key`)
  * - `en` & `tr` localized metadata -> `projects.config` (`jsonb` column)
  * - `sessionsCount` & `responsesCount` -> aggregated counts from `sessions` and `responses`
- * - `defaultGraphs` -> `project_graphs` table rows (`metric_key`, `chart_style`, `col_span`)
+ * - `defaultGraphs` -> `project_graphs` table rows (`id`, `metricKey`, `chartStyle`, `colSpan`, `customTitle`)
  */
 
 export const INITIAL_PROJECTS = [
@@ -26,13 +26,15 @@ export const INITIAL_PROJECTS = [
         'Gelen değişim öğrencileri ile yerel ESN gönüllülerini buluşturan haftalık çok dilli sohbet masaları.',
       category: 'Dil ve Sosyal',
     },
-    sessionsCount: 6,
-    responsesCount: 148,
+    sessionsCount: 3,
+    responsesCount: 12,
     defaultGraphs: [
-      { metricKey: 'score', chartStyle: 'bar-vertical', colSpan: 6 },
-      { metricKey: 'outcome', chartStyle: 'donut', colSpan: 6 },
-      { metricKey: 'comfort', chartStyle: 'bar-horizontal', colSpan: 4 },
-      { metricKey: 'trend', chartStyle: 'combo-trend', colSpan: 8 },
+      { id: 'sc-g1', metricKey: 'sessionTrend', chartStyle: 'dualAxis', colSpan: 8, customTitle: '' },
+      { id: 'sc-g2', metricKey: 'outcome', chartStyle: 'donut', colSpan: 4, customTitle: '' },
+      { id: 'sc-g3', metricKey: 'score', chartStyle: 'bar', colSpan: 6, customTitle: '' },
+      { id: 'sc-g4', metricKey: 'comfort', chartStyle: 'horizontalBar', colSpan: 6, customTitle: '' },
+      { id: 'sc-g5', metricKey: 'cat2', chartStyle: 'bar', colSpan: 6, customTitle: '' },
+      { id: 'sc-g6', metricKey: 'cat1', chartStyle: 'donut', colSpan: 6, customTitle: '' },
     ],
   },
   {
@@ -53,11 +55,13 @@ export const INITIAL_PROJECTS = [
       category: 'Hareketlilik ve Kültür',
     },
     sessionsCount: 3,
-    responsesCount: 92,
+    responsesCount: 10,
     defaultGraphs: [
-      { metricKey: 'score', chartStyle: 'bar-vertical', colSpan: 6 },
-      { metricKey: 'outcome', chartStyle: 'donut', colSpan: 6 },
-      { metricKey: 'cat1', chartStyle: 'bar-horizontal', colSpan: 12 },
+      { id: 'ict-g1', metricKey: 'sessionTrend', chartStyle: 'dualAxis', colSpan: 8, customTitle: '' },
+      { id: 'ict-g2', metricKey: 'outcome', chartStyle: 'donut', colSpan: 4, customTitle: '' },
+      { id: 'ict-g3', metricKey: 'score', chartStyle: 'bar', colSpan: 6, customTitle: '' },
+      { id: 'ict-g4', metricKey: 'cat2', chartStyle: 'horizontalBar', colSpan: 6, customTitle: '' },
+      { id: 'ict-g5', metricKey: 'comfort', chartStyle: 'bar', colSpan: 12, customTitle: '' },
     ],
   },
   {
@@ -77,12 +81,13 @@ export const INITIAL_PROJECTS = [
         'Uluslararası öğrencileri varış öncesinde deneyimli yerel öğrencilerle eşleştiren akran mentorluk programı.',
       category: 'Uyum ve Destek',
     },
-    sessionsCount: 4,
-    responsesCount: 214,
+    sessionsCount: 3,
+    responsesCount: 10,
     defaultGraphs: [
-      { metricKey: 'outcome', chartStyle: 'donut', colSpan: 4 },
-      { metricKey: 'comfort', chartStyle: 'bar-vertical', colSpan: 8 },
-      { metricKey: 'trend', chartStyle: 'line', colSpan: 12 },
+      { id: 'bd-g1', metricKey: 'outcome', chartStyle: 'donut', colSpan: 4, customTitle: '' },
+      { id: 'bd-g2', metricKey: 'sessionTrend', chartStyle: 'line', colSpan: 8, customTitle: '' },
+      { id: 'bd-g3', metricKey: 'comfort', chartStyle: 'horizontalBar', colSpan: 6, customTitle: '' },
+      { id: 'bd-g4', metricKey: 'score', chartStyle: 'bar', colSpan: 6, customTitle: '' },
     ],
   },
   {
@@ -102,11 +107,13 @@ export const INITIAL_PROJECTS = [
         'Kampüs turları, şehir rehberi atölyeleri ve tanışma gecelerinden oluşan dönem başı uyum serisi.',
       category: 'Oryantasyon',
     },
-    sessionsCount: 5,
-    responsesCount: 310,
+    sessionsCount: 3,
+    responsesCount: 10,
     defaultGraphs: [
-      { metricKey: 'score', chartStyle: 'bar-vertical', colSpan: 6 },
-      { metricKey: 'outcome', chartStyle: 'donut', colSpan: 6 },
+      { id: 'ww-g1', metricKey: 'sessionTrend', chartStyle: 'dualAxis', colSpan: 8, customTitle: '' },
+      { id: 'ww-g2', metricKey: 'outcome', chartStyle: 'donut', colSpan: 4, customTitle: '' },
+      { id: 'ww-g3', metricKey: 'cat2', chartStyle: 'horizontalBar', colSpan: 6, customTitle: '' },
+      { id: 'ww-g4', metricKey: 'score', chartStyle: 'bar', colSpan: 6, customTitle: '' },
     ],
   },
 ];

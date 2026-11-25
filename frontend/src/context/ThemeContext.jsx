@@ -69,16 +69,25 @@ export function ThemeProvider({ children }) {
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
-  // Explicitly set `"light"` or `"dark"`, ignoring unrecognized values
+  // Explicitly set `"light"` or `"dark"`, syncing `data-theme` immediately for canvas reads
   const setTheme = useCallback((nextTheme) => {
     if (VALID_THEMES.has(nextTheme)) {
+      if (typeof document !== 'undefined') {
+        document.documentElement.dataset.theme = nextTheme;
+      }
       setThemeState(nextTheme);
     }
   }, []);
 
-  // Flip between `"light"` and `"dark"` modes
+  // Flip between `"light"` and `"dark"` modes, updating `data-theme` before child re-renders
   const toggleTheme = useCallback(() => {
-    setThemeState((prev) => (prev === 'light' ? 'dark' : 'light'));
+    setThemeState((prev) => {
+      const next = prev === 'light' ? 'dark' : 'light';
+      if (typeof document !== 'undefined') {
+        document.documentElement.dataset.theme = next;
+      }
+      return next;
+    });
   }, []);
 
   // Memoize context payload to avoid unnecessary re-renders in consumer components

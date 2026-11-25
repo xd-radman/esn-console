@@ -1,9 +1,9 @@
 /**
- * DataContext.jsx — Shared Application Data & CSV State Provider
- * Centralizes `projects`, `responsesByProject`, and CSV loading state so
- * `LandingPage`, `Header` (Project Switcher), and `ProjectDashboard` stay
- * 100% synchronized. Automatically derives `sessionsCount` and `responsesCount`
- * on each project card from the active parsed dataset.
+ * DataContext.jsx — Shared Application Data, CSV & Graph Layout Provider
+ * Centralizes `projects`, `responsesByProject`, and `graphsByProject` so
+ * `LandingPage`, `Header`, and `ProjectDashboard` stay 100% synchronized.
+ * Automatically derives `sessionsCount` and `responsesCount` on project cards
+ * from the active parsed dataset and manages per-project Bento graph layouts.
  */
 
 import {
@@ -22,15 +22,31 @@ const DataContext = createContext(null);
 const EMPTY_PROJECT_DATA = { sessions: [], responses: [] };
 
 /**
+ * Builds the initial `graphsByProject` lookup by deep-cloning each project's `defaultGraphs`.
+ */
+function buildInitialGraphsMap(projectList) {
+  const map = {};
+  for (const project of projectList) {
+    map[project.id] = structuredClone(project.defaultGraphs ?? []);
+  }
+  return map;
+}
+
+/**
  * Wraps the app with synchronized project metadata, parsed CSV sessions/responses,
- * and CRUD helpers that mirror the future Phase 4 Supabase operations.
+ * customizable Bento graph layouts, and CRUD helpers mirroring Phase 4 Supabase ops.
  */
 export function DataProvider({ children }) {
-  // Base project definitions (status, localized copy, icon, default graph config)
+  // Base project definitions (status, localized copy, icon, default graph templates)
   const [baseProjects, setBaseProjects] = useState(INITIAL_PROJECTS);
 
   // Parsed sessions & responses keyed by `project.id`
   const [responsesByProject, setResponsesByProject] = useState({});
+
+  // Customizable Bento chart configurations keyed by `project.id`
+  const [graphsByProject, setGraphsByProject] = useState(() =>
+    buildInitialGraphsMap(INITIAL_PROJECTS)
+  );
 
   // Bootstrapping flags for initial `/dummy_data.csv` fetch
   const [isLoading, setIsLoading] = useState(true);
@@ -87,7 +103,7 @@ export function DataProvider({ children }) {
     [baseProjects, responsesByProject]
   );
 
-  // Append a newly created (or deep-cloned) project and ensure it has a data bucket
+  // Append a newly created (or deep-cloned) project with its own data & graph buckets
   const addProject = useCallback((newProject) => {
     setBaseProjects((prev) => [...prev, newProject]);
     setResponsesByProject((prev) => {
@@ -99,6 +115,10 @@ export function DataProvider({ children }) {
         [newProject.id]: { sessions: [], responses: [] },
       };
     });
+    setGraphsByProject((prev) => ({
+      ...prev,
+      [newProject.id]: structuredClone(newProject.defaultGraphs ?? []),
+    }));
   }, []);
 
   // Synchronize `'active' | 'inactive'` status across LandingPage and ProjectDashboard
@@ -184,10 +204,48 @@ export function DataProvider({ children }) {
     return parsed;
   }, []);
 
+  // Append a custom Bento graph tile to a project's layout
+  const addGraph = useCallback((projectId, graphConfig) => {
+    const nextGraph = {
+      id: `graph_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+      metricKey: graphConfig.metricKey,
+      chartStyle: graphConfig.chartStyle,
+      colSpan: Number(graphConfig.colSpan) || 6,
+      customTitle: graphConfig.customTitle?.trim() || '',
+    };
+
+    setGraphsByProject((prev) => ({
+      ...prev,
+      [projectId]: [...(prev[projectId] ?? []), nextGraph],
+    }));
+  }, []);
+
+  // Remove a single graph tile from a project's Bento grid
+  const removeGraph = useCallback((projectId, graphId) => {
+    setGraphsByProject((prev) => ({
+      ...prev,
+      [projectId]: (prev[projectId] ?? []).filter((graph) => graph.id !== graphId),
+    }));
+  }, []);
+
+  // Restore a project's default Bento graph layout from its project definition
+  const resetGraphs = useCallback(
+    (projectId) => {
+      const targetProject = baseProjects.find((project) => project.id === projectId);
+      const defaults = structuredClone(targetProject?.defaultGraphs ?? []);
+      setGraphsByProject((prev) => ({
+        ...prev,
+        [projectId]: defaults,
+      }));
+    },
+    [baseProjects]
+  );
+
   const value = useMemo(
     () => ({
       projects,
       responsesByProject,
+      graphsByProject,
       isLoading,
       loadError,
       addProject,
@@ -196,10 +254,14 @@ export function DataProvider({ children }) {
       deleteSession,
       addResponse,
       replaceCsvData,
+      addGraph,
+      removeGraph,
+      resetGraphs,
     }),
     [
       projects,
       responsesByProject,
+      graphsByProject,
       isLoading,
       loadError,
       addProject,
@@ -208,6 +270,9 @@ export function DataProvider({ children }) {
       deleteSession,
       addResponse,
       replaceCsvData,
+      addGraph,
+      removeGraph,
+      resetGraphs,
     ]
   );
 
@@ -215,7 +280,7 @@ export function DataProvider({ children }) {
 }
 
 /**
- * Custom hook returning shared project/CSV state and CRUD actions.
+ * Custom hook returning shared project, CSV, and graph layout state + actions.
  */
 // eslint-disable-next-line react-refresh/only-export-components
 export function useData() {

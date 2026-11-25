@@ -58,8 +58,8 @@ const BLANK_TEMPLATE = {
   sessionsCount: 0,
   responsesCount: 0,
   defaultGraphs: [
-    { metricKey: 'score', chartStyle: 'bar-vertical', colSpan: 6 },
-    { metricKey: 'outcome', chartStyle: 'donut', colSpan: 6 },
+    { id: 'blank-g1', metricKey: 'score', chartStyle: 'bar', colSpan: 6, customTitle: '' },
+    { id: 'blank-g2', metricKey: 'outcome', chartStyle: 'donut', colSpan: 6, customTitle: '' },
   ],
 };
 

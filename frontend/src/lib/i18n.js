@@ -119,6 +119,65 @@ export const translations = {
         'Are you sure you want to remove this session? All response rows linked to it will be deleted from the workspace.',
       deleteSessionResponses: '{count} responses will be removed',
       delete: 'Delete',
+      addGraphKicker: 'Bento Chart Grid',
+      addGraphTitle: 'Add Graph Tile',
+      addGraphSubtitle:
+        'Choose a survey metric, Chart.js visualization style, and grid column span for this workspace.',
+      metricLabel: 'Metric',
+      styleLabel: 'Chart Style',
+      widthLabel: 'Column Width (12-col grid)',
+      widthCols: '{count} cols',
+      customTitleLabel: 'Custom Title',
+      customTitlePlaceholder: 'Optional — leave blank to use metric name',
+      createGraph: 'Add Graph',
+    },
+
+    // Summary KPI strip (`SummaryStrip.jsx`)
+    kpi: {
+      stripLabel: 'Project summary KPIs',
+      totalResponses: 'Total Responses',
+      positiveRate: 'Positive Outcome Rate',
+      avgScore: 'Average Score',
+    },
+
+    // Customizable 12-col Bento chart grid (`ChartGrid.jsx`, `ChartTile.jsx`, `chartUtils.js`)
+    charts: {
+      sectionTitle: 'Analytics & Visualizations',
+      addGraph: 'Add Graph',
+      resetDefault: 'Reset Default',
+      emptyTitle: 'No Graphs Configured',
+      emptySubtitle:
+        'Add a custom chart tile or restore this project’s default Swiss Bento layout.',
+      noData: 'No responses in this session yet.',
+      deleteGraphAria: 'Remove {title} chart',
+      responseCountLabel: 'Responses',
+      positiveRateLabel: 'Positive Rate (%)',
+      shareLabel: 'Share (%)',
+      positiveCenterLabel: 'Positive',
+      topShareCenterLabel: 'Top Share',
+      metrics: {
+        cat1: 'Participant Group',
+        cat2: 'Activity Focus',
+        comfort: 'Comfort Level',
+        score: 'Satisfaction Score',
+        outcome: 'Positive Outcome',
+        sessionTrend: 'Session Trend',
+      },
+      styles: {
+        bar: 'Vertical Bar',
+        horizontalBar: 'Horizontal Bar',
+        donut: 'Donut',
+        line: 'Line',
+        dualAxis: 'Dual-Axis Trend',
+      },
+      values: {
+        yes: 'Yes',
+        maybe: 'Maybe',
+        no: 'No',
+        high: 'High',
+        medium: 'Medium',
+        low: 'Low',
+      },
     },
 
     // Landing page (`/`) hero & directory copy (`LandingPage.jsx`)
@@ -293,6 +352,65 @@ export const translations = {
         'Bu oturumu kaldırmak istediğinizden emin misiniz? Bu oturuma bağlı tüm yanıt satırları çalışma alanından silinecektir.',
       deleteSessionResponses: '{count} yanıt kaldırılacak',
       delete: 'Sil',
+      addGraphKicker: 'Bento Grafik Izgarası',
+      addGraphTitle: 'Grafik Kartı Ekle',
+      addGraphSubtitle:
+        'Bu çalışma alanı için bir anket metriği, Chart.js görselleştirme stili ve sütun genişliği seçin.',
+      metricLabel: 'Metrik',
+      styleLabel: 'Grafik Stili',
+      widthLabel: 'Sütun Genişliği (12 sütunluk ızgara)',
+      widthCols: '{count} sütun',
+      customTitleLabel: 'Özel Başlık',
+      customTitlePlaceholder: 'İsteğe bağlı — metrik adını kullanmak için boş bırakın',
+      createGraph: 'Grafik Ekle',
+    },
+
+    // Summary KPI strip (`SummaryStrip.jsx`)
+    kpi: {
+      stripLabel: 'Proje özet KPI değerleri',
+      totalResponses: 'Toplam Yanıt',
+      positiveRate: 'Olumlu Sonuç Oranı',
+      avgScore: 'Ortalama Puan',
+    },
+
+    // Customizable 12-col Bento chart grid (`ChartGrid.jsx`, `ChartTile.jsx`, `chartUtils.js`)
+    charts: {
+      sectionTitle: 'Analitik ve Görselleştirmeler',
+      addGraph: 'Grafik Ekle',
+      resetDefault: 'Varsayılana Sıfırla',
+      emptyTitle: 'Yapılandırılmış Grafik Yok',
+      emptySubtitle:
+        'Özel bir grafik kartı ekleyin veya bu projenin varsayılan Swiss Bento yerleşimini geri yükleyin.',
+      noData: 'Bu oturumda henüz yanıt bulunmuyor.',
+      deleteGraphAria: '{title} grafiğini kaldır',
+      responseCountLabel: 'Yanıt Sayısı',
+      positiveRateLabel: 'Olumlu Oran (%)',
+      shareLabel: 'Pay (%)',
+      positiveCenterLabel: 'Olumlu',
+      topShareCenterLabel: 'En Yüksek Pay',
+      metrics: {
+        cat1: 'Katılımcı Grubu',
+        cat2: 'Etkinlik Odağı',
+        comfort: 'Konfor Düzeyi',
+        score: 'Memnuniyet Puanı',
+        outcome: 'Olumlu Sonuç',
+        sessionTrend: 'Oturum Eğilimi',
+      },
+      styles: {
+        bar: 'Dikey Çubuk',
+        horizontalBar: 'Yatay Çubuk',
+        donut: 'Halka (Donut)',
+        line: 'Çizgi',
+        dualAxis: 'Çift Eksenli Eğilim',
+      },
+      values: {
+        yes: 'Evet',
+        maybe: 'Belki',
+        no: 'Hayır',
+        high: 'Yüksek',
+        medium: 'Orta',
+        low: 'Düşük',
+      },
     },
 
     // Landing page (`/`) hero & directory copy (`LandingPage.jsx`)

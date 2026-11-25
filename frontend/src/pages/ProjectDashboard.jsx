@@ -1,12 +1,11 @@
 /**
- * ProjectDashboard.jsx — Step 3.2 Dashboard Header & Session Management Toolbar
- * Renders:
+ * ProjectDashboard.jsx — Project Analytics Workspace (`/project/:projectId`)
+ * Connects `DataContext` to:
  * 1. Dashboard Header: project code, Newsreader title, Inter subtitle, and synchronized `StatusSelect`.
- * 2. Session Toolbar: `All Sessions (Combined)` + individual session dropdown,
- *    `+ Add Session` (`AddSessionModal`), `Delete Session` (`DeleteSessionModal`),
- *    `+ Add Demo Response`, and `Upload CSV` (`replaceCsvData`).
- * 3. Step 3.2 Filter Preview: shows the active filter's response count and table
- *    before Step 3.3 adds the KPI strip and customizable Chart.js Bento grid.
+ * 2. Session Management Toolbar: session filter dropdown, `+ Add Session`, `Delete Session`,
+ *    `+ Add Demo Response`, and `Upload CSV`.
+ * 3. Summary KPI Strip (`SummaryStrip.jsx`): Total Responses, Positive Outcome Rate (%), Avg Score (/ 5).
+ * 4. Customizable 12-Column Bento Graph Grid (`ChartGrid.jsx`) backed by Chart.js.
  */
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
@@ -25,10 +24,12 @@ import {
 import { useLang } from '../context/LangContext.jsx';
 import { useData } from '../context/DataContext.jsx';
 import StatusSelect from '../components/StatusSelect.jsx';
+import SummaryStrip from '../components/SummaryStrip.jsx';
+import ChartGrid from '../components/ChartGrid.jsx';
 import AddSessionModal from '../components/modals/AddSessionModal.jsx';
 import DeleteSessionModal from '../components/modals/DeleteSessionModal.jsx';
 
-// Sample pools used by `+ Add Demo Response` for realistic live chart/table testing
+// Sample pools used by `+ Add Demo Response` for realistic live chart/KPI testing
 const DEMO_CAT1 = ['erasmus', 'local', 'both'];
 const DEMO_CAT2 = ['social', 'language', 'culture', 'mix', 'support'];
 const DEMO_COMFORT = ['high', 'high', 'medium', 'low'];
@@ -106,6 +107,7 @@ export default function ProjectDashboard() {
   const {
     projects,
     responsesByProject,
+    graphsByProject,
     isLoading,
     loadError,
     updateProjectStatus,
@@ -113,6 +115,9 @@ export default function ProjectDashboard() {
     deleteSession,
     addResponse,
     replaceCsvData,
+    addGraph,
+    removeGraph,
+    resetGraphs,
   } = useData();
 
   // Active session filter (`"all"` or a specific `session.id`)
@@ -124,10 +129,9 @@ export default function ProjectDashboard() {
   const [toolbarNotice, setToolbarNotice] = useState(null);
 
   const sessionSelectId = useId();
-  const tableCaptionId = useId();
   const fileInputRef = useRef(null);
 
-  // Resolve active project metadata and its grouped CSV data bucket
+  // Resolve active project metadata, CSV data bucket, and active Bento graph layout
   const activeProject = useMemo(
     () => projects.find((project) => project.id === projectId) ?? null,
     [projects, projectId]
@@ -135,6 +139,7 @@ export default function ProjectDashboard() {
 
   const projectData = responsesByProject[projectId] ?? { sessions: [], responses: [] };
   const { sessions, responses } = projectData;
+  const activeGraphs = graphsByProject[projectId] ?? [];
   const projectCopy = activeProject ? activeProject[lang] ?? activeProject.en : null;
 
   // Automatically fall back to `"all"` if the user switches projects and the previous session ID doesn't exist
@@ -152,7 +157,7 @@ export default function ProjectDashboard() {
     [sessions, effectiveSessionId]
   );
 
-  // Filtered response list based on `effectiveSessionId`
+  // Filtered response list and scoped sessions array driving KPIs and charts
   const filteredResponses = useMemo(() => {
     if (effectiveSessionId === 'all') {
       return responses;
@@ -160,7 +165,12 @@ export default function ProjectDashboard() {
     return activeSession?.responses ?? [];
   }, [effectiveSessionId, responses, activeSession]);
 
-  // Toolbar button disabled rules per Step 3.2 spec
+  const scopedSessions = useMemo(
+    () => (activeSession ? [activeSession] : sessions),
+    [activeSession, sessions]
+  );
+
+  // Toolbar button disabled rules
   const canDeleteSession = effectiveSessionId !== 'all' && sessions.length > 1;
   const canAddDemoResponse = effectiveSessionId !== 'all' && Boolean(activeSession);
 
@@ -250,10 +260,34 @@ export default function ProjectDashboard() {
         text: t('dashboard.csvUploadError'),
       });
     } finally {
-      // Clear file input so uploading the same filename twice still fires `onChange`
       event.target.value = '';
     }
   };
+
+  // Graph CRUD callbacks scoped to the active project
+  const handleAddGraph = useCallback(
+    (graphConfig) => {
+      if (activeProject) {
+        addGraph(activeProject.id, graphConfig);
+      }
+    },
+    [activeProject, addGraph]
+  );
+
+  const handleRemoveGraph = useCallback(
+    (graphId) => {
+      if (activeProject) {
+        removeGraph(activeProject.id, graphId);
+      }
+    },
+    [activeProject, removeGraph]
+  );
+
+  const handleResetGraphs = useCallback(() => {
+    if (activeProject) {
+      resetGraphs(activeProject.id);
+    }
+  }, [activeProject, resetGraphs]);
 
   // Unknown `:projectId` fallback view
   if (!activeProject) {
@@ -311,7 +345,6 @@ export default function ProjectDashboard() {
           className="bento-card session-toolbar"
           aria-label={t('dashboard.toolbarLabel')}
         >
-          {/* Left: Session dropdown (`All Sessions` + each session with dates & response count) */}
           <div className="session-select-group">
             <label htmlFor={sessionSelectId} className="visually-hidden">
               {t('dashboard.sessionSelectLabel')}
@@ -353,7 +386,6 @@ export default function ProjectDashboard() {
             </div>
           </div>
 
-          {/* Right: Add Session, Delete Session, Add Demo Response, and Upload CSV actions */}
           <div className="session-toolbar-actions">
             <button
               type="button"
@@ -433,87 +465,21 @@ export default function ProjectDashboard() {
           </div>
         )}
 
-        {/* Step 3.2 Filtered Response Preview Card (replaced by KPI Strip + Charts in Step 3.3) */}
-        <section className="bento-card dashboard-section">
-          <header className="dashboard-section-header">
-            <div className="filter-preview-heading">
-              <span className="font-mono-label filter-preview-kicker">
-                {t('dashboard.activeFilterLabel')}:{' '}
-                {activeSession
-                  ? `${activeSession.title} · ${formatDateRange(
-                      activeSession.startDate,
-                      activeSession.endDate,
-                      lang
-                    )}`
-                  : t('dashboard.allSessions')}
-              </span>
-              <h2 className="font-editorial">{t('dashboard.latestRowsTitle')}</h2>
-            </div>
+        {/* 3-tile Summary KPI Strip */}
+        <SummaryStrip responses={filteredResponses} />
 
-            <span className="font-mono-label status-badge active tabular-nums">
-              {t('dashboard.filteredResponses', { count: filteredResponses.length })}
-            </span>
-          </header>
-
-          {filteredResponses.length === 0 ? (
-            <p className="dashboard-empty-text">{t('dashboard.noResponsesYet')}</p>
-          ) : (
-            <div
-              tabIndex={0}
-              role="region"
-              aria-labelledby={tableCaptionId}
-              className="table-wrapper"
-            >
-              <table className="csv-preview-table">
-                <caption id={tableCaptionId} className="visually-hidden">
-                  {t('dashboard.sampleRowsCaption', { project: projectCopy.title })}
-                </caption>
-                <thead>
-                  <tr>
-                    <th scope="col">{t('dashboard.colSession')}</th>
-                    <th scope="col">{t('dashboard.colDates')}</th>
-                    <th scope="col">{t('dashboard.colCategories')}</th>
-                    <th scope="col">{t('dashboard.colComfort')}</th>
-                    <th scope="col">{t('dashboard.colScore')}</th>
-                    <th scope="col">{t('dashboard.colOutcome')}</th>
-                    <th scope="col">{t('dashboard.colNotes')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...filteredResponses].reverse().map((row) => (
-                    <tr key={row.id}>
-                      <th scope="row">{row.sessionTitle}</th>
-                      <td className="tabular-nums cell-mono">
-                        {formatDateRange(row.startDate, row.endDate, lang)}
-                      </td>
-                      <td className="cell-mono">
-                        {row.cat1} / {row.cat2}
-                      </td>
-                      <td className="cell-mono">{row.comfort}</td>
-                      <td className="tabular-nums cell-score">
-                        {row.score ?? '—'}
-                      </td>
-                      <td>
-                        <span
-                          className={`font-mono-label outcome-chip ${row.outcome}`}
-                        >
-                          {row.outcome}
-                        </span>
-                      </td>
-                      <td className="cell-notes">
-                        <strong>{row.note1}</strong>
-                        {row.note2 ? ` — ${row.note2}` : ''}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
+        {/* Customizable 12-column Bento Chart.js Grid */}
+        <ChartGrid
+          graphs={activeGraphs}
+          responses={filteredResponses}
+          sessions={scopedSessions}
+          onAddGraph={handleAddGraph}
+          onRemoveGraph={handleRemoveGraph}
+          onResetGraphs={handleResetGraphs}
+        />
       </div>
 
-      {/* Step 3.2 Session Management Modals */}
+      {/* Session Management Modals */}
       <AddSessionModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
