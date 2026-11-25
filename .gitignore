@@ -19,3 +19,9 @@ __pycache__/
 .DS_Store
 Thumbs.db
 *.log
+
+# Local planning docs (kept locally for Antigravity, not pushed to GitHub)
+docs/
+
+# Local AI agent instructions
+AGENTS.md
