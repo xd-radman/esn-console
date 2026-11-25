@@ -1,0 +1,21 @@
+# Dependencies (huge, reproducible via package.json)
+node_modules/
+
+# Production build output
+dist/
+dist-ssr/
+
+# Environment secrets (Supabase keys, API URLs — NEVER commit these)
+.env
+.env.local
+.env.*.local
+
+# Future Python ML service (Phase 6)
+.venv/
+__pycache__/
+*.pyc
+
+# OS & Editor clutter
+.DS_Store
+Thumbs.db
+*.log
