@@ -8,12 +8,12 @@
 
 import { useEffect, useRef } from 'react';
 import {
-  Building2,
   CircleCheck,
   KeyRound,
   LogOut,
   Settings,
   ShieldCheck,
+  ShieldCogCorner,
 } from 'lucide-react';
 import { useLang } from '../context/LangContext.jsx';
 
@@ -120,9 +120,9 @@ export default function ProfilePopover({ id, isOpen, onClose, triggerRef }) {
           </span>
         </button>
 
-        <button type="button" className="profile-action-btn" onClick={onClose}>
-          <Building2 size={15} strokeWidth={1.5} aria-hidden="true" />
-          <span>{t('profile.sectionWorkspace')}</span>
+        <button type="button" className="profile-action-btn" onClick={onClose} >
+          <ShieldCogCorner size={15} strokeWidth={1.5} aria-hidden="true" />
+          <span>{t('profile.teamandPremissions')}</span>
         </button>
       </div>
 
