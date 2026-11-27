@@ -303,6 +303,35 @@ export const translations = {
       activeTheme: 'Active theme',
       ready: 'Shell Ready',
     },
+
+    // Google-only Supabase OAuth & role-based access copy (`LoginPage.jsx`, `ProfilePopover.jsx`)
+    auth: {
+      kicker: 'Erasmus Student Network · Google SSO',
+      modeSwitcherLabel: 'Authentication mode',
+      signInTab: 'Sign In',
+      signUpTab: 'Sign Up',
+      signInTitle: 'Sign in to ESN Console',
+      signInSubtitle:
+        'Use your Google account to access section analytics, session feedback, and retention predictions.',
+      signUpTitle: 'Join ESN Console',
+      signUpSubtitle:
+        'Create your passwordless ESN workspace profile with Google. New accounts start with standard Member read & predict access until promoted by an Admin.',
+      continueWithGoogle: 'Continue with Google',
+      signUpWithGoogle: 'Sign Up with Google',
+      redirectingToGoogle: 'Redirecting to Google...',
+      googleOnlyNote:
+        'Passwordless authentication via Google OAuth only. New accounts receive standard Member access automatically.',
+      oauthError:
+        'Google authentication could not be completed. Please try again or contact your ESN section admin.',
+      missingConfig:
+        'Supabase authentication is not configured. Check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.',
+      signOut: 'Sign Out',
+      roleAdmin: 'Admin',
+      roleMember: 'Member',
+      readOnlyBadge: 'Read-Only',
+      checkingSession: 'Verifying your ESN session...',
+      pageTitle: 'Sign In | ESN Console',
+    },
   },
 
   // Turkish localization (`tr`) mirroring the exact English key structure
@@ -602,6 +631,35 @@ export const translations = {
       backHome: 'Tüm Projelere Dön',
       activeTheme: 'Aktif tema',
       ready: 'Kabuk Hazır',
+    },
+
+    // Google-only Supabase OAuth & role-based access copy (`LoginPage.jsx`, `ProfilePopover.jsx`)
+    auth: {
+      kicker: 'Erasmus Student Network · Google SSO',
+      modeSwitcherLabel: 'Kimlik doğrulama modu',
+      signInTab: 'Giriş Yap',
+      signUpTab: 'Kayıt Ol',
+      signInTitle: 'ESN Console’a Giriş Yap',
+      signInSubtitle:
+        'Şube analizlerine, oturum geri bildirimlerine ve bağlılık tahminlerine erişmek için Google hesabınızla devam edin.',
+      signUpTitle: 'ESN Console’a Katıl',
+      signUpSubtitle:
+        'Google ile şifresiz ESN çalışma alanı profilinizi oluşturun. Yeni hesaplar bir Yönetici tarafından yetkilendirilene kadar standart Üye (salt okunur ve tahmin) erişimiyle başlar.',
+      continueWithGoogle: 'Google ile Devam Et',
+      signUpWithGoogle: 'Google ile Kayıt Ol',
+      redirectingToGoogle: 'Google’a yönlendiriliyor...',
+      googleOnlyNote:
+        'Yalnızca Google OAuth ile şifresiz kimlik doğrulama. Yeni hesaplara otomatik olarak standart Üye rolü atanır.',
+      oauthError:
+        'Google kimlik doğrulaması tamamlanamadı. Lütfen tekrar deneyin veya ESN şube yöneticinizle iletişime geçin.',
+      missingConfig:
+        'Supabase kimlik doğrulaması yapılandırılmamış. VITE_SUPABASE_URL ve VITE_SUPABASE_ANON_KEY değerlerini kontrol edin.',
+      signOut: 'Çıkış Yap',
+      roleAdmin: 'Yönetici',
+      roleMember: 'Üye',
+      readOnlyBadge: 'Salt Okunur',
+      checkingSession: 'ESN oturumunuz doğrulanıyor...',
+      pageTitle: 'Giriş Yap | ESN Console',
     },
   },
 };

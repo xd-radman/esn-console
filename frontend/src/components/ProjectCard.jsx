@@ -37,7 +37,11 @@ const PROJECT_ICONS = {
   'heart-handshake': HeartHandshake,
 };
 
-export default function ProjectCard({ project, onStatusChange }) {
+export default function ProjectCard({
+  project,
+  onStatusChange,
+  canEditStatus = true,
+}) {
   const { lang, t } = useLang();
   const navigate = useNavigate();
 
@@ -68,6 +72,7 @@ export default function ProjectCard({ project, onStatusChange }) {
         <StatusSelect
           status={project.status}
           projectTitle={copy.title}
+          disabled={!canEditStatus}
           onChange={(nextStatus) => onStatusChange?.(project.id, nextStatus)}
         />
       </header>

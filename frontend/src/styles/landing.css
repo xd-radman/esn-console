@@ -393,7 +393,7 @@
       border-color: var(--status-inactive-border);
     }
 
-    &:hover {
+    &:hover:not(.is-readonly) {
       border-color: var(--border-strong);
     }
 
@@ -401,6 +401,26 @@
       outline: 2px solid var(--focus-ring);
       outline-offset: 2px;
     }
+
+    /* Non-interactive status pill layout for non-admin members */
+    &.is-readonly {
+      gap: 0.35rem;
+      min-block-size: 1.75rem;
+      padding-block: 0.2rem;
+      padding-inline: 0.6rem;
+      cursor: default;
+    }
+  }
+
+  .status-select-readonly-icon {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .status-select-readonly-text {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.2;
   }
 
   .status-select-icon {

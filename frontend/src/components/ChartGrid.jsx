@@ -16,6 +16,7 @@ export default function ChartGrid({
   graphs = [],
   responses = [],
   sessions = [],
+  isAdmin = false,
   onAddGraph,
   onRemoveGraph,
   onResetGraphs,
@@ -25,7 +26,7 @@ export default function ChartGrid({
 
   return (
     <section className="chart-grid-section" aria-label={t('charts.sectionTitle')}>
-      {/* Section header with graph count, `+ Add Graph`, and `Reset Default` controls */}
+      {/* Section header with graph count and Admin-only `+ Add Graph` / `Reset Default` controls */}
       <header className="chart-grid-header">
         <div className="chart-grid-heading">
           <h2 className="font-editorial">{t('charts.sectionTitle')}</h2>
@@ -34,25 +35,27 @@ export default function ChartGrid({
           </span>
         </div>
 
-        <div className="chart-grid-actions">
-          <button
-            type="button"
-            className="btn primary"
-            onClick={() => setIsAddGraphOpen(true)}
-          >
-            <Plus size={15} strokeWidth={1.5} aria-hidden="true" />
-            <span>{t('charts.addGraph')}</span>
-          </button>
+        {isAdmin && (
+          <div className="chart-grid-actions">
+            <button
+              type="button"
+              className="btn primary"
+              onClick={() => setIsAddGraphOpen(true)}
+            >
+              <Plus size={15} strokeWidth={1.5} aria-hidden="true" />
+              <span>{t('charts.addGraph')}</span>
+            </button>
 
-          <button
-            type="button"
-            className="btn ghost"
-            onClick={onResetGraphs}
-          >
-            <RotateCcw size={15} strokeWidth={1.5} aria-hidden="true" />
-            <span>{t('charts.resetDefault')}</span>
-          </button>
-        </div>
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={onResetGraphs}
+            >
+              <RotateCcw size={15} strokeWidth={1.5} aria-hidden="true" />
+              <span>{t('charts.resetDefault')}</span>
+            </button>
+          </div>
+        )}
       </header>
 
       {/* Swiss Empty State when all graph cards have been deleted */}
@@ -63,24 +66,26 @@ export default function ChartGrid({
           </span>
           <h3 className="font-editorial">{t('charts.emptyTitle')}</h3>
           <p>{t('charts.emptySubtitle')}</p>
-          <div className="chart-empty-actions">
-            <button
-              type="button"
-              className="btn primary"
-              onClick={onResetGraphs}
-            >
-              <RotateCcw size={15} strokeWidth={1.5} aria-hidden="true" />
-              <span>{t('charts.resetDefault')}</span>
-            </button>
-            <button
-              type="button"
-              className="btn"
-              onClick={() => setIsAddGraphOpen(true)}
-            >
-              <Plus size={15} strokeWidth={1.5} aria-hidden="true" />
-              <span>{t('charts.addGraph')}</span>
-            </button>
-          </div>
+          {isAdmin && (
+            <div className="chart-empty-actions">
+              <button
+                type="button"
+                className="btn primary"
+                onClick={onResetGraphs}
+              >
+                <RotateCcw size={15} strokeWidth={1.5} aria-hidden="true" />
+                <span>{t('charts.resetDefault')}</span>
+              </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setIsAddGraphOpen(true)}
+              >
+                <Plus size={15} strokeWidth={1.5} aria-hidden="true" />
+                <span>{t('charts.addGraph')}</span>
+              </button>
+            </div>
+          )}
         </article>
       ) : (
         /* 12-column responsive Bento CSS Grid */
@@ -91,18 +96,21 @@ export default function ChartGrid({
               graph={graph}
               responses={responses}
               sessions={sessions}
+              canRemove={isAdmin}
               onRemove={onRemoveGraph}
             />
           ))}
         </div>
       )}
 
-      {/* Add Graph tile configuration modal */}
-      <AddGraphModal
-        isOpen={isAddGraphOpen}
-        onClose={() => setIsAddGraphOpen(false)}
-        onAdd={onAddGraph}
-      />
+      {/* Add Graph tile configuration modal (Admin only) */}
+      {isAdmin && (
+        <AddGraphModal
+          isOpen={isAddGraphOpen}
+          onClose={() => setIsAddGraphOpen(false)}
+          onAdd={onAddGraph}
+        />
+      )}
     </section>
   );
 }

@@ -1,12 +1,13 @@
 /**
  * ProfilePopover.jsx — Account Overview Popover Card
- * Layout-only account surface anchored to the circular profile button in `Header.jsx`.
- * Displays coordinator identity, role badge, status/access summary strip, and
- * placeholder account actions (wired to real Supabase Auth in Phase 4).
- * Dismisses automatically on outside pointer press (`mousedown`) or `Escape`.
+ * Displays the authenticated Supabase user's identity (`full_name` or email
+ * prefix), `email`, dynamic `Admin` vs `Member` role pill, status/access
+ * summary strip, and a wired Sign Out action. Dismisses automatically on
+ * outside pointer press (`mousedown`) or `Escape`.
  */
 
 import { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   CircleCheck,
   KeyRound,
@@ -14,14 +15,44 @@ import {
   Settings,
   ShieldCheck,
   ShieldCogCorner,
+  User,
 } from 'lucide-react';
 import { useLang } from '../context/LangContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
+
+/**
+ * Derives a two-letter uppercase monogram from the display name or fallback.
+ */
+function getInitials(name, fallback) {
+  const trimmed = name?.trim();
+  if (!trimmed) {
+    return fallback;
+  }
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  }
+  return trimmed.slice(0, 2).toUpperCase();
+}
 
 export default function ProfilePopover({ id, isOpen, onClose, triggerRef }) {
   const { t } = useLang();
+  const { user, profile, isAdmin, signOut } = useAuth();
+  const navigate = useNavigate();
 
   // Reference to the popover card DOM node for outside-click detection
   const popoverRef = useRef(null);
+
+  // Resolve real authenticated display identity from `public.profiles` or Google OAuth metadata
+  const displayEmail = profile?.email || user?.email || t('profile.email');
+  const emailPrefix = displayEmail.includes('@')
+    ? displayEmail.split('@')[0]
+    : displayEmail;
+  const googleName =
+    user?.user_metadata?.full_name || user?.user_metadata?.name || '';
+  const displayName =
+    profile?.full_name?.trim() || googleName.trim() || emailPrefix || t('profile.name');
+  const monogram = getInitials(displayName, t('profile.monogram'));
 
   // Attach document-level `mousedown` and `Escape` listeners only while open
   useEffect(() => {
@@ -59,6 +90,13 @@ export default function ProfilePopover({ id, isOpen, onClose, triggerRef }) {
     };
   }, [isOpen, onClose, triggerRef]);
 
+  // Sign out via Supabase Auth, close the popover, and navigate back to `/login`
+  const handleSignOut = async () => {
+    onClose();
+    await signOut();
+    navigate('/login', { replace: true });
+  };
+
   if (!isOpen) {
     return null;
   }
@@ -71,21 +109,27 @@ export default function ProfilePopover({ id, isOpen, onClose, triggerRef }) {
       role="group"
       aria-label={t('profile.triggerLabel')}
     >
-      {/* Top identity block: monogram avatar, coordinator name, email, and role pill */}
+      {/* Top identity block: monogram avatar, real name, email, and dynamic Admin/Member pill */}
       <div className="profile-identity">
         <div className="profile-monogram" aria-hidden="true">
-          {t('profile.monogram')}
+          {monogram}
         </div>
 
         <div className="profile-details">
           <div className="profile-name-row">
-            <span className="profile-name">{t('profile.name')}</span>
-            <span className="profile-role-pill font-mono-label">
-              <ShieldCheck size={12} strokeWidth={1.5} aria-hidden="true" />
-              <span>{t('profile.roleAdmin')}</span>
+            <span className="profile-name">{displayName}</span>
+            <span
+              className={`profile-role-pill font-mono-label ${isAdmin ? '' : 'member'}`}
+            >
+              {isAdmin ? (
+                <ShieldCheck size={12} strokeWidth={1.5} aria-hidden="true" />
+              ) : (
+                <User size={12} strokeWidth={1.5} aria-hidden="true" />
+              )}
+              <span>{isAdmin ? t('auth.roleAdmin') : t('auth.roleMember')}</span>
             </span>
           </div>
-          <span className="profile-email">{t('profile.email')}</span>
+          <span className="profile-email">{displayEmail}</span>
         </div>
       </div>
 
@@ -103,14 +147,16 @@ export default function ProfilePopover({ id, isOpen, onClose, triggerRef }) {
           <dt className="font-mono-label">{t('profile.accessLabel')}</dt>
           <dd className="profile-status-value">
             <KeyRound size={13} strokeWidth={1.5} aria-hidden="true" />
-            <span>{t('profile.accessFull')}</span>
+            <span>
+              {isAdmin ? t('profile.accessFull') : t('auth.readOnlyBadge')}
+            </span>
           </dd>
         </div>
       </dl>
 
       <hr className="profile-divider" />
 
-      {/* Layout-only account action buttons (connected to Supabase in Phase 4) */}
+      {/* Account action buttons */}
       <div className="profile-actions">
         <button type="button" className="profile-action-btn" onClick={onClose}>
           <Settings size={15} strokeWidth={1.5} aria-hidden="true" />
@@ -120,23 +166,25 @@ export default function ProfilePopover({ id, isOpen, onClose, triggerRef }) {
           </span>
         </button>
 
-        <button type="button" className="profile-action-btn" onClick={onClose} >
-          <ShieldCogCorner size={15} strokeWidth={1.5} aria-hidden="true" />
-          <span>{t('profile.teamandPremissions')}</span>
-        </button>
+        {isAdmin && (
+          <button type="button" className="profile-action-btn" onClick={onClose}>
+            <ShieldCogCorner size={15} strokeWidth={1.5} aria-hidden="true" />
+            <span>{t('profile.teamandPremissions')}</span>
+          </button>
+        )}
       </div>
 
       <hr className="profile-divider" />
 
-      {/* Sign-out action row */}
+      {/* Wired Supabase Sign-Out action row */}
       <div className="profile-actions">
         <button
           type="button"
           className="profile-action-btn signout"
-          onClick={onClose}
+          onClick={handleSignOut}
         >
           <LogOut size={15} strokeWidth={1.5} aria-hidden="true" />
-          <span>{t('profile.signOut')}</span>
+          <span>{t('auth.signOut')}</span>
         </button>
       </div>
     </div>

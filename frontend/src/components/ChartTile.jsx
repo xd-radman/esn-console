@@ -15,7 +15,13 @@ import { buildChartConfig } from '../lib/chartUtils.js';
 
 const ALLOWED_SPANS = new Set([4, 6, 8, 12]);
 
-export default function ChartTile({ graph, responses = [], sessions = [], onRemove }) {
+export default function ChartTile({
+  graph,
+  responses = [],
+  sessions = [],
+  canRemove = false,
+  onRemove,
+}) {
   const { theme } = useTheme();
   const { t } = useLang();
 
@@ -47,14 +53,16 @@ export default function ChartTile({ graph, responses = [], sessions = [], onRemo
           <span className="font-mono-label chart-tile-meta">{styleLabel}</span>
         </div>
 
-        <button
-          type="button"
-          className="btn ghost chart-tile-delete"
-          aria-label={t('charts.deleteGraphAria', { title: resolvedTitle })}
-          onClick={() => onRemove?.(graph.id)}
-        >
-          <X size={15} strokeWidth={1.5} aria-hidden="true" />
-        </button>
+        {canRemove && (
+          <button
+            type="button"
+            className="btn ghost chart-tile-delete"
+            aria-label={t('charts.deleteGraphAria', { title: resolvedTitle })}
+            onClick={() => onRemove?.(graph.id)}
+          >
+            <X size={15} strokeWidth={1.5} aria-hidden="true" />
+          </button>
+        )}
       </header>
 
       {/* Responsive Chart.js canvas container or graceful zero-response empty state */}

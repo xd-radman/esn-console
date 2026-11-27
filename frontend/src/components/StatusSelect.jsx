@@ -1,18 +1,47 @@
 /**
- * StatusSelect.jsx — Synchronized Active / Inactive Pill Dropdown
+ * StatusSelect.jsx — Synchronized Active / Inactive Pill Dropdown (or Read-Only Pill)
  * Reusable status control rendered on both Landing `ProjectCard` tiles and
- * the Phase 3 `ProjectDashboard` header. Stops event propagation on pointer/click
+ * the `ProjectDashboard` header. Stops event propagation on pointer/click
  * and change events so toggling status inside a clickable card never navigates.
+ * When `disabled` is true (non-admin member view), renders as a non-interactive
+ * Swiss status pill without dropdown affordances.
  */
 
 import { useId } from 'react';
 import { ChevronDown, CircleCheck, CircleDashed } from 'lucide-react';
 import { useLang } from '../context/LangContext.jsx';
 
-export default function StatusSelect({ status, onChange, projectTitle = '' }) {
+export default function StatusSelect({
+  status,
+  onChange,
+  projectTitle = '',
+  disabled = false,
+}) {
   const { t } = useLang();
   const selectId = useId();
   const isActive = status === 'active';
+  const statusLabel = isActive ? t('status.active') : t('status.inactive');
+
+  // Render a clean read-only status pill for non-admin members
+  if (disabled) {
+    return (
+      <span
+        className={`status-select ${isActive ? 'active' : 'inactive'} is-readonly`}
+        aria-label={`${t('status.changeFor', { project: projectTitle })}: ${statusLabel}`}
+      >
+        <span className="status-select-readonly-icon" aria-hidden="true">
+          {isActive ? (
+            <CircleCheck size={13} strokeWidth={1.5} />
+          ) : (
+            <CircleDashed size={13} strokeWidth={1.5} />
+          )}
+        </span>
+        <span className="status-select-readonly-text font-mono-label">
+          {statusLabel}
+        </span>
+      </span>
+    );
+  }
 
   // Prevent pointer/click events from bubbling up to parent card click handlers
   const stopBubble = (event) => {

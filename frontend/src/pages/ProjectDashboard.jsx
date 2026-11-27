@@ -16,12 +16,14 @@ import {
   ChevronDown,
   CircleCheck,
   Database,
+  Eye,
   Plus,
   Sparkles,
   Trash2,
   Upload,
 } from 'lucide-react';
 import { useLang } from '../context/LangContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import { useData } from '../context/DataContext.jsx';
 import StatusSelect from '../components/StatusSelect.jsx';
 import SummaryStrip from '../components/SummaryStrip.jsx';
@@ -109,6 +111,7 @@ export default function ProjectDashboard({
 }) {
   const { projectId } = useParams();
   const { lang, t } = useLang();
+  const { isAdmin } = useAuth();
   const {
     projects,
     responsesByProject,
@@ -335,6 +338,7 @@ export default function ProjectDashboard({
               <StatusSelect
                 status={activeProject.status}
                 projectTitle={projectCopy.title}
+                disabled={!isAdmin}
                 onChange={(nextStatus) => updateProjectStatus(activeProject.id, nextStatus)}
               />
             </div>
@@ -391,52 +395,59 @@ export default function ProjectDashboard({
             </div>
           </div>
 
-          <div className="session-toolbar-actions">
-            <button
-              type="button"
-              className="btn primary"
-              onClick={() => setIsAddModalOpen(true)}
-            >
-              <Plus size={15} strokeWidth={1.5} aria-hidden="true" />
-              <span>{t('dashboard.addSession')}</span>
-            </button>
+          {isAdmin ? (
+            <div className="session-toolbar-actions">
+              <button
+                type="button"
+                className="btn primary"
+                onClick={() => setIsAddModalOpen(true)}
+              >
+                <Plus size={15} strokeWidth={1.5} aria-hidden="true" />
+                <span>{t('dashboard.addSession')}</span>
+              </button>
 
-            <button
-              type="button"
-              className="btn"
-              disabled={!canDeleteSession}
-              onClick={() => setIsDeleteModalOpen(true)}
-            >
-              <Trash2 size={15} strokeWidth={1.5} aria-hidden="true" />
-              <span>{t('dashboard.deleteSession')}</span>
-            </button>
+              <button
+                type="button"
+                className="btn"
+                disabled={!canDeleteSession}
+                onClick={() => setIsDeleteModalOpen(true)}
+              >
+                <Trash2 size={15} strokeWidth={1.5} aria-hidden="true" />
+                <span>{t('dashboard.deleteSession')}</span>
+              </button>
 
-            <button
-              type="button"
-              className="btn"
-              disabled={!canAddDemoResponse}
-              onClick={handleAddDemoResponse}
-            >
-              <Sparkles size={15} strokeWidth={1.5} aria-hidden="true" />
-              <span>{t('dashboard.addDemoResponse')}</span>
-            </button>
+              <button
+                type="button"
+                className="btn"
+                disabled={!canAddDemoResponse}
+                onClick={handleAddDemoResponse}
+              >
+                <Sparkles size={15} strokeWidth={1.5} aria-hidden="true" />
+                <span>{t('dashboard.addDemoResponse')}</span>
+              </button>
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv,text/csv"
-              className="visually-hidden"
-              onChange={handleCsvUpload}
-            />
-            <button
-              type="button"
-              className="btn ghost"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload size={15} strokeWidth={1.5} aria-hidden="true" />
-              <span>{t('dashboard.uploadCsv')}</span>
-            </button>
-          </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,text/csv"
+                className="visually-hidden"
+                onChange={handleCsvUpload}
+              />
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload size={15} strokeWidth={1.5} aria-hidden="true" />
+                <span>{t('dashboard.uploadCsv')}</span>
+              </button>
+            </div>
+          ) : (
+            <span className="readonly-pill font-mono-label">
+              <Eye size={13} strokeWidth={1.5} aria-hidden="true" />
+              <span>{t('auth.readOnlyBadge')}</span>
+            </span>
+          )}
         </section>
 
         {/* Loading, error, or live action confirmation banners */}
@@ -478,6 +489,7 @@ export default function ProjectDashboard({
           graphs={activeGraphs}
           responses={filteredResponses}
           sessions={scopedSessions}
+          isAdmin={isAdmin}
           onAddGraph={handleAddGraph}
           onRemoveGraph={handleRemoveGraph}
           onResetGraphs={handleResetGraphs}
@@ -499,24 +511,28 @@ export default function ProjectDashboard({
         projectTitle={projectCopy.title}
       />
 
-      {/* Session Management Modals */}
-      <AddSessionModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onAdd={handleAddSession}
-      />
+      {/* Session Management Modals (Admin only) */}
+      {isAdmin && (
+        <>
+          <AddSessionModal
+            isOpen={isAddModalOpen}
+            onClose={() => setIsAddModalOpen(false)}
+            onAdd={handleAddSession}
+          />
 
-      <DeleteSessionModal
-        isOpen={isDeleteModalOpen}
-        session={activeSession}
-        formattedDateRange={
-          activeSession
-            ? formatDateRange(activeSession.startDate, activeSession.endDate, lang)
-            : ''
-        }
-        onClose={() => setIsDeleteModalOpen(false)}
-        onConfirm={handleConfirmDeleteSession}
-      />
+          <DeleteSessionModal
+            isOpen={isDeleteModalOpen}
+            session={activeSession}
+            formattedDateRange={
+              activeSession
+                ? formatDateRange(activeSession.startDate, activeSession.endDate, lang)
+                : ''
+            }
+            onClose={() => setIsDeleteModalOpen(false)}
+            onConfirm={handleConfirmDeleteSession}
+          />
+        </>
+      )}
     </main>
   );
 }

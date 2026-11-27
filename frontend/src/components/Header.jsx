@@ -13,15 +13,43 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ChevronDown, Moon, PanelRight, Sun } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useLang } from '../context/LangContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import { useData } from '../context/DataContext.jsx';
 import ProfilePopover from './ProfilePopover.jsx';
+
+/**
+ * Derives a two-character uppercase monogram from a user's full name or email.
+ */
+function buildMonogram(fullName, email, fallback) {
+  const trimmed = fullName?.trim();
+  if (trimmed) {
+    const parts = trimmed.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+    }
+    return trimmed.slice(0, 2).toUpperCase();
+  }
+  if (email) {
+    return email.slice(0, 2).toUpperCase();
+  }
+  return fallback;
+}
 
 export default function Header({ isSidebarOpen = false, onToggleSidebar }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
   const { lang, setLang, t } = useLang();
+  const { user, profile } = useAuth();
   const { projects } = useData();
+
+  const googleFullName =
+    user?.user_metadata?.full_name || user?.user_metadata?.name;
+  const userMonogram = buildMonogram(
+    profile?.full_name || googleFullName,
+    profile?.email ?? user?.email,
+    t('profile.monogram')
+  );
 
   // Open/closed state for the account ProfilePopover
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -197,7 +225,7 @@ export default function Header({ isSidebarOpen = false, onToggleSidebar }) {
               aria-label={t('profile.triggerLabel')}
               onClick={() => setIsProfileOpen((prev) => !prev)}
             >
-              <span aria-hidden="true">{t('profile.monogram')}</span>
+              <span aria-hidden="true">{userMonogram}</span>
             </button>
 
             <ProfilePopover

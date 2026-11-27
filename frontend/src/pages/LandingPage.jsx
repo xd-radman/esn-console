@@ -9,12 +9,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { useLang } from '../context/LangContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import { useData } from '../context/DataContext.jsx';
 import ProjectCard from '../components/ProjectCard.jsx';
 import NewProjectModal from '../components/modals/NewProjectModal.jsx';
 
 export default function LandingPage() {
   const { t } = useLang();
+  const { isAdmin } = useAuth();
   const { projects, updateProjectStatus, addProject } = useData();
 
   // Controls open/closed state for the `+ New Project` modal dialog
@@ -73,16 +75,18 @@ export default function LandingPage() {
             <p className="landing-hero-subtitle">{t('landing.subtitle')}</p>
           </div>
 
-          <div className="landing-hero-actions">
-            <button
-              type="button"
-              className="btn primary landing-new-btn"
-              onClick={() => setIsModalOpen(true)}
-            >
-              <Plus size={16} strokeWidth={1.5} aria-hidden="true" />
-              <span>{t('landing.newProject')}</span>
-            </button>
-          </div>
+          {isAdmin && (
+            <div className="landing-hero-actions">
+              <button
+                type="button"
+                className="btn primary landing-new-btn"
+                onClick={() => setIsModalOpen(true)}
+              >
+                <Plus size={16} strokeWidth={1.5} aria-hidden="true" />
+                <span>{t('landing.newProject')}</span>
+              </button>
+            </div>
+          )}
         </div>
       </section>
 
@@ -95,18 +99,21 @@ export default function LandingPage() {
           <ProjectCard
             key={project.id}
             project={project}
+            canEditStatus={isAdmin}
             onStatusChange={updateProjectStatus}
           />
         ))}
       </section>
 
-      {/* Accessible native `<dialog>` modal for creating or duplicating a project */}
-      <NewProjectModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        onCreate={handleCreateProject}
-        projects={projects}
-      />
+      {/* Accessible native `<dialog>` modal for creating or duplicating a project (Admin only) */}
+      {isAdmin && (
+        <NewProjectModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          onCreate={handleCreateProject}
+          projects={projects}
+        />
+      )}
     </main>
   );
 }
