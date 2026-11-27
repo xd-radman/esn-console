@@ -412,7 +412,14 @@ export function AuthProvider({ children }) {
   );
 
   const hasPermission = useCallback(
-    (key) => Boolean(permissions[key]),
+    (key) => {
+      if (key === 'use_retention_predictor' || key === 'use_predictor') {
+        return Boolean(
+          permissions.use_retention_predictor ?? permissions.use_predictor
+        );
+      }
+      return Boolean(permissions[key]);
+    },
     [permissions]
   );
 

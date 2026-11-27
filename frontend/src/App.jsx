@@ -1,12 +1,10 @@
 /**
  * App.jsx — Root Application Shell, Protected Routes & Client-Side Route Table
  * Renders the persistent `<Header />` on authenticated routes above `<Routes>`.
- * Protects `/` and `/project/:projectId` via `ProtectedRoute` so unauthenticated
- * users are redirected to `/login`, while coordinating `PredictionSidebar` state
- * between `Header` and `ProjectDashboard`.
+ * Protects `/`, `/project/:projectId`, and `/project/:projectId/predictor` via
+ * `ProtectedRoute` so unauthenticated users are redirected to `/login`.
  */
 
-import { useCallback, useState } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { LoaderCircle } from 'lucide-react';
 import { useAuth } from './context/AuthContext.jsx';
@@ -16,6 +14,7 @@ import Header from './components/Header.jsx';
 import ErrorToast from './components/ErrorToast.jsx';
 import LandingPage from './pages/LandingPage.jsx';
 import ProjectDashboard from './pages/ProjectDashboard.jsx';
+import PredictorPage from './pages/PredictorPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import AccessPendingPage from './pages/AccessPendingPage.jsx';
 
@@ -61,28 +60,12 @@ export default function App() {
   const { user, loading } = useAuth();
   const { actionError, dismissActionError } = useData();
 
-  // Tracks open/closed state for the dashboard Prediction Sidebar
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  const handleToggleSidebar = useCallback(() => {
-    setIsSidebarOpen((prev) => !prev);
-  }, []);
-
-  const handleCloseSidebar = useCallback(() => {
-    setIsSidebarOpen(false);
-  }, []);
-
   // Hide the authenticated workspace header on `/login` or before sign-in resolves
   const showHeader = !loading && Boolean(user) && location.pathname !== '/login';
 
   return (
     <div className="app-shell">
-      {showHeader && (
-        <Header
-          isSidebarOpen={isSidebarOpen}
-          onToggleSidebar={handleToggleSidebar}
-        />
-      )}
+      {showHeader && <Header />}
 
       {/* Client-side route table with auth protection on workspace routes */}
       <Routes>
@@ -99,10 +82,15 @@ export default function App() {
           path="/project/:projectId"
           element={
             <ProtectedRoute>
-              <ProjectDashboard
-                isSidebarOpen={isSidebarOpen}
-                onCloseSidebar={handleCloseSidebar}
-              />
+              <ProjectDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/project/:projectId/predictor"
+          element={
+            <ProtectedRoute>
+              <PredictorPage />
             </ProtectedRoute>
           }
         />

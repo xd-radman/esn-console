@@ -170,11 +170,57 @@
     }
   }
 
-  /* Highlight sidebar toggle with ESN Cyan tint when active (`aria-pressed="true"`) */
-  .header-sidebar-btn[aria-pressed="true"] {
-    background-color: var(--accent-primary-soft);
-    border-color: var(--accent-primary-border);
-    color: var(--accent-primary-ink);
+  /* Swiss segmented view switcher (`Analytics | Predictor`) inside project header */
+  .view-switcher {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.1875rem;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--border-hairline);
+    background-color: var(--bg-inset);
+    gap: 0.125rem;
+  }
+
+  .view-switcher-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    min-block-size: 1.875rem;
+    padding-block: 0.25rem;
+    padding-inline: 0.65rem;
+    border-radius: calc(var(--radius-control) - 2px);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--ink-muted);
+    white-space: nowrap;
+    transition: var(--transition-theme);
+
+    &:hover:not([aria-current="page"]) {
+      color: var(--ink-primary);
+      background-color: var(--bg-hover);
+    }
+
+    &[aria-current="page"] {
+      background-color: var(--bg-elevated);
+      color: var(--ink-primary);
+      font-weight: 600;
+      box-shadow: 0 1px 2px rgba(24, 23, 21, 0.08);
+
+      & > svg {
+        color: var(--accent-primary-ink);
+      }
+
+      /* Non-color bottom indicator reinforcing current page state */
+      &::after {
+        content: '';
+        position: absolute;
+        inset-block-end: 0;
+        inset-inline: 0.55rem;
+        border-block-end: 2px solid var(--accent-primary);
+      }
+    }
   }
 
   /* Right cluster: EN | TR pill, Light/Dark button, and circular Profile avatar */
@@ -431,8 +477,7 @@
 
   /* Compact secondary button text on narrow mobile screens while keeping accessible names */
   @media (max-width: 40rem) {
-    .header-theme-label,
-    .header-sidebar-label {
+    .header-theme-label {
       position: absolute;
       clip-path: inset(50%);
       overflow: hidden;
@@ -444,11 +489,17 @@
     .header-divider {
       display: none;
     }
+
+    .view-switcher-link {
+      padding-inline: 0.5rem;
+      font-size: 0.78rem;
+    }
   }
 
   /* Bump touch target sizes on coarse-pointer devices */
   @media (pointer: coarse) {
-    .segmented-control > button {
+    .segmented-control > button,
+    .view-switcher-link {
       min-block-size: 2.5rem;
       min-inline-size: 2.5rem;
     }
@@ -471,6 +522,7 @@
       .brand-button,
       .project-switcher-select,
       .segmented-control > button,
+      .view-switcher-link,
       .profile-trigger,
       .profile-action-btn
     ) {
@@ -482,6 +534,7 @@
   @media (forced-colors: active) {
     .project-switcher-select,
     .segmented-control,
+    .view-switcher,
     .profile-trigger,
     .profile-popover,
     .profile-status-strip {
@@ -489,10 +542,14 @@
     }
 
     .segmented-control > button[aria-pressed="true"],
-    .header-sidebar-btn[aria-pressed="true"],
+    .view-switcher-link[aria-current="page"],
     .profile-trigger[aria-expanded="true"] {
       outline: 2px solid Highlight;
       outline-offset: -2px;
+    }
+
+    .view-switcher-link[aria-current="page"]::after {
+      border-block-end-color: Highlight;
     }
   }
 }

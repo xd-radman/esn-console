@@ -1,16 +1,24 @@
 /**
  * Header.jsx — Persistent Global Navigation & Workspace Toolbar
  * Renders across every view:
- * - Left: ESN Star logo + Brand button (`/`), plus dashboard-only controls when
+ * - Left: ESN Star logo + Brand button (`/`), plus project-scoped controls when
  *   viewing `/project/:projectId` (`All Projects` back button, Project Switcher
- *   dropdown populated live from `DataContext`, and Prediction Sidebar toggle).
+ *   dropdown populated live from `DataContext`, and the Swiss `Analytics | Predictor`
+ *   segmented view switcher gated by `use_retention_predictor`).
  * - Right: `EN | TR` segmented language switcher, Light/Dark theme button, and
  *   the circular Profile button toggling `ProfilePopover`.
  */
 
 import { useCallback, useId, useMemo, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ChevronDown, Moon, PanelRight, Sun } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import {
+  ArrowLeft,
+  BarChart3,
+  ChevronDown,
+  Cpu,
+  Moon,
+  Sun,
+} from 'lucide-react';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useLang } from '../context/LangContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -37,7 +45,7 @@ function buildMonogram(fullName, email, fallback) {
   return fallback;
 }
 
-export default function Header({ isSidebarOpen = false, onToggleSidebar }) {
+export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
@@ -55,7 +63,7 @@ export default function Header({ isSidebarOpen = false, onToggleSidebar }) {
   );
 
   const canViewWorkspace = hasPermission('view_workspace');
-  const canUsePredictor = hasPermission('use_predictor');
+  const canUsePredictor = hasPermission('use_retention_predictor');
   const canManageRoles = hasPermission('manage_roles');
 
   const googleFullName =
@@ -78,9 +86,10 @@ export default function Header({ isSidebarOpen = false, onToggleSidebar }) {
   // Ref to the circular profile button for outside-click exclusion & Escape focus restore
   const profileTriggerRef = useRef(null);
 
-  // Parse `/project/:projectId` from the current pathname to reveal dashboard-only controls
-  const projectMatch = location.pathname.match(/^\/project\/([^/]+)/);
+  // Parse `/project/:projectId` (and optional `/predictor` suffix) from the current pathname
+  const projectMatch = location.pathname.match(/^\/project\/([^/]+)(\/predictor)?\/?$/);
   const activeProjectId = projectMatch ? decodeURIComponent(projectMatch[1]) : null;
+  const isPredictorView = Boolean(projectMatch?.[2]);
 
   // Include any custom `:projectId` URL slug in the select list so controlled value stays valid
   const hasKnownProject = visibleProjects.some((item) => item.id === activeProjectId);
@@ -105,11 +114,16 @@ export default function Header({ isSidebarOpen = false, onToggleSidebar }) {
     navigate('/');
   };
 
-  // Navigate to the newly selected project route
+  // Navigate to the newly selected project, preserving Predictor view when permitted
   const handleProjectSwitch = (event) => {
     const nextProjectId = event.target.value;
     if (nextProjectId) {
-      navigate(`/project/${encodeURIComponent(nextProjectId)}`);
+      const encoded = encodeURIComponent(nextProjectId);
+      const nextPath =
+        isPredictorView && canUsePredictor
+          ? `/project/${encoded}/predictor`
+          : `/project/${encoded}`;
+      navigate(nextPath);
     }
   };
 
@@ -183,18 +197,30 @@ export default function Header({ isSidebarOpen = false, onToggleSidebar }) {
                 />
               </div>
 
-              {/* Collapsible organizer prediction sidebar toggle (requires `use_predictor`) */}
+              {/* Swiss segmented view switcher (`Analytics | Predictor`), gated by `use_retention_predictor` */}
               {canUsePredictor && (
-                <button
-                  type="button"
-                  className="btn header-sidebar-btn"
-                  aria-pressed={isSidebarOpen}
-                  aria-label={t('nav.toggleSidebar')}
-                  onClick={onToggleSidebar}
+                <div
+                  className="view-switcher"
+                  role="group"
+                  aria-label={t('nav.viewSwitcherLabel')}
                 >
-                  <PanelRight size={15} strokeWidth={1.5} aria-hidden="true" />
-                  <span className="header-sidebar-label">{t('nav.sidebarShort')}</span>
-                </button>
+                  <Link
+                    to={`/project/${encodeURIComponent(activeProjectId)}`}
+                    className="view-switcher-link"
+                    aria-current={!isPredictorView ? 'page' : undefined}
+                  >
+                    <BarChart3 size={14} strokeWidth={1.5} aria-hidden="true" />
+                    <span>{t('nav.analyticsTab')}</span>
+                  </Link>
+                  <Link
+                    to={`/project/${encodeURIComponent(activeProjectId)}/predictor`}
+                    className="view-switcher-link"
+                    aria-current={isPredictorView ? 'page' : undefined}
+                  >
+                    <Cpu size={14} strokeWidth={1.5} aria-hidden="true" />
+                    <span>{t('nav.predictorTab')}</span>
+                  </Link>
+                </div>
               )}
             </nav>
           )}

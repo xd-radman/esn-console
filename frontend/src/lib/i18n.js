@@ -9,12 +9,13 @@ export const translations = {
   en: {
     brand: 'ESN Console',
 
-    // Persistent global header & dashboard-only navigation controls
+    // Persistent global header & project-scoped navigation controls
     nav: {
       allProjects: 'All Projects',
       switchProject: 'Switch project',
-      toggleSidebar: 'Toggle prediction sidebar',
-      sidebarShort: 'Predictor',
+      viewSwitcherLabel: 'Project view switcher',
+      analyticsTab: 'Analytics',
+      predictorTab: 'Predictor',
       controlsLabel: 'Workspace controls',
     },
 
@@ -371,55 +372,60 @@ export const translations = {
       nextPage: 'Next page',
     },
 
-    // Collapsible organizer prediction sidebar (`PredictionSidebar.jsx` + `mlApi.js`)
-    sidebar: {
-      kicker: 'Organizer Intelligence',
-      title: 'Retention Predictor',
-      subtitle:
-        'Test upcoming session parameters to estimate repeat attendance before publishing.',
-      closeLabel: 'Close prediction sidebar',
-      toggleLabel: 'Toggle prediction sidebar',
-      sessionFormat: 'Session Format',
-      groupMix: 'Participant Mix',
-      comfortLevel: 'Expected Comfort Level',
-      expectedSize: 'Expected Group Size',
-      checkBtn: 'Check Prediction',
-      checking: 'Evaluating...',
+    // Dedicated schema-driven Predictive Analytics Studio (`PredictorPage.jsx` + `mlApi.js`)
+    predictor: {
+      kicker: 'Predictive Analytics Studio',
+      pageTitle: '{id} · Predictor | ESN Console',
+      demoModelBadge: 'DEMO MODEL',
+      emptyTitle: 'No predictive model is configured for this project yet',
+      emptySubtitle:
+        'Connect a trained scikit-learn model or add a predictor schema to this project’s configuration to run organizer what-if scenarios.',
+      backToAnalytics: 'Back to Analytics',
+      scenarioKicker: 'What-If Scenario',
+      scenarioTitle: 'Scenario & Model Inputs',
+      prefillLabel: 'Prefill from Session Average',
+      responsesSampled: '{count} responses',
+      applyBaselineBtn: 'Prefill',
+      prefillApplied: 'Prefilled {fields} fields from {responses} responses.',
+      prefillNoMatch: 'No matching columns found in the selected session.',
+      runBtn: 'Run Prediction',
+      runningBtn: 'Running Prediction...',
+      insightsRegionLabel: 'Prediction verdict and model breakdown',
+      readyKicker: 'Awaiting Scenario',
+      promptTitle:
+        'Adjust scenario inputs and run a prediction to see the model’s breakdown',
+      promptSubtitle:
+        'Configure upcoming session parameters on the left—or prefill from a past session’s real average—to estimate repeat attendance and inspect key drivers.',
       verdictLabel: 'Predicted Verdict',
       confidenceLabel: 'Confidence',
-      factorsLabel: 'Top Contributing Factors',
-      heuristicNote: 'Local heuristic mode · FastAPI /predict connects in Phase 6',
+      inputsModifiedHint: 'Scenario inputs modified — click Run Prediction to refresh.',
       verdicts: {
-        high_retention: 'High Retention Likely',
-        moderate_retention: 'Moderate Retention',
+        likely_return: 'Likely to Return',
+        neutral: 'Moderate / Neutral Outlook',
         at_risk: 'Retention At Risk',
       },
-      formats: {
-        interactive: 'Interactive Tables & Icebreakers',
-        cultural: 'Guided Cultural Walk & Social',
-        workshop: 'Structured Workshop / Orientation',
-        mixer: 'Open Social Mixer',
+      verdictDescriptions: {
+        likely_return:
+          'Strong positive signals suggest high participant satisfaction and repeat attendance.',
+        neutral:
+          'Mixed signals detected. Tweaking comfort, group balance, or structured prompts may lift retention.',
+        at_risk:
+          'Elevated drop-off risk. Consider improving facilitation, comfort, or table structure before launch.',
       },
-      mixes: {
-        balanced: 'Balanced Erasmus + Local',
-        erasmus_heavy: 'Mostly Incoming Erasmus',
-        local_heavy: 'Mostly Local Volunteers',
-      },
-      comforts: {
-        high: 'High — Welcoming & Guided',
-        medium: 'Medium — Casual Drop-In',
-        low: 'Low — Crowded / Unstructured',
-      },
-      factors: {
-        balancedMix: 'Balanced Erasmus & local volunteer mix boosts sense of belonging',
-        highComfort: 'High-comfort setting strongly correlates with repeat attendance',
-        interactiveFormat: 'Interactive format accelerates peer bonding in the first 30 min',
-        optimalGroupSize: 'Group size (15–45) keeps conversations personal and manageable',
-        largeGroupRisk: 'Large crowd (>60) may dilute interactions without extra facilitators',
-        lowComfortRisk: 'Low-comfort environment increases early drop-off risk',
-        skewedMixRisk: 'Skewed participant ratio limits cross-cultural exchange',
-        smallGroupNote: 'Small group (<12) works best in a cozy venue with an active host',
-      },
+      driversKicker: 'Feature Attribution',
+      driversTitle: 'Key Drivers',
+      impactAxisLabel: 'Impact (-1 to +1)',
+      positiveDriver: 'Positive Lift',
+      negativeDriver: 'Risk Factor',
+      contextKicker: 'Real Supabase Baseline',
+      contextTitle: 'Session Context Comparison',
+      allSessionsShort: 'All Sessions',
+      contextNoNumeric: 'This model schema has no numeric inputs to compare against session averages.',
+      contextTableCaption: 'Comparison of tested numeric scenario inputs against real session averages',
+      contextColMetric: 'Input Metric',
+      contextColScenario: 'Tested',
+      contextColBaseline: 'Session Avg',
+      contextColDelta: 'Delta',
     },
 
     // Landing page (`/`) hero & directory copy (`LandingPage.jsx`)
@@ -670,7 +676,7 @@ export const translations = {
       },
       use_predictor: {
         label: 'Use Retention Predictor',
-        desc: 'Open and run the organizer Retention Prediction sidebar.',
+        desc: 'Access the dedicated Predictor Studio page and run scenario forecasts.',
       },
       manage_roles: {
         label: 'Manage Team & Roles',
@@ -714,12 +720,13 @@ export const translations = {
   tr: {
     brand: 'ESN Console',
 
-    // Persistent global header & dashboard-only navigation controls
+    // Persistent global header & project-scoped navigation controls
     nav: {
       allProjects: 'Tüm Projeler',
       switchProject: 'Proje değiştir',
-      toggleSidebar: 'Tahmin panelini aç veya kapat',
-      sidebarShort: 'Tahminleyici',
+      viewSwitcherLabel: 'Proje görünüm seçici',
+      analyticsTab: 'Analitik',
+      predictorTab: 'Tahminleyici',
       controlsLabel: 'Çalışma alanı kontrolleri',
     },
 
@@ -1076,55 +1083,60 @@ export const translations = {
       nextPage: 'Sonraki sayfa',
     },
 
-    // Collapsible organizer prediction sidebar (`PredictionSidebar.jsx` + `mlApi.js`)
-    sidebar: {
-      kicker: 'Organizatör Zekası',
-      title: 'Bağlılık Tahminleyicisi',
-      subtitle:
-        'Yayınlamadan önce tekrar katılım olasılığını tahmin etmek için oturum parametrelerini test edin.',
-      closeLabel: 'Tahmin panelini kapat',
-      toggleLabel: 'Tahmin panelini aç veya kapat',
-      sessionFormat: 'Oturum Formatı',
-      groupMix: 'Katılımcı Dengesi',
-      comfortLevel: 'Beklenen Konfor Düzeyi',
-      expectedSize: 'Beklenen Grup Boyutu',
-      checkBtn: 'Tahmini Kontrol Et',
-      checking: 'Değerlendiriliyor...',
+    // Dedicated schema-driven Predictive Analytics Studio (`PredictorPage.jsx` + `mlApi.js`)
+    predictor: {
+      kicker: 'Tahminsel Analitik Stüdyosu',
+      pageTitle: '{id} · Tahminleyici | ESN Console',
+      demoModelBadge: 'DEMO MODEL',
+      emptyTitle: 'Bu proje için henüz bir tahmin modeli yapılandırılmadı',
+      emptySubtitle:
+        'Organizatör senaryo testleri çalıştırmak için bu projenin yapılandırmasına eğitilmiş bir scikit-learn modeli veya tahmin şeması bağlayın.',
+      backToAnalytics: 'Analitiğe Dön',
+      scenarioKicker: 'Senaryo Testi',
+      scenarioTitle: 'Senaryo ve Model Girdileri',
+      prefillLabel: 'Oturum Ortalamasından Doldur',
+      responsesSampled: '{count} yanıt',
+      applyBaselineBtn: 'Doldur',
+      prefillApplied: '{responses} yanıttan {fields} alan otomatik dolduruldu.',
+      prefillNoMatch: 'Seçilen oturumda eşleşen sütun bulunamadı.',
+      runBtn: 'Tahmini Çalıştır',
+      runningBtn: 'Tahmin Hesaplanıyor...',
+      insightsRegionLabel: 'Tahmin sonucu ve model analizi',
+      readyKicker: 'Senaryo Bekleniyor',
+      promptTitle:
+        'Model dökümünü görmek için senaryo girdilerini ayarlayın ve bir tahmin çalıştırın',
+      promptSubtitle:
+        'Tekrar katılım olasılığını tahmin etmek ve başlıca etkenleri incelemek için soldaki oturum parametrelerini düzenleyin veya geçmiş bir oturum ortalamasından doldurun.',
       verdictLabel: 'Tahmin Sonucu',
       confidenceLabel: 'Güven Oranı',
-      factorsLabel: 'Başlıca Etkenler',
-      heuristicNote: 'Yerel sezgisel mod · FastAPI /predict Faz 6’da bağlanacak',
+      inputsModifiedHint: 'Senaryo girdileri değiştirildi — güncellemek için Tahmini Çalıştır’a tıklayın.',
       verdicts: {
-        high_retention: 'Yüksek Bağlılık Bekleniyor',
-        moderate_retention: 'Orta Düzey Bağlılık',
+        likely_return: 'Tekrar Katılım Olası',
+        neutral: 'Orta / Nötr Görünüm',
         at_risk: 'Bağlılık Risk Altında',
       },
-      formats: {
-        interactive: 'Etkileşimli Masalar ve Buz Kırıcılar',
-        cultural: 'Rehberli Kültür Yürüyüşü ve Sosyal',
-        workshop: 'Yapılandırılmış Atölye / Oryantasyon',
-        mixer: 'Açık Sosyal Buluşma',
+      verdictDescriptions: {
+        likely_return:
+          'Güçlü olumlu sinyaller yüksek katılımcı memnuniyeti ve tekrar katılım potansiyeline işaret ediyor.',
+        neutral:
+          'Karışık sinyaller algılandı. Konfor düzeyi, grup dengesi veya yönlendirmeli kartları iyileştirmek bağlılığı artırabilir.',
+        at_risk:
+          'Yüksek ayrılma riski. Yayınlamadan önce moderasyon, konfor veya masa yapısını güçlendirmeyi değerlendirin.',
       },
-      mixes: {
-        balanced: 'Dengeli Erasmus + Yerel',
-        erasmus_heavy: 'Ağırlıklı Erasmus Öğrencileri',
-        local_heavy: 'Ağırlıklı Yerel Gönüllüler',
-      },
-      comforts: {
-        high: 'Yüksek — Samimi ve Yönlendirmeli',
-        medium: 'Orta — Serbest Katılım',
-        low: 'Düşük — Kalabalık / Plansız',
-      },
-      factors: {
-        balancedMix: 'Dengeli Erasmus ve yerel gönüllü oranı aidiyet duygusunu artırıyor',
-        highComfort: 'Yüksek konfor ortamı tekrar katılımla güçlü biçimde ilişkili',
-        interactiveFormat: 'Etkileşimli format ilk 30 dakikada akran bağlarını hızlandırıyor',
-        optimalGroupSize: 'Grup boyutu (15–45) sohbetleri samimi ve yönetilebilir tutuyor',
-        largeGroupRisk: 'Kalabalık grup (>60) ek moderatör olmadan etkileşimi azaltabilir',
-        lowComfortRisk: 'Düşük konfor ortamı erken ayrılma riskini artırıyor',
-        skewedMixRisk: 'Tek taraflı katılımcı oranı kültürlerarası etkileşimi sınırlıyor',
-        smallGroupNote: 'Küçük grup (<12) samimi bir mekan ve aktif moderatörle en iyi sonucu verir',
-      },
+      driversKicker: 'Özellik Katkısı',
+      driversTitle: 'Başlıca Etkenler',
+      impactAxisLabel: 'Etki (-1 ile +1 arası)',
+      positiveDriver: 'Olumlu Katkı',
+      negativeDriver: 'Risk Etkeni',
+      contextKicker: 'Gerçek Supabase Temeli',
+      contextTitle: 'Oturum Bağlamı Karşılaştırması',
+      allSessionsShort: 'Tüm Oturumlar',
+      contextNoNumeric: 'Bu model şemasında oturum ortalamalarıyla karşılaştırılacak sayısal girdi bulunmuyor.',
+      contextTableCaption: 'Test edilen sayısal senaryo girdilerinin gerçek oturum ortalamalarıyla karşılaştırması',
+      contextColMetric: 'Girdi Metriği',
+      contextColScenario: 'Test Edilen',
+      contextColBaseline: 'Oturum Ort.',
+      contextColDelta: 'Fark',
     },
 
     // Landing page (`/`) hero & directory copy (`LandingPage.jsx`)
@@ -1375,7 +1387,7 @@ export const translations = {
       },
       use_predictor: {
         label: 'Bağlılık Tahminleyicisini Kullan',
-        desc: 'Organizatör Bağlılık Tahmin panelini açma ve çalıştırma.',
+        desc: 'Tahminleyici Stüdyosu sayfasına erişme ve senaryo tahminleri çalıştırma.',
       },
       manage_roles: {
         label: 'Ekip ve Rolleri Yönet',

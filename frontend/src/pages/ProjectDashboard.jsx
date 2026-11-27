@@ -43,7 +43,6 @@ import StatusSelect from '../components/StatusSelect.jsx';
 import SummaryStrip from '../components/SummaryStrip.jsx';
 import ChartGrid from '../components/ChartGrid.jsx';
 import FeedbackTable from '../components/FeedbackTable.jsx';
-import PredictionSidebar from '../components/PredictionSidebar.jsx';
 import AddSessionModal from '../components/modals/AddSessionModal.jsx';
 import DeleteSessionModal from '../components/modals/DeleteSessionModal.jsx';
 import DeleteProjectModal from '../components/modals/DeleteProjectModal.jsx';
@@ -147,10 +146,7 @@ function formatDateRange(startDate, endDate, lang) {
   return `${formatter.format(startObj)} – ${formatter.format(endObj)}`;
 }
 
-export default function ProjectDashboard({
-  isSidebarOpen = false,
-  onCloseSidebar,
-}) {
+export default function ProjectDashboard() {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const { lang, t } = useLang();
@@ -169,7 +165,6 @@ export default function ProjectDashboard({
   const canManageSessions = hasPermission('manage_sessions');
   const canManageResponses = hasPermission('manage_responses');
   const canManageGraphs = hasPermission('manage_graphs');
-  const canUsePredictor = hasPermission('use_predictor');
   const {
     projects,
     responsesByProject,
@@ -949,17 +944,6 @@ export default function ProjectDashboard({
           formatDateRange={formatDateRange}
         />
       </div>
-
-      {/* Collapsible 60fps Organizer Prediction Sidebar (gated by `use_predictor`) */}
-      {canUsePredictor && (
-        <PredictionSidebar
-          key={activeProject.id}
-          isOpen={isSidebarOpen}
-          onClose={onCloseSidebar}
-          projectId={activeProject.id}
-          projectTitle={projectCopy.title}
-        />
-      )}
 
       {/* Session Management Modals (gated by `manage_sessions`) */}
       {canManageSessions && (
