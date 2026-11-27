@@ -17,6 +17,7 @@ import {
   CircleCheck,
   Database,
   Eye,
+  LoaderCircle,
   Plus,
   Sparkles,
   Trash2,
@@ -122,7 +123,7 @@ export default function ProjectDashboard({
     addSession,
     deleteSession,
     addResponse,
-    replaceCsvData,
+    importCsvToProject,
     addGraph,
     removeGraph,
     resetGraphs,
@@ -188,48 +189,46 @@ export default function ProjectDashboard({
     document.title = t('dashboard.pageTitle', { id: label });
   }, [projectCopy, projectId, t]);
 
-  // Add a new session and immediately select it in the toolbar dropdown
+  // Add a new session in Supabase and immediately select it in the toolbar dropdown
   const handleAddSession = useCallback(
-    ({ title, startDate, endDate }) => {
+    async ({ title, startDate, endDate }) => {
       if (!activeProject) {
         return;
       }
-      const newSessionId = addSession(activeProject.id, {
+      const newSessionId = await addSession(activeProject.id, {
         title,
         startDate,
         endDate,
       });
-      setSelectedSessionId(newSessionId);
-      setToolbarNotice(null);
+      if (newSessionId) {
+        setSelectedSessionId(newSessionId);
+        setToolbarNotice(null);
+      }
     },
     [activeProject, addSession]
   );
 
-  // Delete the selected session and reset selection back to `"all"`
+  // Delete the selected session from Supabase and reset selection back to `"all"`
   const handleConfirmDeleteSession = useCallback(
-    (sessionIdToDelete) => {
+    async (sessionIdToDelete) => {
       if (!activeProject) {
         return;
       }
-      deleteSession(activeProject.id, sessionIdToDelete);
-      setSelectedSessionId('all');
-      setToolbarNotice(null);
+      const deleted = await deleteSession(activeProject.id, sessionIdToDelete);
+      if (deleted) {
+        setSelectedSessionId('all');
+        setToolbarNotice(null);
+      }
     },
     [activeProject, deleteSession]
   );
 
-  // Inject a realistic randomized demo response into the currently selected session
-  const handleAddDemoResponse = useCallback(() => {
+  // Inject a realistic randomized demo response into Supabase for the selected session
+  const handleAddDemoResponse = useCallback(async () => {
     if (!activeProject || !activeSession) {
       return;
     }
     const demoRow = {
-      id: `demo_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
-      projectId: activeProject.id,
-      sessionId: activeSession.id,
-      sessionTitle: activeSession.title,
-      startDate: activeSession.startDate,
-      endDate: activeSession.endDate,
       cat1: pickRandom(DEMO_CAT1),
       cat2: pickRandom(DEMO_CAT2),
       comfort: pickRandom(DEMO_COMFORT),
@@ -238,27 +237,36 @@ export default function ProjectDashboard({
       note1: pickRandom(DEMO_HIGHLIGHTS),
       note2: pickRandom(DEMO_SUGGESTIONS),
     };
-    addResponse(activeProject.id, activeSession.id, demoRow);
-    setToolbarNotice({
-      type: 'success',
-      text: t('dashboard.demoAdded', { session: activeSession.title }),
-    });
+    const inserted = await addResponse(activeProject.id, activeSession.id, demoRow);
+    if (inserted) {
+      setToolbarNotice({
+        type: 'success',
+        text: t('dashboard.demoAdded', { session: activeSession.title }),
+      });
+    }
   }, [activeProject, activeSession, addResponse, t]);
 
-  // Parse a user-selected local `.csv` file and live-update `DataContext`
+  // Parse a user-selected `.csv` file with PapaParse and bulk-insert into Supabase
   const handleCsvUpload = async (event) => {
     const file = event.target.files?.[0];
-    if (!file) {
+    if (!file || !activeProject) {
       return;
     }
     try {
       const csvText = await file.text();
-      const parsed = replaceCsvData(csvText);
+      const { importedCount } = await importCsvToProject(activeProject.id, csvText);
+      if (importedCount === 0) {
+        setToolbarNotice({
+          type: 'error',
+          text: t('toast.csvEmpty'),
+        });
+        return;
+      }
       setSelectedSessionId('all');
       setToolbarNotice({
         type: 'success',
         text: t('dashboard.csvUploaded', {
-          count: parsed.rows.length,
+          count: importedCount,
           file: file.name,
         }),
       });
@@ -296,6 +304,23 @@ export default function ProjectDashboard({
       resetGraphs(activeProject.id);
     }
   }, [activeProject, resetGraphs]);
+
+  // Wait for Supabase initial fetch before deciding a project slug is unknown
+  if (isLoading && !activeProject) {
+    return (
+      <main className="page-stage">
+        <div className="bento-card auth-loading-card" role="status" aria-live="polite">
+          <LoaderCircle
+            size={20}
+            strokeWidth={1.5}
+            aria-hidden="true"
+            className="auth-spinner"
+          />
+          <span className="font-mono-label">{t('dashboard.loadingData')}</span>
+        </div>
+      </main>
+    );
+  }
 
   // Unknown `:projectId` fallback view
   if (!activeProject) {

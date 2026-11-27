@@ -161,9 +161,6 @@ export default function ProfilePopover({ id, isOpen, onClose, triggerRef }) {
         <button type="button" className="profile-action-btn" onClick={onClose}>
           <Settings size={15} strokeWidth={1.5} aria-hidden="true" />
           <span>{t('profile.accountSettings')}</span>
-          <span className="profile-action-tag font-mono-label">
-            {t('profile.authPreviewTag')}
-          </span>
         </button>
 
         {isAdmin && (

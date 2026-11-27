@@ -7,7 +7,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { AlertCircle, LoaderCircle, Plus } from 'lucide-react';
 import { useLang } from '../context/LangContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useData } from '../context/DataContext.jsx';
@@ -17,7 +17,14 @@ import NewProjectModal from '../components/modals/NewProjectModal.jsx';
 export default function LandingPage() {
   const { t } = useLang();
   const { isAdmin } = useAuth();
-  const { projects, updateProjectStatus, addProject } = useData();
+  const {
+    projects,
+    isLoading,
+    isSeeding,
+    loadError,
+    updateProjectStatus,
+    addProject,
+  } = useData();
 
   // Controls open/closed state for the `+ New Project` modal dialog
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,10 +40,10 @@ export default function LandingPage() {
     [projects]
   );
 
-  // Append newly created project card to shared DataContext and close modal
+  // Persist newly created project card to Supabase and close modal
   const handleCreateProject = useCallback(
-    (newProject) => {
-      addProject(newProject);
+    async (newProject) => {
+      await addProject(newProject);
       setIsModalOpen(false);
     },
     [addProject]
@@ -90,20 +97,64 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Fixed 3-column desktop CSS Grid ensuring equal card widths across partial rows */}
-      <section
-        className="landing-directory"
-        aria-label={t('landing.directoryLabel')}
-      >
-        {projects.map((project) => (
-          <ProjectCard
-            key={project.id}
-            project={project}
-            canEditStatus={isAdmin}
-            onStatusChange={updateProjectStatus}
-          />
-        ))}
-      </section>
+      {/* Loading skeletons, fetch error banner, or 3-column equal-width Project Directory */}
+      {isLoading && projects.length === 0 ? (
+        <section
+          className="workspace-loading-stage"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="bento-card workspace-loading-bar">
+            <LoaderCircle
+              size={16}
+              strokeWidth={1.5}
+              aria-hidden="true"
+              className="auth-spinner"
+            />
+            <span className="font-mono-label">
+              {isSeeding ? t('toast.seedingWorkspace') : t('toast.loadingDirectory')}
+            </span>
+          </div>
+
+          <div className="skeleton-grid" aria-hidden="true">
+            {[0, 1, 2].map((slot) => (
+              <div key={slot} className="bento-card skeleton-card">
+                <div className="skeleton-bar short" />
+                <div className="skeleton-bar medium" />
+                <div className="skeleton-bar full" />
+                <div className="skeleton-bar short" />
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : (
+        <>
+          {loadError && (
+            <div className="workspace-loading-stage">
+              <div className="bento-card dashboard-banner error" role="alert">
+                <AlertCircle size={16} strokeWidth={1.5} aria-hidden="true" />
+                <span>
+                  {t('dashboard.loadError')}: {loadError}
+                </span>
+              </div>
+            </div>
+          )}
+
+          <section
+            className="landing-directory"
+            aria-label={t('landing.directoryLabel')}
+          >
+            {projects.map((project) => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                canEditStatus={isAdmin}
+                onStatusChange={updateProjectStatus}
+              />
+            ))}
+          </section>
+        </>
+      )}
 
       {/* Accessible native `<dialog>` modal for creating or duplicating a project (Admin only) */}
       {isAdmin && (

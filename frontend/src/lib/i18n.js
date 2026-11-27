@@ -267,8 +267,8 @@ export const translations = {
       placeholderSubtitle:
         'Filter sessions, add or delete session periods, inject demo responses, or upload a custom CSV file.',
       projectIdLabel: 'Active project ID',
-      loadingData: 'Loading project dataset from dummy_data.csv...',
-      loadError: 'Could not load CSV dataset',
+      loadingData: 'Loading workspace data from Supabase...',
+      loadError: 'Could not load workspace data',
       notFoundTitle: 'Project Not Found',
       notFoundSubtitle:
         'No project matches this URL slug. Return to the directory to choose an active ESN workspace.',
@@ -323,6 +323,10 @@ export const translations = {
         'Passwordless authentication via Google OAuth only. New accounts receive standard Member access automatically.',
       oauthError:
         'Google authentication could not be completed. Please try again or contact your ESN section admin.',
+      accountNotFound:
+        'No ESN Console account was found for this Google email. Please switch to the Sign Up tab to create your account first.',
+      accountAlreadyExists:
+        'An ESN Console account with this Google email already exists. Please switch to the Sign In tab instead.',
       missingConfig:
         'Supabase authentication is not configured. Check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.',
       signOut: 'Sign Out',
@@ -331,6 +335,18 @@ export const translations = {
       readOnlyBadge: 'Read-Only',
       checkingSession: 'Verifying your ESN session...',
       pageTitle: 'Sign In | ESN Console',
+    },
+
+    // Supabase loading states & dismissible error toast copy
+    toast: {
+      regionLabel: 'Workspace notifications',
+      errorTitle: 'Action Could Not Be Saved',
+      dismissLabel: 'Dismiss notification',
+      permissionDenied: 'Permission denied. Admin privileges are required to modify workspace data.',
+      writeFailed: 'Could not save your change to Supabase. Please try again.',
+      loadingDirectory: 'Syncing ESN projects from Supabase...',
+      seedingWorkspace: 'Initializing default ESN projects...',
+      csvEmpty: 'No valid response rows were found in the selected CSV file.',
     },
   },
 
@@ -596,8 +612,8 @@ export const translations = {
       placeholderSubtitle:
         'Oturumları filtreleyin, yeni dönem ekleyin veya silin, demo yanıt ekleyin ya da özel bir CSV dosyası yükleyin.',
       projectIdLabel: 'Aktif proje kimliği',
-      loadingData: 'Proje veri seti dummy_data.csv dosyasından yükleniyor...',
-      loadError: 'CSV veri seti yüklenemedi',
+      loadingData: 'Çalışma alanı verileri Supabase’ten yükleniyor...',
+      loadError: 'Çalışma alanı verileri yüklenemedi',
       notFoundTitle: 'Proje Bulunamadı',
       notFoundSubtitle:
         'Bu URL kimliğiyle eşleşen bir proje yok. Aktif bir ESN çalışma alanı seçmek için dizine dönün.',
@@ -652,6 +668,10 @@ export const translations = {
         'Yalnızca Google OAuth ile şifresiz kimlik doğrulama. Yeni hesaplara otomatik olarak standart Üye rolü atanır.',
       oauthError:
         'Google kimlik doğrulaması tamamlanamadı. Lütfen tekrar deneyin veya ESN şube yöneticinizle iletişime geçin.',
+      accountNotFound:
+        'Bu Google e-posta adresiyle kayıtlı bir ESN Console hesabı bulunamadı. Lütfen önce Kayıt Ol sekmesinden hesabınızı oluşturun.',
+      accountAlreadyExists:
+        'Bu Google e-posta adresiyle zaten bir ESN Console hesabı bulunuyor. Lütfen bunun yerine Giriş Yap sekmesini kullanın.',
       missingConfig:
         'Supabase kimlik doğrulaması yapılandırılmamış. VITE_SUPABASE_URL ve VITE_SUPABASE_ANON_KEY değerlerini kontrol edin.',
       signOut: 'Çıkış Yap',
@@ -660,6 +680,18 @@ export const translations = {
       readOnlyBadge: 'Salt Okunur',
       checkingSession: 'ESN oturumunuz doğrulanıyor...',
       pageTitle: 'Giriş Yap | ESN Console',
+    },
+
+    // Supabase loading states & dismissible error toast copy
+    toast: {
+      regionLabel: 'Çalışma alanı bildirimleri',
+      errorTitle: 'İşlem Kaydedilemedi',
+      dismissLabel: 'Bildirimi kapat',
+      permissionDenied: 'Yetki reddedildi. Çalışma alanı verilerini değiştirmek için Yönetici yetkisi gerekir.',
+      writeFailed: 'Değişiklik Supabase’e kaydedilemedi. Lütfen tekrar deneyin.',
+      loadingDirectory: 'ESN projeleri Supabase’ten senkronize ediliyor...',
+      seedingWorkspace: 'Varsayılan ESN projeleri hazırlanıyor...',
+      csvEmpty: 'Seçilen CSV dosyasında geçerli yanıt satırı bulunamadı.',
     },
   },
 };

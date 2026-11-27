@@ -500,9 +500,153 @@
     }
   }
 
+  /* ------------------------------------------------------------------------
+     Swiss Workspace Loading Skeletons & Dismissible Error Toast
+     ------------------------------------------------------------------------ */
+  .workspace-loading-stage {
+    inline-size: 100%;
+    max-inline-size: 82rem;
+    margin-inline: auto;
+    padding-block: clamp(1.5rem, 3.5vw, 2.75rem);
+    padding-inline: clamp(1rem, 2.5vw, 2rem);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .workspace-loading-bar {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    gap: 0.65rem;
+    padding: 0.65rem 1rem;
+    color: var(--ink-secondary);
+  }
+
+  .skeleton-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.125rem;
+  }
+
+  @media (min-width: 40rem) {
+    .skeleton-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  .skeleton-card {
+    min-block-size: 18.5rem;
+    padding: 1.35rem 1.4rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .skeleton-bar {
+    block-size: 0.85rem;
+    border-radius: var(--radius-control);
+    background-color: var(--bg-subtle);
+
+    &.short {
+      inline-size: 38%;
+    }
+
+    &.medium {
+      inline-size: 68%;
+      block-size: 1.35rem;
+    }
+
+    &.full {
+      inline-size: 100%;
+    }
+  }
+
+  /* Consistent bottom-end notification region for persistent manual popovers */
+  .toast-region {
+    position: fixed;
+    inset-block-end: 1.25rem;
+    inset-inline-end: 1.25rem;
+    z-index: 90;
+    pointer-events: none;
+  }
+
+  .toast-card {
+    pointer-events: auto;
+    inline-size: min(24rem, calc(100dvw - 2rem));
+    padding: 0.875rem 1rem;
+    border: 1px solid var(--status-danger-border);
+    box-shadow: var(--shadow-popover);
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    color: var(--ink-primary);
+    opacity: 0;
+    transform: translateY(0.5rem);
+    transition: opacity 180ms ease, transform 180ms ease, display 180ms ease, overlay 180ms ease;
+    transition-behavior: allow-discrete;
+
+    &[popover] {
+      position: fixed;
+      inset-block-start: auto;
+      inset-inline-start: auto;
+      inset-block-end: 1.25rem;
+      inset-inline-end: 1.25rem;
+      margin: 0;
+    }
+
+    &.is-visible,
+    &:popover-open {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    &[hidden] {
+      display: none;
+    }
+  }
+
+  .toast-icon {
+    display: inline-flex;
+    align-items: center;
+    margin-block-start: 0.1rem;
+    color: var(--status-danger);
+    flex-shrink: 0;
+  }
+
+  .toast-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-inline-size: 0;
+    flex: 1;
+  }
+
+  .toast-title {
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--status-danger);
+    line-height: 1.3;
+  }
+
+  .toast-message {
+    font-size: 0.8125rem;
+    color: var(--ink-secondary);
+    line-height: 1.45;
+  }
+
+  .toast-dismiss-btn {
+    min-block-size: 1.85rem;
+    min-inline-size: 1.85rem;
+    padding: 0.25rem;
+    flex-shrink: 0;
+    color: var(--ink-muted);
+  }
+
   /* Respect OS reduced-motion setting on interactive primitives */
   @media (prefers-reduced-motion: reduce) {
-    :where(.bento-card, .btn, .form-input, .form-textarea, .form-select) {
+    :where(.bento-card, .btn, .form-input, .form-textarea, .form-select, .toast-card) {
       transition: none;
     }
   }
@@ -516,7 +660,8 @@
     .modal-dialog,
     .form-input,
     .form-textarea,
-    .form-select {
+    .form-select,
+    .toast-card {
       border-color: CanvasText;
       box-shadow: none;
     }

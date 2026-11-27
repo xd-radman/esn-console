@@ -16,7 +16,7 @@ import {
   ShieldCheck,
   Sun,
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext.jsx';
+import { AUTH_INTENT_STORAGE_KEY, useAuth } from '../context/AuthContext.jsx';
 import { useLang } from '../context/LangContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 
@@ -68,7 +68,7 @@ function readRedirectOAuthError(search, hash) {
 }
 
 export default function LoginPage() {
-  const { user, loading, signInWithGoogle } = useAuth();
+  const { user, loading, authError, clearAuthError, signInWithGoogle } = useAuth();
   const { lang, setLang, t } = useLang();
   const { isDark, toggleTheme } = useTheme();
   const location = useLocation();
@@ -76,11 +76,13 @@ export default function LoginPage() {
   // Active segmented mode (`'signin'` or `'signup'`)
   const [authMode, setAuthMode] = useState('signin');
 
-  // Pending OAuth redirect state and localized error key
+  // Pending OAuth redirect state and local error key (merged with AuthContext `authError`)
   const [isRedirecting, setIsRedirecting] = useState(false);
-  const [errorKey, setErrorKey] = useState(() =>
+  const [localErrorKey, setLocalErrorKey] = useState(() =>
     readRedirectOAuthError(location.search, location.hash) ? 'auth.oauthError' : null
   );
+
+  const activeErrorKey = localErrorKey || authError;
 
   // Stable IDs associating the Sign In / Sign Up tabs with the visible panel
   const signInTabId = useId();
@@ -133,7 +135,8 @@ export default function LoginPage() {
         nextMode = authMode === 'signin' ? 'signup' : 'signin';
       }
       setAuthMode(nextMode);
-      setErrorKey(null);
+      setLocalErrorKey(null);
+      clearAuthError();
       if (nextMode === 'signin') {
         signInTabRef.current?.focus();
       } else {
@@ -142,14 +145,27 @@ export default function LoginPage() {
     }
   };
 
-  // Trigger passwordless Google OAuth redirect for both Sign In and Sign Up modes
+  // Persist tab intent (`'signin'` | `'signup'`) before triggering passwordless Google OAuth
   const handleGoogleAuth = async () => {
-    setErrorKey(null);
+    setLocalErrorKey(null);
+    clearAuthError();
     setIsRedirecting(true);
+
+    try {
+      window.sessionStorage.setItem(AUTH_INTENT_STORAGE_KEY, authMode);
+    } catch {
+      // Proceed even if sessionStorage is restricted
+    }
+
     try {
       const { error } = await signInWithGoogle();
       if (error) {
-        setErrorKey(
+        try {
+          window.sessionStorage.removeItem(AUTH_INTENT_STORAGE_KEY);
+        } catch {
+          // Ignore storage cleanup errors
+        }
+        setLocalErrorKey(
           error.message === 'MISSING_SUPABASE_CONFIG'
             ? 'auth.missingConfig'
             : 'auth.oauthError'
@@ -157,7 +173,12 @@ export default function LoginPage() {
         setIsRedirecting(false);
       }
     } catch {
-      setErrorKey('auth.oauthError');
+      try {
+        window.sessionStorage.removeItem(AUTH_INTENT_STORAGE_KEY);
+      } catch {
+        // Ignore storage cleanup errors
+      }
+      setLocalErrorKey('auth.oauthError');
       setIsRedirecting(false);
     }
   };
@@ -241,7 +262,8 @@ export default function LoginPage() {
               className="auth-mode-tab"
               onClick={() => {
                 setAuthMode('signin');
-                setErrorKey(null);
+                setLocalErrorKey(null);
+                clearAuthError();
               }}
             >
               {t('auth.signInTab')}
@@ -257,7 +279,8 @@ export default function LoginPage() {
               className="auth-mode-tab"
               onClick={() => {
                 setAuthMode('signup');
-                setErrorKey(null);
+                setLocalErrorKey(null);
+                clearAuthError();
               }}
             >
               {t('auth.signUpTab')}
@@ -280,11 +303,11 @@ export default function LoginPage() {
               </p>
             </div>
 
-            {/* Inline alert banner shown if Google OAuth fails or Supabase config is missing */}
-            {errorKey && (
+            {/* Inline alert banner shown for OAuth failures or Sign-In/Sign-Up intent mismatches */}
+            {activeErrorKey && (
               <div className="auth-error-banner" role="alert" aria-live="assertive">
                 <AlertCircle size={16} strokeWidth={1.5} aria-hidden="true" />
-                <span>{t(errorKey)}</span>
+                <span>{t(activeErrorKey)}</span>
               </div>
             )}
 

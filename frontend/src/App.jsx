@@ -10,8 +10,10 @@ import { useCallback, useState } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { LoaderCircle } from 'lucide-react';
 import { useAuth } from './context/AuthContext.jsx';
+import { useData } from './context/DataContext.jsx';
 import { useLang } from './context/LangContext.jsx';
 import Header from './components/Header.jsx';
+import ErrorToast from './components/ErrorToast.jsx';
 import LandingPage from './pages/LandingPage.jsx';
 import ProjectDashboard from './pages/ProjectDashboard.jsx';
 import LoginPage from './pages/LoginPage.jsx';
@@ -50,6 +52,7 @@ function ProtectedRoute({ children }) {
 export default function App() {
   const location = useLocation();
   const { user, loading } = useAuth();
+  const { actionError, dismissActionError } = useData();
 
   // Tracks open/closed state for the dashboard Prediction Sidebar
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -98,6 +101,9 @@ export default function App() {
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+
+      {/* Persistent dismissible toast region for Supabase write/RLS errors */}
+      <ErrorToast error={actionError} onDismiss={dismissActionError} />
     </div>
   );
 }
