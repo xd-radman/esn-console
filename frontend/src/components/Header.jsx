@@ -8,7 +8,7 @@
  *   the circular Profile button toggling `ProfilePopover`.
  */
 
-import { useCallback, useId, useRef, useState } from 'react';
+import { useCallback, useId, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ChevronDown, Moon, PanelRight, Sun } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext.jsx';
@@ -42,8 +42,17 @@ export default function Header({ isSidebarOpen = false, onToggleSidebar }) {
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
   const { lang, setLang, t } = useLang();
-  const { user, profile, hasPermission } = useAuth();
+  const { user, profile, hasPermission, canViewInactiveProjects } = useAuth();
   const { projects } = useData();
+
+  // Filter Project Switcher options so inactive projects are visible only to leadership
+  const visibleProjects = useMemo(
+    () =>
+      projects.filter(
+        (project) => project.status === 'active' || canViewInactiveProjects
+      ),
+    [projects, canViewInactiveProjects]
+  );
 
   const canViewWorkspace = hasPermission('view_workspace');
   const canUsePredictor = hasPermission('use_predictor');
@@ -74,7 +83,7 @@ export default function Header({ isSidebarOpen = false, onToggleSidebar }) {
   const activeProjectId = projectMatch ? decodeURIComponent(projectMatch[1]) : null;
 
   // Include any custom `:projectId` URL slug in the select list so controlled value stays valid
-  const hasKnownProject = projects.some((item) => item.id === activeProjectId);
+  const hasKnownProject = visibleProjects.some((item) => item.id === activeProjectId);
 
   const closeProfile = useCallback(() => {
     setIsProfileOpen(false);
@@ -154,7 +163,7 @@ export default function Header({ isSidebarOpen = false, onToggleSidebar }) {
                   value={activeProjectId}
                   onChange={handleProjectSwitch}
                 >
-                  {projects.map((project) => {
+                  {visibleProjects.map((project) => {
                     const copy = project[lang] ?? project.en;
                     return (
                       <option key={project.id} value={project.id}>

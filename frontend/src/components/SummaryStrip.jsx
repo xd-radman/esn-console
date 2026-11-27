@@ -19,6 +19,7 @@ import KpiConfigModal, { KPI_ICON_MAP } from './modals/KpiConfigModal.jsx';
 export default function SummaryStrip({
   project,
   responses = [],
+  kpisOverride = null,
   canEdit = false,
   onSaveKpis,
 }) {
@@ -33,13 +34,19 @@ export default function SummaryStrip({
     [project]
   );
 
-  // Respect explicit saved `project.config.kpis` array; fall back when undefined
+  // Use resolved KPI override when provided; otherwise read team default KPIs or auto-generate
   const kpis = useMemo(() => {
+    if (Array.isArray(kpisOverride)) {
+      return kpisOverride.slice(0, 3);
+    }
+    if (Array.isArray(project?.config?.defaultKpis)) {
+      return project.config.defaultKpis.slice(0, 3);
+    }
     if (Array.isArray(project?.config?.kpis)) {
       return project.config.kpis.slice(0, 3);
     }
     return buildDefaultProjectKpis(columns, t('kpi.totalResponses'));
-  }, [project, columns, t]);
+  }, [kpisOverride, project, columns, t]);
 
   // Compute display values for all active KPI boxes in a single memoized pass
   const computedKpis = useMemo(

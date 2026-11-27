@@ -29,17 +29,17 @@ import App from './App.jsx';
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
-      <ThemeProvider>
-        <LangProvider>
-          <ToastProvider>
-            <AuthProvider>
+      <LangProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <ThemeProvider>
               <DataProvider>
                 <App />
               </DataProvider>
-            </AuthProvider>
-          </ToastProvider>
-        </LangProvider>
-      </ThemeProvider>
+            </ThemeProvider>
+          </AuthProvider>
+        </ToastProvider>
+      </LangProvider>
     </BrowserRouter>
   </StrictMode>
 );

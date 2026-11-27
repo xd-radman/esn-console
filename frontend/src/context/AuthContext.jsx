@@ -26,6 +26,8 @@ import {
   normalizeRoleSlug,
   resolveUserPermissions,
 } from '../lib/roleHierarchy.js';
+import { useLang } from './LangContext.jsx';
+import { useToast } from './ToastContext.jsx';
 
 const AuthContext = createContext(null);
 
@@ -33,6 +35,9 @@ const AuthContext = createContext(null);
 export const AUTH_INTENT_STORAGE_KEY = 'esn_auth_intent';
 
 export function AuthProvider({ children }) {
+  const { t } = useLang();
+  const { showToast } = useToast();
+
   // Active Supabase session (`null` when signed out)
   const [session, setSession] = useState(null);
 
@@ -150,6 +155,58 @@ export function AuthProvider({ children }) {
     setProfileState({ userId, data: data ?? null });
     return data ?? null;
   }, [userId, refreshRoles]);
+
+  // Merge and persist partial user preferences (`public.profiles.preferences`) with immediate local sync
+  const updateUserPreferences = useCallback(
+    async (partialPrefs) => {
+      if (!supabase || !userId || !partialPrefs || typeof partialPrefs !== 'object') {
+        return false;
+      }
+
+      const currentData =
+        profileState.userId === userId ? profileState.data : null;
+      const previousPrefs =
+        currentData?.preferences && typeof currentData.preferences === 'object'
+          ? currentData.preferences
+          : {};
+      const merged = {
+        ...previousPrefs,
+        ...partialPrefs,
+      };
+
+      // Optimistically sync in-memory profile state immediately
+      setProfileState((prev) =>
+        prev.userId === userId && prev.data
+          ? { userId, data: { ...prev.data, preferences: merged } }
+          : prev
+      );
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ preferences: merged })
+        .eq('id', userId)
+        .select('*')
+        .maybeSingle();
+
+      if (error) {
+        console.error('[ESN Console] Failed to update profile preferences:', error);
+        showToast(error.message || t('toast.writeFailed'), 'error');
+        // Roll back optimistic preference merge on failure
+        setProfileState((prev) =>
+          prev.userId === userId && prev.data
+            ? { userId, data: { ...prev.data, preferences: previousPrefs } }
+            : prev
+        );
+        return false;
+      }
+
+      if (data) {
+        setProfileState({ userId, data });
+      }
+      return true;
+    },
+    [userId, profileState, showToast, t]
+  );
 
   // Load `public.roles`, fetch `public.profiles`, and enforce Sign-In vs. Sign-Up OAuth intent
   useEffect(() => {
@@ -364,6 +421,19 @@ export function AuthProvider({ children }) {
   // Backward-compatible alias for project-management admin privileges
   const isAdmin = Boolean(permissions.manage_projects);
 
+  // Only top leadership (`owner`, `president`, `vice_president` / `vice-president`) can see inactive projects or set team defaults
+  const rawRoleSlug = String(profile?.role ?? role ?? '').trim().toLowerCase();
+  const isTopLeadership =
+    rawRoleSlug === 'owner' ||
+    rawRoleSlug === 'president' ||
+    rawRoleSlug === 'vice_president' ||
+    rawRoleSlug === 'vice-president' ||
+    role === 'owner' ||
+    role === 'president' ||
+    role === 'vice_president';
+  const canViewInactiveProjects = isTopLeadership;
+  const canSetDefaultLayout = isTopLeadership;
+
   const value = useMemo(
     () => ({
       session,
@@ -377,6 +447,8 @@ export function AuthProvider({ children }) {
       refreshRoles,
       permissions,
       hasPermission,
+      canViewInactiveProjects,
+      canSetDefaultLayout,
       isOwner,
       isLimbo,
       isAdmin,
@@ -384,6 +456,7 @@ export function AuthProvider({ children }) {
       authError,
       clearAuthError,
       refreshProfile,
+      updateUserPreferences,
       signInWithGoogle,
       signOut,
     }),
@@ -399,6 +472,8 @@ export function AuthProvider({ children }) {
       refreshRoles,
       permissions,
       hasPermission,
+      canViewInactiveProjects,
+      canSetDefaultLayout,
       isOwner,
       isLimbo,
       isAdmin,
@@ -406,6 +481,7 @@ export function AuthProvider({ children }) {
       authError,
       clearAuthError,
       refreshProfile,
+      updateUserPreferences,
       signInWithGoogle,
       signOut,
     ]

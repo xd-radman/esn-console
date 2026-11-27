@@ -7,7 +7,7 @@
  */
 
 import { useState } from 'react';
-import { BarChart3, BookmarkCheck, Plus, RotateCcw } from 'lucide-react';
+import { BarChart3, Plus } from 'lucide-react';
 import { useLang } from '../context/LangContext.jsx';
 import ChartTile from './ChartTile.jsx';
 import AddGraphModal from './modals/AddGraphModal.jsx';
@@ -21,8 +21,6 @@ export default function ChartGrid({
   onAddGraph,
   onUpdateGraph,
   onRemoveGraph,
-  onSetDefaultGraphs,
-  onResetGraphs,
 }) {
   const { t } = useLang();
   const [isAddGraphOpen, setIsAddGraphOpen] = useState(false);
@@ -65,25 +63,6 @@ export default function ChartGrid({
               <Plus size={15} strokeWidth={1.5} aria-hidden="true" />
               <span>{t('charts.addGraph')}</span>
             </button>
-
-            <button
-              type="button"
-              className="btn ghost"
-              disabled={graphs.length === 0}
-              onClick={() => onSetDefaultGraphs?.(graphs)}
-            >
-              <BookmarkCheck size={15} strokeWidth={1.5} aria-hidden="true" />
-              <span>{t('charts.setAsDefault')}</span>
-            </button>
-
-            <button
-              type="button"
-              className="btn ghost"
-              onClick={onResetGraphs}
-            >
-              <RotateCcw size={15} strokeWidth={1.5} aria-hidden="true" />
-              <span>{t('charts.resetDefault')}</span>
-            </button>
           </div>
         )}
       </header>
@@ -101,14 +80,6 @@ export default function ChartGrid({
               <button
                 type="button"
                 className="btn primary"
-                onClick={onResetGraphs}
-              >
-                <RotateCcw size={15} strokeWidth={1.5} aria-hidden="true" />
-                <span>{t('charts.resetDefault')}</span>
-              </button>
-              <button
-                type="button"
-                className="btn"
                 onClick={handleOpenAddModal}
               >
                 <Plus size={15} strokeWidth={1.5} aria-hidden="true" />

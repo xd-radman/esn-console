@@ -15,13 +15,21 @@ import {
   Check,
   LoaderCircle,
   Lock,
+  Palette,
+  RotateCcw,
   ShieldCheck,
   User,
   X,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase.js';
+import {
+  COLOR_PALETTE_PRESETS,
+  DEFAULT_ESN_COLORS,
+  PALETTE_SLOT_KEYS,
+} from '../../lib/colorPalettes.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useLang } from '../../context/LangContext.jsx';
+import { useTheme } from '../../context/ThemeContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 
 /**
@@ -42,9 +50,11 @@ function buildInitials(name, fallback) {
 export default function AccountSettingsModal({ isOpen, onClose }) {
   const { user, profile, roleMeta, hasPermission, refreshProfile } = useAuth();
   const { t } = useLang();
+  const { palette, savePalette } = useTheme();
   const { showToast } = useToast();
 
-  // Granular permission gate: `new_member` and `visitor` cannot edit their display name
+  // Granular permission gate: `new_member` and `visitor` cannot edit their display name,
+  // but every user (including visitors) can stage and save their own color palette
   const canEditName = hasPermission('edit_own_name');
   const hasElevatedRole =
     hasPermission('manage_projects') || hasPermission('manage_roles');
@@ -60,14 +70,34 @@ export default function AccountSettingsModal({ isOpen, onClose }) {
   const initialFullName =
     profile?.full_name?.trim() || googleName.trim() || emailPrefix;
 
-  // Controlled display name input and save spinner state
+  // Controlled display name, staged palette draft, and save spinner state
   const [fullName, setFullName] = useState(initialFullName);
+  const [draftPalette, setDraftPalette] = useState(() => ({
+    presetId: palette?.presetId ?? 'esn',
+    colors: [...(palette?.colors ?? DEFAULT_ESN_COLORS)],
+  }));
   const [isSaving, setIsSaving] = useState(false);
 
-  // Track whether the trimmed input differs from the saved `public.profiles.full_name`
+  // Track unsaved edits to either display name (if permitted) or staged color palette
   const savedName = (profile?.full_name || '').trim();
   const trimmedInput = fullName.trim();
-  const hasChanges = trimmedInput.length > 0 && trimmedInput !== savedName;
+  const hasNameChanges =
+    canEditName && trimmedInput.length > 0 && trimmedInput !== savedName;
+
+  const savedColors = palette?.colors ?? DEFAULT_ESN_COLORS;
+  const hasPaletteChanges =
+    draftPalette.presetId !== (palette?.presetId ?? 'esn') ||
+    draftPalette.colors.some(
+      (hex, idx) => hex.toUpperCase() !== (savedColors[idx] || '').toUpperCase()
+    );
+
+  const hasChanges = hasNameChanges || hasPaletteChanges;
+
+  const isDraftDefaultEsn =
+    draftPalette.presetId === 'esn' &&
+    draftPalette.colors.every(
+      (hex, idx) => hex.toUpperCase() === DEFAULT_ESN_COLORS[idx]
+    );
 
   const headingId = useId();
   const nameInputId = useId();
@@ -94,9 +124,13 @@ export default function AccountSettingsModal({ isOpen, onClose }) {
     }
   }, [isOpen]);
 
-  // Reset form state whenever the dialog closes so next open initializes fresh from `profile`
+  // Reset staged name & palette state when the dialog closes without saving
   const handleDialogClose = () => {
     setFullName(initialFullName);
+    setDraftPalette({
+      presetId: palette?.presetId ?? 'esn',
+      colors: [...(palette?.colors ?? DEFAULT_ESN_COLORS)],
+    });
     setIsSaving(false);
     onClose?.();
   };
@@ -141,59 +175,104 @@ export default function AccountSettingsModal({ isOpen, onClose }) {
     pressedOutsideRef.current = false;
   };
 
-  // Validate non-empty & unique username, persist to `public.profiles`, and notify via toast
+  // Stage a preset selection locally without applying it until Save Changes is clicked
+  const handleSelectDraftPreset = (presetId) => {
+    const preset = COLOR_PALETTE_PRESETS.find((item) => item.id === presetId);
+    if (!preset) {
+      return;
+    }
+    setDraftPalette({
+      presetId: preset.id,
+      colors: [...preset.colors],
+    });
+  };
+
+  // Stage an individual custom color override locally without applying it yet
+  const handleChangeDraftColor = (index, hex) => {
+    const normalized = hex.trim().toUpperCase();
+    setDraftPalette((prev) => {
+      const nextColors = [...prev.colors];
+      nextColors[index] = normalized;
+      return {
+        presetId: 'custom',
+        colors: nextColors,
+      };
+    });
+  };
+
+  // Stage resetting back to the official ESN palette (applied on Save Changes)
+  const handleResetDraftPalette = () => {
+    setDraftPalette({
+      presetId: 'esn',
+      colors: [...DEFAULT_ESN_COLORS],
+    });
+  };
+
+  // Persist staged display name (when permitted & changed) and/or staged color palette
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    // Hard guard: prevent accounts without `edit_own_name` or unchanged inputs from firing requests
-    if (!canEditName || !hasChanges) {
-      return;
-    }
-
-    const trimmedName = trimmedInput;
-
-    if (!supabase || !user?.id) {
-      showToast(t('settings.saveError'), 'error');
+    if (!hasChanges || isSaving) {
       return;
     }
 
     setIsSaving(true);
     try {
-      // Pre-check case-insensitive username uniqueness against other profiles
-      const { data: existingMatch, error: checkError } = await supabase
-        .from('profiles')
-        .select('id')
-        .ilike('full_name', trimmedName)
-        .neq('id', user.id)
-        .maybeSingle();
+      if (hasNameChanges) {
+        const trimmedName = trimmedInput;
 
-      if (checkError) {
-        console.error('[ESN Console] Failed to verify username uniqueness:', checkError);
-      } else if (existingMatch) {
-        showToast(t('settings.usernameTaken'), 'error');
-        nameInputRef.current?.focus();
-        return;
-      }
+        if (!supabase || !user?.id) {
+          showToast(t('settings.saveError'), 'error');
+          return;
+        }
 
-      const { error } = await supabase
-        .from('profiles')
-        .update({ full_name: trimmedName })
-        .eq('id', user.id);
+        // Pre-check case-insensitive username uniqueness against other profiles
+        const { data: existingMatch, error: checkError } = await supabase
+          .from('profiles')
+          .select('id')
+          .ilike('full_name', trimmedName)
+          .neq('id', user.id)
+          .maybeSingle();
 
-      if (error) {
-        if (error.code === '23505') {
+        if (checkError) {
+          console.error('[ESN Console] Failed to verify username uniqueness:', checkError);
+        } else if (existingMatch) {
           showToast(t('settings.usernameTaken'), 'error');
           nameInputRef.current?.focus();
           return;
         }
-        console.error('[ESN Console] Failed to update full_name:', error);
-        showToast(error.message || t('settings.saveError'), 'error');
-        return;
+
+        const { error } = await supabase
+          .from('profiles')
+          .update({ full_name: trimmedName })
+          .eq('id', user.id);
+
+        if (error) {
+          if (error.code === '23505') {
+            showToast(t('settings.usernameTaken'), 'error');
+            nameInputRef.current?.focus();
+            return;
+          }
+          console.error('[ESN Console] Failed to update full_name:', error);
+          showToast(error.message || t('settings.saveError'), 'error');
+          return;
+        }
+
+        await refreshProfile();
+        setFullName(trimmedName);
       }
 
-      await refreshProfile();
-      setFullName(trimmedName);
-      showToast(t('settings.savedSuccess'), 'success');
+      if (hasPaletteChanges) {
+        const savedOk = await savePalette(draftPalette);
+        if (!savedOk) {
+          return;
+        }
+      }
+
+      showToast(
+        hasNameChanges ? t('settings.savedSuccess') : t('palette.savedSuccess'),
+        'success'
+      );
     } catch (error) {
       console.error('[ESN Console] Unexpected error saving profile:', error);
       showToast(
@@ -352,38 +431,122 @@ export default function AccountSettingsModal({ isOpen, onClose }) {
               {t('settings.emailReadonlyHint')}
             </p>
           </div>
+
+          {/* Appearance & Color Palette section (available to all users) */}
+          <section className="palette-section hairline-top" aria-label={t('palette.sectionTitle')}>
+            <div className="palette-section-header">
+              <div className="palette-section-heading">
+                <Palette size={15} strokeWidth={1.5} aria-hidden="true" />
+                <span className="form-label">{t('palette.sectionTitle')}</span>
+              </div>
+              <button
+                type="button"
+                className="btn ghost palette-reset-btn"
+                disabled={isDraftDefaultEsn}
+                onClick={handleResetDraftPalette}
+              >
+                <RotateCcw size={13} strokeWidth={1.5} aria-hidden="true" />
+                <span>{t('palette.resetDefault')}</span>
+              </button>
+            </div>
+
+            <p className="settings-field-hint">{t('palette.sectionSubtitle')}</p>
+
+            {/* 5 Curated Preset Swatch Cards (staged until Save Changes) */}
+            <div className="palette-preset-grid">
+              {COLOR_PALETTE_PRESETS.map((preset) => {
+                const isSelected = draftPalette.presetId === preset.id;
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    className={`palette-preset-card ${isSelected ? 'is-active' : ''}`}
+                    aria-pressed={isSelected}
+                    onClick={() => handleSelectDraftPreset(preset.id)}
+                  >
+                    <div className="palette-preset-top">
+                      <span className="palette-preset-name">{t(preset.labelKey)}</span>
+                      {isSelected && (
+                        <Check
+                          size={13}
+                          strokeWidth={1.75}
+                          aria-hidden="true"
+                          className="palette-preset-check"
+                        />
+                      )}
+                    </div>
+                    <div className="palette-dots-row" aria-hidden="true">
+                      {preset.colors.map((hex, idx) => (
+                        <span
+                          key={`${preset.id}_${idx}`}
+                          className="palette-dot"
+                          style={{ '--swatch-color': hex }}
+                        />
+                      ))}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 5 Individual Custom Color Overrides (staged until Save Changes) */}
+            <div className="palette-custom-block">
+              <span className="font-mono-label palette-custom-kicker">
+                {t('palette.customizeLabel')}
+              </span>
+              <div className="palette-custom-grid">
+                {draftPalette.colors.map((hex, idx) => (
+                  <label key={PALETTE_SLOT_KEYS[idx]} className="palette-slot-card">
+                    <span className="palette-slot-swatch-wrap">
+                      <input
+                        type="color"
+                        className="palette-color-input"
+                        aria-label={t(PALETTE_SLOT_KEYS[idx])}
+                        value={hex}
+                        onChange={(event) =>
+                          handleChangeDraftColor(idx, event.target.value)
+                        }
+                      />
+                    </span>
+                    <span className="palette-slot-name">{t(PALETTE_SLOT_KEYS[idx])}</span>
+                    <span className="font-mono-label palette-slot-hex tabular-nums">
+                      {hex}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </section>
         </div>
 
-        {/* Modal action footer — Save button rendered only when `edit_own_name` is granted */}
+        {/* Modal action footer — Save Changes applies name edits (if permitted) and/or staged palette for all users */}
         <footer className="modal-footer hairline-top">
           <button type="button" className="btn" onClick={handleExplicitClose}>
-            <span>{canEditName ? t('modal.cancel') : t('modal.closeLabel')}</span>
+            <span>{t('modal.cancel')}</span>
           </button>
 
-          {canEditName && (
-            <button
-              type="submit"
-              className="btn primary"
-              disabled={!canEditName || !hasChanges || isSaving}
-            >
-              {isSaving ? (
-                <>
-                  <LoaderCircle
-                    size={15}
-                    strokeWidth={1.5}
-                    aria-hidden="true"
-                    className="auth-spinner"
-                  />
-                  <span>{t('settings.saving')}</span>
-                </>
-              ) : (
-                <>
-                  <Check size={15} strokeWidth={1.5} aria-hidden="true" />
-                  <span>{t('settings.saveBtn')}</span>
-                </>
-              )}
-            </button>
-          )}
+          <button
+            type="submit"
+            className="btn primary"
+            disabled={!hasChanges || isSaving}
+          >
+            {isSaving ? (
+              <>
+                <LoaderCircle
+                  size={15}
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                  className="auth-spinner"
+                />
+                <span>{t('settings.saving')}</span>
+              </>
+            ) : (
+              <>
+                <Check size={15} strokeWidth={1.5} aria-hidden="true" />
+                <span>{t('settings.saveBtn')}</span>
+              </>
+            )}
+          </button>
         </footer>
       </form>
     </dialog>,

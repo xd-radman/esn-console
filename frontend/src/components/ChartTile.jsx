@@ -36,8 +36,9 @@ export default function ChartTile({
   onEdit,
   onRemove,
 }) {
-  const { theme } = useTheme();
+  const { theme, palette } = useTheme();
   const { t } = useLang();
+  const paletteSignature = palette?.colors?.join(',') ?? '';
 
   // Refs for inline & expanded Chart.js instances and native `<dialog>` modal
   const chartRef = useRef(null);
@@ -85,7 +86,7 @@ export default function ChartTile({
 
   const styleLabel = t(`charts.styles.${graph.chartStyle}`);
 
-  // Rebuild base Chart.js config from live CSS custom properties and `graph.config`
+  // Rebuild base Chart.js config from live CSS custom properties, `graph.config`, and active palette
   const baseConfig = useMemo(() => {
     if (responses.length === 0) {
       return null;
@@ -99,8 +100,9 @@ export default function ChartTile({
       columns,
       t,
       theme,
+      paletteSignature,
     });
-  }, [graph, responses, sessions, columns, t, theme]);
+  }, [graph, responses, sessions, columns, t, theme, paletteSignature]);
 
   // Handle clicking any bar, line point, or donut slice to toggle the selection chip
   const handleChartClick = useCallback(
@@ -292,7 +294,7 @@ export default function ChartTile({
         >
           <Chart
             ref={chartRef}
-            key={`${graph.id}-${graph.chartStyle}-${resolvedConfig.xAxisKey}-${resolvedConfig.yAxisKey}-${resolvedConfig.aggregation}-${resolvedConfig.secondaryYAxisKey}-${theme}`}
+            key={`${graph.id}-${graph.chartStyle}-${resolvedConfig.xAxisKey}-${resolvedConfig.yAxisKey}-${resolvedConfig.aggregation}-${resolvedConfig.secondaryYAxisKey}-${theme}-${paletteSignature}`}
             type={baseConfig.chartType}
             data={baseConfig.data}
             options={interactiveOptions}
@@ -401,7 +403,7 @@ export default function ChartTile({
                 >
                   <Chart
                     ref={expandedChartRef}
-                    key={`expanded-${graph.id}-${graph.chartStyle}-${resolvedConfig.xAxisKey}-${resolvedConfig.yAxisKey}-${resolvedConfig.aggregation}-${resolvedConfig.secondaryYAxisKey}-${theme}`}
+                    key={`expanded-${graph.id}-${graph.chartStyle}-${resolvedConfig.xAxisKey}-${resolvedConfig.yAxisKey}-${resolvedConfig.aggregation}-${resolvedConfig.secondaryYAxisKey}-${theme}-${paletteSignature}`}
                     type={baseConfig.chartType}
                     data={baseConfig.data}
                     options={interactiveOptions}

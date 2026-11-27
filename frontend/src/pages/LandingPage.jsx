@@ -19,7 +19,7 @@ import DeleteProjectModal from '../components/modals/DeleteProjectModal.jsx';
 export default function LandingPage() {
   const { t } = useLang();
   const navigate = useNavigate();
-  const { hasPermission } = useAuth();
+  const { hasPermission, canViewInactiveProjects } = useAuth();
   const canManageProjects = hasPermission('manage_projects');
   const {
     projects,
@@ -40,10 +40,19 @@ export default function LandingPage() {
     document.title = t('landing.pageTitle');
   }, [t]);
 
-  // Count active initiatives for the hero metadata strip
+  // Restrict inactive projects to leadership (`owner`, `president`, `vice_president`)
+  const visibleProjects = useMemo(
+    () =>
+      projects.filter(
+        (project) => project.status === 'active' || canViewInactiveProjects
+      ),
+    [projects, canViewInactiveProjects]
+  );
+
+  // Count active initiatives within the visible project list for the hero metadata strip
   const activeCount = useMemo(
-    () => projects.filter((project) => project.status === 'active').length,
-    [projects]
+    () => visibleProjects.filter((project) => project.status === 'active').length,
+    [visibleProjects]
   );
 
   // Persist newly created dynamic-schema project to Supabase, close modal, and open its dashboard
@@ -80,7 +89,7 @@ export default function LandingPage() {
               <div className="landing-hero-tags">
                 <span className="mono-tag">{t('landing.kicker')}</span>
                 <span className="font-mono-label landing-hero-counts tabular-nums">
-                  {t('landing.totalProjects', { count: projects.length })} ·{' '}
+                  {t('landing.totalProjects', { count: visibleProjects.length })} ·{' '}
                   {t('landing.activeCount', { count: activeCount })}
                 </span>
               </div>
@@ -154,7 +163,7 @@ export default function LandingPage() {
             className="landing-directory"
             aria-label={t('landing.directoryLabel')}
           >
-            {projects.map((project) => (
+            {visibleProjects.map((project) => (
               <ProjectCard
                 key={project.id}
                 project={project}

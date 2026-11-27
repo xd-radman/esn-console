@@ -444,6 +444,7 @@ export const translations = {
       notFoundTitle: 'Project Not Found',
       notFoundSubtitle:
         'No project matches this URL slug. Return to the directory to choose an active ESN workspace.',
+      inactiveProjectRedirect: 'This project is currently inactive.',
       allSessions: 'All Sessions (Combined)',
       sessionSelectLabel: 'Active session filter',
       toolbarLabel: 'Session management toolbar',
@@ -452,6 +453,12 @@ export const translations = {
       addDemoResponse: 'Add Demo Response',
       uploadCsv: 'Upload CSV',
       columnsBtn: 'Columns',
+      setDefaultBtn: 'Set Default',
+      resetToDefaultBtn: 'Reset to Default',
+      personalViewBadge: 'Personal View',
+      defaultViewBadge: 'Default View',
+      setDefaultLayoutToast: 'Saved current KPIs and graphs as the shared team default.',
+      resetLayoutToast: 'Restored the project’s shared team default layout.',
       selectSessionForCsv: 'Select a specific session first to import a CSV into it.',
       csvMissingColumns: 'CSV import blocked — missing required columns: {columns}.',
       csvImportedSuccess: 'Imported {count} responses into the session.',
@@ -543,6 +550,30 @@ export const translations = {
       validationRequired: 'Please enter a display name before saving.',
       usernameTaken: 'This display name is already taken. Please choose another.',
       memberEditLocked: 'Profile editing is locked until an Admin approves your account.',
+    },
+
+    // Per-user Appearance & Color Palette (`colorPalettes.js`, `AccountSettingsModal.jsx`)
+    palette: {
+      sectionTitle: 'Appearance & Color Palette',
+      sectionSubtitle:
+        'Choose a curated preset or customize the 5 brand and chart colors for your workspace.',
+      resetDefault: 'Reset to ESN Default',
+      customizeLabel: 'Customize Individual Colors',
+      savedSuccess: 'Color palette updated.',
+      presets: {
+        esn: 'ESN Official',
+        nordic: 'Nordic Slate',
+        terracotta: 'Warm Editorial',
+        botanical: 'Forest Studio',
+        monochrome: 'Swiss Ink',
+      },
+      slots: {
+        primary: 'Primary Accent',
+        accent2: 'Accent 2',
+        accent3: 'Accent 3',
+        accent4: 'Accent 4',
+        accent5: 'Accent 5',
+      },
     },
 
     // Team & Permissions modal (`TeamPermissionsModal.jsx`)
@@ -1115,6 +1146,7 @@ export const translations = {
       notFoundTitle: 'Proje Bulunamadı',
       notFoundSubtitle:
         'Bu URL kimliğiyle eşleşen bir proje yok. Aktif bir ESN çalışma alanı seçmek için dizine dönün.',
+      inactiveProjectRedirect: 'Bu proje şu anda pasif durumda.',
       allSessions: 'Tüm Oturumlar (Birleşik)',
       sessionSelectLabel: 'Aktif oturum filtresi',
       toolbarLabel: 'Oturum yönetim araç çubuğu',
@@ -1123,6 +1155,12 @@ export const translations = {
       addDemoResponse: 'Demo Yanıt Ekle',
       uploadCsv: 'CSV Yükle',
       columnsBtn: 'Sütunlar',
+      setDefaultBtn: 'Varsayılan Yap',
+      resetToDefaultBtn: 'Varsayılana Sıfırla',
+      personalViewBadge: 'Kişisel Görünüm',
+      defaultViewBadge: 'Varsayılan Görünüm',
+      setDefaultLayoutToast: 'Mevcut KPI ve grafikler paylaşılan ekip varsayılanı olarak kaydedildi.',
+      resetLayoutToast: 'Projenin paylaşılan ekip varsayılan düzeni geri yüklendi.',
       selectSessionForCsv: 'CSV içe aktarmak için önce belirli bir oturum seçin.',
       csvMissingColumns: 'CSV aktarımı engellendi — eksik zorunlu sütunlar: {columns}.',
       csvImportedSuccess: 'Oturuma {count} yanıt aktarıldı.',
@@ -1214,6 +1252,30 @@ export const translations = {
       validationRequired: 'Kaydetmeden önce lütfen bir görünen ad girin.',
       usernameTaken: 'Bu görünen ad zaten kullanılıyor. Lütfen başka bir ad seçin.',
       memberEditLocked: 'Bir Yönetici hesabınızı onaylayana kadar profil düzenleme kilitlidir.',
+    },
+
+    // Per-user Appearance & Color Palette (`colorPalettes.js`, `AccountSettingsModal.jsx`)
+    palette: {
+      sectionTitle: 'Görünüm ve Renk Paleti',
+      sectionSubtitle:
+        'Hazır bir palet seçin veya çalışma alanınız için 5 marka ve grafik rengini özelleştirin.',
+      resetDefault: 'ESN Varsayılanına Sıfırla',
+      customizeLabel: 'Tekil Renkleri Özelleştir',
+      savedSuccess: 'Renk paleti güncellendi.',
+      presets: {
+        esn: 'ESN Resmi',
+        nordic: 'İskandinav Arduvaz',
+        terracotta: 'Sıcak Editoryal',
+        botanical: 'Orman Stüdyo',
+        monochrome: 'İsviçre Mürekkep',
+      },
+      slots: {
+        primary: 'Ana Vurgu',
+        accent2: 'Vurgu 2',
+        accent3: 'Vurgu 3',
+        accent4: 'Vurgu 4',
+        accent5: 'Vurgu 5',
+      },
     },
 
     // Team & Permissions modal (`TeamPermissionsModal.jsx`)

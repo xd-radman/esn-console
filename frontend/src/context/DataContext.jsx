@@ -1306,6 +1306,98 @@ export function DataProvider({ children }) {
     [resolveProject, reportWriteError, setGraphsByProject]
   );
 
+  // Save the current KPI boxes & graphs as the shared team default in `projects.config` and sync `public.project_graphs`
+  const saveProjectDefaultLayout = useCallback(
+    async (projectId, { kpis = [], graphs = [] } = {}) => {
+      const target = resolveProject(projectId);
+      if (!supabase || !target) {
+        return false;
+      }
+
+      const sanitizedKpis = Array.isArray(kpis) ? kpis.slice(0, 3) : [];
+      const graphBlueprints = (graphs ?? []).map((graph, index) => ({
+        metric_key:
+          graph.config?.xAxisKey ||
+          graph.metricKey ||
+          graph.metric_key ||
+          '__session__',
+        chart_style: graph.chartStyle || graph.chart_style || 'bar',
+        col_span: Number(graph.colSpan ?? graph.col_span) || 6,
+        custom_title: String(graph.customTitle ?? graph.custom_title ?? '').trim(),
+        sort_order: index,
+        config: graph.config ?? null,
+      }));
+
+      const nextConfig = {
+        ...(target.config ?? {}),
+        kpis: sanitizedKpis,
+        defaultKpis: sanitizedKpis,
+        defaultGraphs: graphBlueprints,
+      };
+
+      const { error: projectError } = await supabase
+        .from('projects')
+        .update({ config: nextConfig })
+        .eq('id', target.dbId);
+
+      if (projectError) {
+        reportWriteError(projectError);
+        return false;
+      }
+
+      // Sync `public.project_graphs` so unmodified/new users immediately see the updated team default
+      const { error: deleteError } = await supabase
+        .from('project_graphs')
+        .delete()
+        .eq('project_id', target.dbId);
+
+      if (deleteError) {
+        reportWriteError(deleteError);
+        return false;
+      }
+
+      let syncedGraphs = [];
+      if (graphBlueprints.length > 0) {
+        const payloads = graphBlueprints.map((bp, idx) => ({
+          project_id: target.dbId,
+          metric_key: bp.metric_key,
+          chart_style: bp.chart_style,
+          col_span: bp.col_span,
+          custom_title: bp.custom_title,
+          config: bp.config,
+          sort_order: idx,
+        }));
+
+        const { data: insertedRows, error: insertError } = await supabase
+          .from('project_graphs')
+          .insert(payloads)
+          .select('*')
+          .order('sort_order', { ascending: true });
+
+        if (insertError) {
+          reportWriteError(insertError);
+          return false;
+        }
+        syncedGraphs = (insertedRows ?? []).map(mapGraphRow);
+      }
+
+      setBaseProjects((prev) =>
+        prev.map((project) =>
+          project.id === target.id
+            ? { ...project, config: nextConfig, defaultGraphs: graphBlueprints }
+            : project
+        )
+      );
+      setGraphsByProject((prev) => ({
+        ...prev,
+        [target.id]: syncedGraphs,
+      }));
+
+      return true;
+    },
+    [resolveProject, reportWriteError, setBaseProjects, setGraphsByProject]
+  );
+
   // Save the current graph layout as `projects.config.defaultGraphs` blueprint snapshot
   const saveProjectDefaultGraphs = useCallback(
     async (projectId, currentGraphs = []) => {
@@ -1605,6 +1697,7 @@ export function DataProvider({ children }) {
       updateProjectGraph,
       removeGraph,
       saveProjectDefaultGraphs,
+      saveProjectDefaultLayout,
       resetGraphs,
     }),
     [
@@ -1632,6 +1725,7 @@ export function DataProvider({ children }) {
       updateProjectGraph,
       removeGraph,
       saveProjectDefaultGraphs,
+      saveProjectDefaultLayout,
       resetGraphs,
     ]
   );

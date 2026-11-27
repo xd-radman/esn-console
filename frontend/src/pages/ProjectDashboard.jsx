@@ -14,22 +14,27 @@ import Papa from 'papaparse';
 import {
   AlertCircle,
   ArrowLeft,
+  BookmarkCheck,
   ChevronDown,
   CircleCheck,
   Database,
   Eye,
   LoaderCircle,
   Plus,
+  RotateCcw,
   SlidersHorizontal,
   Sparkles,
   Trash2,
   Upload,
+  User,
+  Users,
 } from 'lucide-react';
 import { useLang } from '../context/LangContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useData } from '../context/DataContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import {
+  buildDefaultProjectKpis,
   getActiveColumns,
   normalizeRowToSchema,
   validateCSVHeadersAgainstSchema,
@@ -149,7 +154,14 @@ export default function ProjectDashboard({
   const { projectId } = useParams();
   const navigate = useNavigate();
   const { lang, t } = useLang();
-  const { hasPermission } = useAuth();
+  const {
+    profile,
+    hasPermission,
+    canViewInactiveProjects,
+    canSetDefaultLayout,
+    updateUserPreferences,
+    loading: authLoading,
+  } = useAuth();
   const { showToast } = useToast();
 
   // Granular per-capability permission gates
@@ -167,15 +179,10 @@ export default function ProjectDashboard({
     updateProjectStatus,
     deleteProject,
     updateProjectColumns,
-    updateProjectKpis,
     addSession,
     deleteSession,
     bulkInsertResponses,
-    addGraph,
-    updateProjectGraph,
-    removeGraph,
-    saveProjectDefaultGraphs,
-    resetGraphs,
+    saveProjectDefaultLayout,
   } = useData();
 
   // Active session filter (`"all"` or a specific `session.id`)
@@ -199,8 +206,61 @@ export default function ProjectDashboard({
 
   const projectData = responsesByProject[projectId] ?? { sessions: [], responses: [] };
   const { sessions, responses } = projectData;
-  const activeGraphs = graphsByProject[projectId] ?? [];
+  const activeGraphs = useMemo(
+    () => graphsByProject[projectId] ?? [],
+    [graphsByProject, projectId]
+  );
   const projectCopy = activeProject ? activeProject[lang] ?? activeProject.en : null;
+
+  // Resolve shared team default KPIs & graphs from Supabase project data
+  const teamDefaultKpis = useMemo(() => {
+    const cols = activeProject?.config?.columns ?? [];
+    if (Array.isArray(activeProject?.config?.defaultKpis)) {
+      return activeProject.config.defaultKpis.slice(0, 3);
+    }
+    if (Array.isArray(activeProject?.config?.kpis)) {
+      return activeProject.config.kpis.slice(0, 3);
+    }
+    return buildDefaultProjectKpis(cols, t('kpi.totalResponses'));
+  }, [activeProject, t]);
+
+  const teamDefaultGraphs = useMemo(() => {
+    if (activeGraphs.length > 0) {
+      return activeGraphs;
+    }
+    const savedBlueprints = activeProject?.config?.defaultGraphs;
+    if (Array.isArray(savedBlueprints) && savedBlueprints.length > 0) {
+      return savedBlueprints.map((bp, idx) => ({
+        id: `default_bp_${idx}_${bp.metric_key || bp.metricKey || 'chart'}`,
+        metricKey: bp.metric_key || bp.metricKey || '__session__',
+        chartStyle: bp.chart_style || bp.chartStyle || 'bar',
+        colSpan: Number(bp.col_span ?? bp.colSpan) || 6,
+        customTitle: bp.custom_title ?? bp.customTitle ?? '',
+        sortOrder: Number(bp.sort_order ?? idx) || idx,
+        config: bp.config ?? null,
+      }));
+    }
+    return [];
+  }, [activeGraphs, activeProject]);
+
+  // Check if the current user has a saved personal layout override for this project
+  const personalLayout =
+    profile?.preferences?.dashboardLayouts?.[projectId] ?? null;
+  const hasCustomLayout = Boolean(personalLayout?.hasCustomLayout);
+
+  const effectiveKpis = useMemo(() => {
+    if (hasCustomLayout && Array.isArray(personalLayout?.kpis)) {
+      return personalLayout.kpis.slice(0, 3);
+    }
+    return teamDefaultKpis;
+  }, [hasCustomLayout, personalLayout, teamDefaultKpis]);
+
+  const effectiveGraphs = useMemo(() => {
+    if (hasCustomLayout && Array.isArray(personalLayout?.graphs)) {
+      return personalLayout.graphs;
+    }
+    return teamDefaultGraphs;
+  }, [hasCustomLayout, personalLayout, teamDefaultGraphs]);
 
   // Automatically fall back to `"all"` if the user switches projects and the previous session ID doesn't exist
   const effectiveSessionId = useMemo(() => {
@@ -397,15 +457,54 @@ export default function ProjectDashboard({
     [activeProject, updateProjectColumns]
   );
 
-  // Persist customized KPI boxes (`max 3`) via `updateProjectKpis`
-  const handleSaveProjectKpis = useCallback(
-    async (nextKpis) => {
+  // Persist a personal layout override (`kpis` + `graphs`) into `profile.preferences.dashboardLayouts[projectId]`
+  const persistPersonalLayout = useCallback(
+    async (nextKpis, nextGraphs) => {
       if (!activeProject) {
         return false;
       }
-      return updateProjectKpis(activeProject.id, nextKpis);
+      const existingLayouts =
+        profile?.preferences?.dashboardLayouts &&
+        typeof profile.preferences.dashboardLayouts === 'object'
+          ? profile.preferences.dashboardLayouts
+          : {};
+
+      return updateUserPreferences({
+        dashboardLayouts: {
+          ...existingLayouts,
+          [activeProject.id]: {
+            hasCustomLayout: true,
+            kpis: nextKpis,
+            graphs: nextGraphs,
+          },
+        },
+      });
     },
-    [activeProject, updateProjectKpis]
+    [activeProject, profile, updateUserPreferences]
+  );
+
+  // Clear this project's personal override from `profile.preferences.dashboardLayouts`
+  const clearPersonalLayoutOverride = useCallback(async () => {
+    if (!activeProject) {
+      return false;
+    }
+    const existingLayouts =
+      profile?.preferences?.dashboardLayouts &&
+      typeof profile.preferences.dashboardLayouts === 'object'
+        ? profile.preferences.dashboardLayouts
+        : {};
+    const nextLayouts = { ...existingLayouts };
+    delete nextLayouts[activeProject.id];
+
+    return updateUserPreferences({
+      dashboardLayouts: nextLayouts,
+    });
+  }, [activeProject, profile, updateUserPreferences]);
+
+  // Save personal KPI box changes (only affects the current user)
+  const handleSavePersonalKpis = useCallback(
+    async (nextKpis) => persistPersonalLayout(nextKpis, effectiveGraphs),
+    [persistPersonalLayout, effectiveGraphs]
   );
 
   // Permanently delete the active project and redirect back to the project directory
@@ -421,48 +520,112 @@ export default function ProjectDashboard({
     [deleteProject, navigate]
   );
 
-  // Graph CRUD callbacks scoped to the active project
+  // Personal Graph CRUD callbacks (stored in `profile.preferences.dashboardLayouts[projectId]`)
   const handleAddGraph = useCallback(
-    (graphConfig) => {
-      if (activeProject) {
-        addGraph(activeProject.id, graphConfig);
+    async (graphConfig) => {
+      const newGraph = {
+        id: `personal_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+        metricKey:
+          graphConfig.config?.xAxisKey || graphConfig.metricKey || '__session__',
+        chartStyle: graphConfig.chartStyle || 'bar',
+        colSpan: Number(graphConfig.colSpan) || 6,
+        customTitle: graphConfig.customTitle?.trim() || '',
+        sortOrder: effectiveGraphs.length,
+        config: graphConfig.config ?? null,
+      };
+      const ok = await persistPersonalLayout(effectiveKpis, [
+        ...effectiveGraphs,
+        newGraph,
+      ]);
+      if (ok) {
+        showToast(t('charts.graphAddedToast'), 'success');
       }
     },
-    [activeProject, addGraph]
+    [effectiveKpis, effectiveGraphs, persistPersonalLayout, showToast, t]
   );
 
   const handleUpdateGraph = useCallback(
-    (graphId, updates) => {
-      if (activeProject) {
-        updateProjectGraph(graphId, updates);
+    async (graphId, updates) => {
+      const nextGraphs = effectiveGraphs.map((graph) =>
+        graph.id === graphId
+          ? {
+              ...graph,
+              metricKey:
+                updates.config?.xAxisKey ||
+                updates.metricKey ||
+                graph.metricKey,
+              chartStyle: updates.chartStyle || graph.chartStyle,
+              colSpan: Number(updates.colSpan) || graph.colSpan,
+              customTitle: updates.customTitle?.trim() ?? '',
+              config: updates.config ?? graph.config ?? null,
+            }
+          : graph
+      );
+      const ok = await persistPersonalLayout(effectiveKpis, nextGraphs);
+      if (ok) {
+        showToast(t('charts.graphUpdatedToast'), 'success');
       }
     },
-    [activeProject, updateProjectGraph]
+    [effectiveKpis, effectiveGraphs, persistPersonalLayout, showToast, t]
   );
 
   const handleRemoveGraph = useCallback(
-    (graphId) => {
-      if (activeProject) {
-        removeGraph(activeProject.id, graphId);
-      }
+    async (graphId) => {
+      const nextGraphs = effectiveGraphs.filter((graph) => graph.id !== graphId);
+      await persistPersonalLayout(effectiveKpis, nextGraphs);
     },
-    [activeProject, removeGraph]
+    [effectiveKpis, effectiveGraphs, persistPersonalLayout]
   );
 
-  const handleSetDefaultGraphs = useCallback(
-    (currentGraphs) => {
-      if (activeProject) {
-        saveProjectDefaultGraphs(activeProject.id, currentGraphs);
-      }
-    },
-    [activeProject, saveProjectDefaultGraphs]
-  );
-
-  const handleResetGraphs = useCallback(() => {
-    if (activeProject) {
-      resetGraphs(activeProject.id);
+  // Reset the current user's personal layout override back to the shared team default
+  const handleResetToDefaultLayout = useCallback(async () => {
+    const ok = await clearPersonalLayoutOverride();
+    if (ok) {
+      showToast(t('dashboard.resetLayoutToast'), 'success');
     }
-  }, [activeProject, resetGraphs]);
+  }, [clearPersonalLayoutOverride, showToast, t]);
+
+  // Leadership action (`owner`, `president`, `vice_president`): publish current view as team default
+  const handleSetTeamDefaultLayout = useCallback(async () => {
+    if (!activeProject || !canSetDefaultLayout) {
+      return;
+    }
+    const ok = await saveProjectDefaultLayout(activeProject.id, {
+      kpis: effectiveKpis,
+      graphs: effectiveGraphs,
+    });
+    if (ok) {
+      if (hasCustomLayout) {
+        await clearPersonalLayoutOverride();
+      }
+      showToast(t('dashboard.setDefaultLayoutToast'), 'success');
+    }
+  }, [
+    activeProject,
+    canSetDefaultLayout,
+    saveProjectDefaultLayout,
+    effectiveKpis,
+    effectiveGraphs,
+    hasCustomLayout,
+    clearPersonalLayoutOverride,
+    showToast,
+    t,
+  ]);
+
+  // Redirect non-leadership users cleanly to `/` if they open an inactive project URL directly
+  const isRestrictedInactive =
+    !authLoading &&
+    Boolean(activeProject) &&
+    activeProject.status !== 'active' &&
+    !canViewInactiveProjects;
+
+  useEffect(() => {
+    if (!isRestrictedInactive) {
+      return;
+    }
+    showToast(t('dashboard.inactiveProjectRedirect'), 'info');
+    navigate('/', { replace: true });
+  }, [isRestrictedInactive, navigate, showToast, t]);
 
   // Wait for Supabase initial fetch before deciding a project slug is unknown
   if (isLoading && !activeProject) {
@@ -479,6 +642,11 @@ export default function ProjectDashboard({
         </div>
       </main>
     );
+  }
+
+  // Suppress dashboard content while redirecting away from an inactive project
+  if (isRestrictedInactive) {
+    return null;
   }
 
   // Unknown `:projectId` fallback view
@@ -584,8 +752,31 @@ export default function ProjectDashboard({
             </div>
           </div>
 
-          {canManageSessions || canManageResponses || canManageProjects ? (
+          {canManageSessions ||
+          canManageResponses ||
+          canManageProjects ||
+          canManageGraphs ||
+          canSetDefaultLayout ||
+          hasCustomLayout ? (
             <div className="session-toolbar-actions">
+              <span
+                className={`personal-view-pill font-mono-label ${
+                  hasCustomLayout ? 'is-personal' : 'is-default'
+                }`}
+              >
+                {hasCustomLayout ? (
+                  <>
+                    <User size={12} strokeWidth={1.5} aria-hidden="true" />
+                    <span>{t('dashboard.personalViewBadge')}</span>
+                  </>
+                ) : (
+                  <>
+                    <Users size={12} strokeWidth={1.5} aria-hidden="true" />
+                    <span>{t('dashboard.defaultViewBadge')}</span>
+                  </>
+                )}
+              </span>
+
               {canManageSessions && (
                 <>
                   <button
@@ -655,6 +846,29 @@ export default function ProjectDashboard({
                   <span>{t('dashboard.columnsBtn')}</span>
                 </button>
               )}
+
+              {(hasCustomLayout || canManageGraphs) && (
+                <button
+                  type="button"
+                  className="btn ghost"
+                  disabled={!hasCustomLayout}
+                  onClick={handleResetToDefaultLayout}
+                >
+                  <RotateCcw size={15} strokeWidth={1.5} aria-hidden="true" />
+                  <span>{t('dashboard.resetToDefaultBtn')}</span>
+                </button>
+              )}
+
+              {canSetDefaultLayout && (
+                <button
+                  type="button"
+                  className="btn ghost toolbar-set-default-btn"
+                  onClick={handleSetTeamDefaultLayout}
+                >
+                  <BookmarkCheck size={15} strokeWidth={1.5} aria-hidden="true" />
+                  <span>{t('dashboard.setDefaultBtn')}</span>
+                </button>
+              )}
             </div>
           ) : (
             <span className="readonly-pill font-mono-label">
@@ -695,17 +909,18 @@ export default function ProjectDashboard({
           </div>
         )}
 
-        {/* 3-Slot Customizable Summary KPI Strip */}
+        {/* 3-Slot Customizable Summary KPI Strip (Personal Override or Team Default) */}
         <SummaryStrip
           project={activeProject}
           responses={filteredResponses}
+          kpisOverride={effectiveKpis}
           canEdit={canManageGraphs}
-          onSaveKpis={handleSaveProjectKpis}
+          onSaveKpis={handleSavePersonalKpis}
         />
 
         {/* Customizable 12-column Dynamic Bento Chart.js Grid */}
         <ChartGrid
-          graphs={activeGraphs}
+          graphs={effectiveGraphs}
           responses={filteredResponses}
           sessions={scopedSessions}
           columns={activeProject.config?.columns ?? []}
@@ -713,8 +928,6 @@ export default function ProjectDashboard({
           onAddGraph={handleAddGraph}
           onUpdateGraph={handleUpdateGraph}
           onRemoveGraph={handleRemoveGraph}
-          onSetDefaultGraphs={handleSetDefaultGraphs}
-          onResetGraphs={handleResetGraphs}
         />
 
         {/* Dynamic Searchable Feedback Table */}
