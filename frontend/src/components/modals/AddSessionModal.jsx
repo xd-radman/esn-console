@@ -7,8 +7,11 @@
  */
 
 import { useEffect, useId, useRef, useState } from 'react';
-import { AlertCircle, Plus, X } from 'lucide-react';
+import Papa from 'papaparse';
+import { AlertCircle, FileSpreadsheet, Plus, Upload, X } from 'lucide-react';
 import { useLang } from '../../context/LangContext.jsx';
+import { useToast } from '../../context/ToastContext.jsx';
+import { validateCSVHeadersAgainstSchema } from '../../lib/csvSchema.js';
 
 /**
  * Returns today's local calendar date formatted as `YYYY-MM-DD` for `<input type="date">`.
@@ -21,13 +24,21 @@ function getTodayIsoDate() {
   return `${year}-${month}-${day}`;
 }
 
-export default function AddSessionModal({ isOpen, onClose, onAdd }) {
+export default function AddSessionModal({
+  isOpen,
+  onClose,
+  onAdd,
+  columns = [],
+  canAttachCsv = false,
+}) {
   const { t } = useLang();
+  const { showToast } = useToast();
 
-  // Controlled input state for session title and ISO calendar dates
+  // Controlled input state for session title, ISO calendar dates, and optional validated CSV
   const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState(getTodayIsoDate);
   const [endDate, setEndDate] = useState(getTodayIsoDate);
+  const [csvAttachment, setCsvAttachment] = useState(null);
 
   // Field-level validation messages shown on blur/submit and cleared on edit
   const [titleError, setTitleError] = useState('');
@@ -41,10 +52,11 @@ export default function AddSessionModal({ isOpen, onClose, onAdd }) {
   const endDateId = useId();
   const dateErrorId = useId();
 
-  // Refs for native `<dialog>`, validation focus routing, and backdrop fallback
+  // Refs for native `<dialog>`, validation focus routing, file input, and backdrop fallback
   const dialogRef = useRef(null);
   const titleInputRef = useRef(null);
   const endDateInputRef = useRef(null);
+  const csvFileInputRef = useRef(null);
   const pressedOutsideRef = useRef(false);
 
   // Sync React `isOpen` boolean with native `dialog.showModal()` / `dialog.close()`
@@ -68,6 +80,7 @@ export default function AddSessionModal({ isOpen, onClose, onAdd }) {
     setTitle('');
     setStartDate(today);
     setEndDate(today);
+    setCsvAttachment(null);
     setTitleError('');
     setDateError('');
   };
@@ -117,6 +130,54 @@ export default function AddSessionModal({ isOpen, onClose, onAdd }) {
     pressedOutsideRef.current = false;
   };
 
+  // Parse and strictly validate an optional CSV file against `project.config.columns`
+  const handleCsvAttach = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) {
+      return;
+    }
+
+    try {
+      const csvText = await file.text();
+      const parsed = Papa.parse(csvText, {
+        header: true,
+        skipEmptyLines: true,
+      });
+      const headers = (parsed.meta?.fields ?? [])
+        .map((field) => String(field ?? '').trim())
+        .filter(Boolean);
+      const rows = Array.isArray(parsed.data) ? parsed.data : [];
+
+      if (headers.length === 0 || rows.length === 0) {
+        showToast(t('toast.csvEmpty'), 'error');
+        return;
+      }
+
+      const { valid, missingColumns, extraColumns } =
+        validateCSVHeadersAgainstSchema(headers, columns);
+
+      if (!valid) {
+        setCsvAttachment(null);
+        showToast(
+          t('dashboard.csvMissingColumns', {
+            columns: missingColumns.join(', '),
+          }),
+          'error'
+        );
+        return;
+      }
+
+      setCsvAttachment({
+        fileName: file.name,
+        rows,
+        extraColumns,
+      });
+    } catch {
+      showToast(t('dashboard.csvUploadError'), 'error');
+    }
+  };
+
   // Validate title, required dates, and chronological order (`endDate >= startDate`)
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -144,6 +205,7 @@ export default function AddSessionModal({ isOpen, onClose, onAdd }) {
       title: trimmedTitle,
       startDate,
       endDate,
+      csvAttachment,
     });
     handleExplicitClose();
   };
@@ -277,6 +339,55 @@ export default function AddSessionModal({ isOpen, onClose, onAdd }) {
               <AlertCircle size={14} strokeWidth={1.5} aria-hidden="true" />
               <span>{dateError}</span>
             </p>
+          )}
+
+          {/* Optional schema-validated CSV attachment for immediate import into this session */}
+          {canAttachCsv && columns.length > 0 && (
+            <div className="form-field">
+              <div className="form-label-row">
+                <span className="form-label">{t('modal.attachCsvLabel')}</span>
+                <span className="font-mono-label form-badge">
+                  {t('modal.optionalBadge')}
+                </span>
+              </div>
+
+              <input
+                ref={csvFileInputRef}
+                type="file"
+                accept=".csv,text/csv"
+                className="visually-hidden"
+                onChange={handleCsvAttach}
+              />
+
+              {csvAttachment ? (
+                <div className="session-csv-chip">
+                  <FileSpreadsheet size={15} strokeWidth={1.5} aria-hidden="true" />
+                  <span className="session-csv-chip-name">
+                    {csvAttachment.fileName}
+                  </span>
+                  <span className="font-mono-label session-csv-chip-meta tabular-nums">
+                    {t('modal.csvRowsReady', { count: csvAttachment.rows.length })}
+                  </span>
+                  <button
+                    type="button"
+                    className="btn ghost chart-selection-clear"
+                    aria-label={t('modal.removeCsvAria')}
+                    onClick={() => setCsvAttachment(null)}
+                  >
+                    <X size={13} strokeWidth={1.5} aria-hidden="true" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="btn session-csv-attach-btn"
+                  onClick={() => csvFileInputRef.current?.click()}
+                >
+                  <Upload size={14} strokeWidth={1.5} aria-hidden="true" />
+                  <span>{t('modal.attachCsvBtn')}</span>
+                </button>
+              )}
+            </div>
           )}
         </div>
 

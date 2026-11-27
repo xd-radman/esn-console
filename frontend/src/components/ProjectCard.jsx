@@ -40,6 +40,7 @@ const PROJECT_ICONS = {
 export default function ProjectCard({
   project,
   onStatusChange,
+  onDeleteProject,
   canEditStatus = true,
 }) {
   const { lang, t } = useLang();
@@ -74,6 +75,11 @@ export default function ProjectCard({
           projectTitle={copy.title}
           disabled={!canEditStatus}
           onChange={(nextStatus) => onStatusChange?.(project.id, nextStatus)}
+          onDelete={
+            canEditStatus && onDeleteProject
+              ? () => onDeleteProject(project)
+              : undefined
+          }
         />
       </header>
 

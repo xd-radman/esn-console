@@ -19,8 +19,171 @@ import {
 import { supabase } from '../lib/supabase.js';
 import { INITIAL_PROJECTS } from '../lib/initialProjects.js';
 import { parseCsvText } from '../lib/csvLoader.js';
+import { normalizeRowToSchema } from '../lib/csvSchema.js';
+import { generateStarterGraphsFromColumns } from '../lib/chartUtils.js';
 import { deriveShortTitle, seedInitialDataIfEmpty } from '../lib/supabaseSeed.js';
 import { useAuth } from './AuthContext.jsx';
+import { useLang } from './LangContext.jsx';
+import { useToast } from './ToastContext.jsx';
+
+// Turkish diacritic map for clean ASCII project slugs & 2-letter Swiss codes
+const TR_CHAR_MAP = {
+  ç: 'c',
+  Ç: 'c',
+  ğ: 'g',
+  Ğ: 'g',
+  ı: 'i',
+  İ: 'i',
+  ö: 'o',
+  Ö: 'o',
+  ş: 's',
+  Ş: 's',
+  ü: 'u',
+  Ü: 'u',
+};
+
+/**
+ * Generates a unique kebab-case slug from a project title against existing projects.
+ */
+function buildUniqueProjectSlug(rawTitle, existingProjects = []) {
+  const normalized = String(rawTitle ?? '')
+    .replace(/[çÇğĞıİöÖşŞüÜ]/g, (ch) => TR_CHAR_MAP[ch] ?? ch)
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  const baseSlug = normalized || 'esn-project';
+  const taken = new Set(existingProjects.map((project) => project.id));
+
+  if (!taken.has(baseSlug)) {
+    return baseSlug;
+  }
+
+  let suffix = 2;
+  while (taken.has(`${baseSlug}-${suffix}`)) {
+    suffix += 1;
+  }
+  return `${baseSlug}-${suffix}`;
+}
+
+/**
+ * Generates a unique 2-letter-initial Swiss project code (`ESN-XX-NN`).
+ */
+function buildUniqueProjectCode(rawTitle, existingProjects = []) {
+  const cleanWords = String(rawTitle ?? '')
+    .replace(/[çÇğĞıİöÖşŞüÜ]/g, (ch) => TR_CHAR_MAP[ch] ?? ch)
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9\s]/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  let initials = 'PR';
+  if (cleanWords.length >= 2) {
+    initials = `${cleanWords[0][0]}${cleanWords[1][0]}`;
+  } else if (cleanWords.length === 1) {
+    initials = cleanWords[0].slice(0, 2).padEnd(2, 'X');
+  }
+
+  const takenCodes = new Set(existingProjects.map((project) => project.code));
+  let index = existingProjects.length + 1;
+  let candidate = `ESN-${initials}-${String(index).padStart(2, '0')}`;
+
+  while (takenCodes.has(candidate)) {
+    index += 1;
+    candidate = `ESN-${initials}-${String(index).padStart(2, '0')}`;
+  }
+  return candidate;
+}
+
+/**
+ * Builds 2–3 starter Bento graph configs from a new project's active `category`
+ * and `number` columns:
+ * 1) First category (6-col `bar`) or first number (6-col `bar`)
+ * 2) Second category (6-col `donut`) or first number (6-col `bar`)
+ * 3) Third remaining metric (12-col `dualAxis` for number or `horizontalBar` for category)
+ */
+function buildStarterGraphsForNewProject(activeColumns = []) {
+  const categoryCols = activeColumns.filter((col) => col?.type === 'category');
+  const numberCols = activeColumns.filter((col) => col?.type === 'number');
+  const starters = [];
+  const usedKeys = new Set();
+
+  // Tile 1: first category as 6-col bar (or first number if no categories)
+  if (categoryCols[0]) {
+    starters.push({
+      metricKey: categoryCols[0].key,
+      chartStyle: 'bar',
+      colSpan: 6,
+      customTitle: '',
+    });
+    usedKeys.add(categoryCols[0].key);
+  } else if (numberCols[0]) {
+    starters.push({
+      metricKey: numberCols[0].key,
+      chartStyle: 'bar',
+      colSpan: 6,
+      customTitle: '',
+    });
+    usedKeys.add(numberCols[0].key);
+  }
+
+  // Tile 2: second category as 6-col donut, or first unused number as 6-col bar
+  if (categoryCols[1]) {
+    starters.push({
+      metricKey: categoryCols[1].key,
+      chartStyle: 'donut',
+      colSpan: 6,
+      customTitle: '',
+    });
+    usedKeys.add(categoryCols[1].key);
+  } else if (numberCols[0] && !usedKeys.has(numberCols[0].key)) {
+    starters.push({
+      metricKey: numberCols[0].key,
+      chartStyle: 'bar',
+      colSpan: 6,
+      customTitle: '',
+    });
+    usedKeys.add(numberCols[0].key);
+  } else if (numberCols[1] && !usedKeys.has(numberCols[1].key)) {
+    starters.push({
+      metricKey: numberCols[1].key,
+      chartStyle: 'bar',
+      colSpan: 6,
+      customTitle: '',
+    });
+    usedKeys.add(numberCols[1].key);
+  }
+
+  // Tile 3: 12-col trend/comparison chart if another unused metric exists
+  const remainingNumber = numberCols.find((col) => !usedKeys.has(col.key));
+  const remainingCategory = categoryCols.find((col) => !usedKeys.has(col.key));
+
+  if (remainingNumber) {
+    starters.push({
+      metricKey: remainingNumber.key,
+      chartStyle: 'dualAxis',
+      colSpan: 12,
+      customTitle: '',
+    });
+  } else if (remainingCategory) {
+    starters.push({
+      metricKey: remainingCategory.key,
+      chartStyle: 'horizontalBar',
+      colSpan: 12,
+      customTitle: '',
+    });
+  } else if (starters.length === 1) {
+    // Expand single starter chart cleanly to full width
+    starters[0].colSpan = 12;
+  }
+
+  return starters;
+}
 
 const DataContext = createContext(null);
 
@@ -72,6 +235,7 @@ function mapProjectRow(row) {
     Array.isArray(cfg.defaultGraphs) && cfg.defaultGraphs.length > 0
       ? cfg.defaultGraphs
       : seedMatch?.defaultGraphs ?? FALLBACK_DEFAULT_GRAPHS;
+  const columns = Array.isArray(cfg.columns) ? cfg.columns : [];
 
   return {
     id: slug,
@@ -83,6 +247,14 @@ function mapProjectRow(row) {
     en: enCopy,
     tr: trCopy,
     defaultGraphs,
+    config: {
+      ...cfg,
+      en: enCopy,
+      tr: trCopy,
+      defaultGraphs,
+      columns,
+    },
+    columns,
   };
 }
 
@@ -97,6 +269,7 @@ function mapGraphRow(row) {
     colSpan: Number(row.col_span) || 6,
     customTitle: row.custom_title || '',
     sortOrder: Number(row.sort_order) || 0,
+    config: row.config && typeof row.config === 'object' ? row.config : null,
   };
 }
 
@@ -120,6 +293,8 @@ function mapResponseRow(row, projectSlug, sessionLookup) {
     outcome: row.outcome || '',
     note1: row.note1 || '',
     note2: row.note2 || '',
+    extra_data:
+      row.extra_data && typeof row.extra_data === 'object' ? row.extra_data : {},
   };
 }
 
@@ -219,6 +394,8 @@ async function fetchAllWorkspaceTables() {
 
 export function DataProvider({ children }) {
   const { user, hasPermission, loading: authLoading } = useAuth();
+  const { t } = useLang();
+  const { showToast } = useToast();
   const userId = user?.id ?? null;
   const canViewWorkspace = hasPermission('view_workspace');
   const canManageProjects = hasPermission('manage_projects');
@@ -372,28 +549,54 @@ export function DataProvider({ children }) {
     [baseProjects, responsesByProject]
   );
 
-  // Create a new project in `public.projects` and persist its cloned `project_graphs`
-  const addProject = useCallback(
-    async (newProject) => {
+  // Create a dynamic-schema project in `public.projects`, seed starter graphs, and optionally import Session 1
+  const createProject = useCallback(
+    async ({
+      title,
+      subtitle = '',
+      status = 'active',
+      iconKey = 'messages-square',
+      columns = [],
+      initialImport = null,
+    }) => {
       if (!supabase) {
         return null;
       }
 
-      const defaultGraphs = structuredClone(
-        newProject.defaultGraphs ?? FALLBACK_DEFAULT_GRAPHS
-      );
+      const trimmedTitle = String(title ?? '').trim();
+      const trimmedSubtitle =
+        String(subtitle ?? '').trim() || t('modal.defaultSubtitle');
+      const activeColumns = (columns ?? [])
+        .filter((col) => col && col.type !== 'ignore' && col.key)
+        .map(({ key, label, type }) => ({
+          key,
+          label: String(label).trim(),
+          type,
+        }));
+
+      const slug = buildUniqueProjectSlug(trimmedTitle, baseProjects);
+      const code = buildUniqueProjectCode(trimmedTitle, baseProjects);
+      const starterGraphs = buildStarterGraphsForNewProject(activeColumns);
+
+      const enCopy = {
+        title: trimmedTitle,
+        subtitle: trimmedSubtitle,
+        category: t('modal.defaultCategory'),
+      };
+      const trCopy = { ...enCopy };
 
       const { data: insertedProject, error: projectError } = await supabase
         .from('projects')
         .insert({
-          code: newProject.code,
-          slug: newProject.id,
-          status: newProject.status || 'active',
-          icon_key: newProject.iconKey || 'messages-square',
+          code,
+          slug,
+          status: status === 'inactive' ? 'inactive' : 'active',
+          icon_key: iconKey || 'messages-square',
           config: {
-            en: newProject.en,
-            tr: newProject.tr,
-            defaultGraphs,
+            en: enCopy,
+            tr: trCopy,
+            columns: activeColumns,
+            defaultGraphs: starterGraphs,
           },
         })
         .select('*')
@@ -406,10 +609,10 @@ export function DataProvider({ children }) {
 
       const mappedProject = mapProjectRow(insertedProject);
 
-      // Insert cloned default graph tiles linked to the new project's UUID
+      // Insert auto-generated starter Bento charts into `public.project_graphs`
       let insertedGraphs = [];
-      if (defaultGraphs.length > 0) {
-        const graphPayloads = defaultGraphs.map((graph, index) => ({
+      if (starterGraphs.length > 0) {
+        const graphPayloads = starterGraphs.map((graph, index) => ({
           project_id: mappedProject.dbId,
           metric_key: graph.metricKey,
           chart_style: graph.chartStyle,
@@ -431,20 +634,109 @@ export function DataProvider({ children }) {
         }
       }
 
+      // Optionally create Session 1 and bulk-insert normalized CSV rows
+      let initialSessions = [];
+      let initialResponses = [];
+
+      if (
+        initialImport &&
+        Array.isArray(initialImport.rows) &&
+        initialImport.rows.length > 0
+      ) {
+        const todayIso = new Date().toISOString().slice(0, 10);
+        const sessionTitle =
+          String(initialImport.sessionTitle ?? '').trim() || 'Session 1';
+
+        const { data: insertedSession, error: sessionError } = await supabase
+          .from('sessions')
+          .insert({
+            project_id: mappedProject.dbId,
+            title: sessionTitle,
+            short_title: deriveShortTitle(sessionTitle),
+            start_date: todayIso,
+            end_date: todayIso,
+          })
+          .select('*')
+          .single();
+
+        if (sessionError) {
+          reportWriteError(sessionError);
+        } else if (insertedSession) {
+          const mappedSession = {
+            id: insertedSession.id,
+            projectId: mappedProject.id,
+            title: insertedSession.title,
+            shortTitle:
+              insertedSession.short_title || deriveShortTitle(insertedSession.title),
+            startDate: insertedSession.start_date || todayIso,
+            endDate: insertedSession.end_date || todayIso,
+            responses: [],
+          };
+
+          const responsePayloads = initialImport.rows.map((rawRow) => ({
+            project_id: mappedProject.dbId,
+            session_id: insertedSession.id,
+            extra_data: normalizeRowToSchema(rawRow, activeColumns),
+          }));
+
+          const { data: insertedRows, error: responsesError } = await supabase
+            .from('responses')
+            .insert(responsePayloads)
+            .select('*');
+
+          if (responsesError) {
+            reportWriteError(responsesError);
+          } else {
+            const sessionMap = new Map([[mappedSession.id, mappedSession]]);
+            initialResponses = (insertedRows ?? []).map((row) =>
+              mapResponseRow(row, mappedProject.id, sessionMap)
+            );
+            mappedSession.responses = [...initialResponses];
+          }
+
+          initialSessions = [mappedSession];
+        }
+      }
+
+      // Update local state with the new project, starter graphs, and any imported Session 1 data
       setBaseProjects((prev) => [...prev, mappedProject]);
       setResponsesByProject((prev) => ({
         ...prev,
-        [mappedProject.id]: { sessions: [], responses: [] },
+        [mappedProject.id]: {
+          sessions: initialSessions,
+          responses: initialResponses,
+        },
       }));
       setGraphsByProject((prev) => ({
         ...prev,
         [mappedProject.id]: insertedGraphs,
       }));
 
+      showToast(
+        initialResponses.length > 0
+          ? t('modal.projectCreatedWithRows', {
+              title: trimmedTitle,
+              count: initialResponses.length,
+            })
+          : t('modal.projectCreatedToast', { title: trimmedTitle }),
+        'success'
+      );
+
       return mappedProject;
     },
-    [reportWriteError, setBaseProjects, setResponsesByProject, setGraphsByProject]
+    [
+      baseProjects,
+      reportWriteError,
+      setBaseProjects,
+      setResponsesByProject,
+      setGraphsByProject,
+      showToast,
+      t,
+    ]
   );
+
+  // Backward-compatible alias for `createProject`
+  const addProject = createProject;
 
   // Optimistically toggle `'active' | 'inactive'` status and persist to `public.projects`
   const updateProjectStatus = useCallback(
@@ -480,6 +772,61 @@ export function DataProvider({ children }) {
       return true;
     },
     [resolveProject, reportWriteError, setBaseProjects]
+  );
+
+  // Permanently delete a project from `public.projects` and purge all related local state
+  const deleteProject = useCallback(
+    async (projectId) => {
+      if (!canManageProjects) {
+        showToast(t('toast.permissionDenied'), 'error');
+        return false;
+      }
+
+      const target = resolveProject(projectId);
+      if (!supabase || !target) {
+        return false;
+      }
+
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', target.dbId);
+
+      if (error) {
+        reportWriteError(error);
+        showToast(t('modal.projectDeleteError'), 'error');
+        return false;
+      }
+
+      const targetTitle = target.en?.title || target.tr?.title || target.slug;
+
+      setBaseProjects((prev) =>
+        prev.filter((project) => project.id !== target.id)
+      );
+      setResponsesByProject((prev) => {
+        const next = { ...prev };
+        delete next[target.id];
+        return next;
+      });
+      setGraphsByProject((prev) => {
+        const next = { ...prev };
+        delete next[target.id];
+        return next;
+      });
+
+      showToast(t('modal.projectDeletedToast', { title: targetTitle }), 'success');
+      return true;
+    },
+    [
+      canManageProjects,
+      resolveProject,
+      reportWriteError,
+      setBaseProjects,
+      setResponsesByProject,
+      setGraphsByProject,
+      showToast,
+      t,
+    ]
   );
 
   // Insert a new session into `public.sessions` and return its generated UUID
@@ -817,8 +1164,8 @@ export function DataProvider({ children }) {
     [resolveProject, responsesByProject, reportWriteError, setResponsesByProject]
   );
 
-  // Append a custom Bento graph tile to `public.project_graphs`
-  const addGraph = useCallback(
+  // Append a custom Bento graph tile (with 1-col / 2-col `config`) to `public.project_graphs`
+  const addProjectGraph = useCallback(
     async (projectId, graphConfig) => {
       const target = resolveProject(projectId);
       if (!supabase || !target) {
@@ -831,14 +1178,18 @@ export function DataProvider({ children }) {
           ? Math.max(...currentGraphs.map((item) => item.sortOrder ?? 0)) + 1
           : 0;
 
+      const resolvedMetricKey =
+        graphConfig.config?.xAxisKey || graphConfig.metricKey || '__session__';
+
       const { data: inserted, error } = await supabase
         .from('project_graphs')
         .insert({
           project_id: target.dbId,
-          metric_key: graphConfig.metricKey,
+          metric_key: resolvedMetricKey,
           chart_style: graphConfig.chartStyle,
           col_span: Number(graphConfig.colSpan) || 6,
           custom_title: graphConfig.customTitle?.trim() || '',
+          config: graphConfig.config ?? null,
           sort_order: nextSortOrder,
         })
         .select('*')
@@ -855,9 +1206,62 @@ export function DataProvider({ children }) {
         [target.id]: [...(prev[target.id] ?? []), mappedGraph],
       }));
 
+      showToast(t('charts.graphAddedToast'), 'success');
       return mappedGraph;
     },
-    [resolveProject, graphsByProject, reportWriteError, setGraphsByProject]
+    [resolveProject, graphsByProject, reportWriteError, setGraphsByProject, showToast, t]
+  );
+
+  // Backward-compatible alias for `addProjectGraph`
+  const addGraph = addProjectGraph;
+
+  // Update an existing graph's settings (`metric_key`, `chart_style`, `col_span`, `custom_title`, `config`)
+  const updateProjectGraph = useCallback(
+    async (graphId, updates) => {
+      if (!supabase || !graphId || !updates) {
+        return null;
+      }
+
+      const resolvedMetricKey =
+        updates.config?.xAxisKey || updates.metricKey || '__session__';
+
+      const payload = {
+        metric_key: resolvedMetricKey,
+        chart_style: updates.chartStyle,
+        col_span: Number(updates.colSpan) || 6,
+        custom_title: updates.customTitle?.trim() || '',
+        config: updates.config ?? null,
+      };
+
+      const { data: updatedRow, error } = await supabase
+        .from('project_graphs')
+        .update(payload)
+        .eq('id', graphId)
+        .select('*')
+        .single();
+
+      if (error) {
+        reportWriteError(error);
+        return null;
+      }
+
+      const mappedGraph = mapGraphRow(updatedRow);
+      setGraphsByProject((prev) => {
+        const next = { ...prev };
+        for (const [slug, list] of Object.entries(prev)) {
+          if (list.some((item) => item.id === graphId)) {
+            next[slug] = list.map((item) =>
+              item.id === graphId ? mappedGraph : item
+            );
+          }
+        }
+        return next;
+      });
+
+      showToast(t('charts.graphUpdatedToast'), 'success');
+      return mappedGraph;
+    },
+    [reportWriteError, setGraphsByProject, showToast, t]
   );
 
   // Remove a single Bento graph tile from `public.project_graphs`
@@ -902,7 +1306,57 @@ export function DataProvider({ children }) {
     [resolveProject, reportWriteError, setGraphsByProject]
   );
 
-  // Delete all `project_graphs` rows for a project and re-insert its `defaultGraphs`
+  // Save the current graph layout as `projects.config.defaultGraphs` blueprint snapshot
+  const saveProjectDefaultGraphs = useCallback(
+    async (projectId, currentGraphs = []) => {
+      const target = resolveProject(projectId);
+      if (!supabase || !target) {
+        return false;
+      }
+
+      const blueprints = (currentGraphs ?? []).map((graph, index) => ({
+        metric_key:
+          graph.config?.xAxisKey ||
+          graph.metricKey ||
+          graph.metric_key ||
+          '__session__',
+        chart_style: graph.chartStyle || graph.chart_style || 'bar',
+        col_span: Number(graph.colSpan ?? graph.col_span) || 6,
+        custom_title: String(graph.customTitle ?? graph.custom_title ?? '').trim(),
+        sort_order: index,
+        config: graph.config ?? null,
+      }));
+
+      const nextConfig = {
+        ...(target.config ?? {}),
+        defaultGraphs: blueprints,
+      };
+
+      const { error } = await supabase
+        .from('projects')
+        .update({ config: nextConfig })
+        .eq('id', target.dbId);
+
+      if (error) {
+        reportWriteError(error);
+        return false;
+      }
+
+      setBaseProjects((prev) =>
+        prev.map((project) =>
+          project.id === target.id
+            ? { ...project, config: nextConfig, defaultGraphs: blueprints }
+            : project
+        )
+      );
+
+      showToast(t('charts.defaultSavedToast'), 'success');
+      return true;
+    },
+    [resolveProject, reportWriteError, setBaseProjects, showToast, t]
+  );
+
+  // Delete all `project_graphs` rows for a project and re-insert saved `defaultGraphs` (or starter fallback)
   const resetGraphs = useCallback(
     async (projectId) => {
       const target = resolveProject(projectId);
@@ -920,7 +1374,22 @@ export function DataProvider({ children }) {
         return false;
       }
 
-      const defaults = target.defaultGraphs ?? FALLBACK_DEFAULT_GRAPHS;
+      // Prefer saved `projects.config.defaultGraphs` snapshot; otherwise auto-generate starters from `config.columns`
+      const savedDefaults = Array.isArray(target.config?.defaultGraphs)
+        ? target.config.defaultGraphs
+        : [];
+      const defaults =
+        savedDefaults.length > 0
+          ? savedDefaults
+          : (() => {
+              const dynamicStarters = generateStarterGraphsFromColumns(
+                target.config?.columns ?? []
+              );
+              return dynamicStarters.length > 0
+                ? dynamicStarters
+                : FALLBACK_DEFAULT_GRAPHS;
+            })();
+
       if (defaults.length === 0) {
         setGraphsByProject((prev) => ({ ...prev, [target.id]: [] }));
         return true;
@@ -928,11 +1397,19 @@ export function DataProvider({ children }) {
 
       const graphPayloads = defaults.map((graph, index) => ({
         project_id: target.dbId,
-        metric_key: graph.metricKey,
-        chart_style: graph.chartStyle,
-        col_span: Number(graph.colSpan) || 6,
-        custom_title: graph.customTitle?.trim() || '',
-        sort_order: index,
+        metric_key:
+          graph.config?.xAxisKey ||
+          graph.metric_key ||
+          graph.metricKey ||
+          '__session__',
+        chart_style: graph.chart_style || graph.chartStyle || 'bar',
+        col_span: Number(graph.col_span ?? graph.colSpan) || 6,
+        custom_title: String(graph.custom_title ?? graph.customTitle ?? '').trim(),
+        config: graph.config ?? null,
+        sort_order:
+          graph.sort_order !== undefined && graph.sort_order !== null
+            ? Number(graph.sort_order)
+            : index,
       }));
 
       const { data: insertedRows, error: insertError } = await supabase
@@ -951,9 +1428,155 @@ export function DataProvider({ children }) {
         [target.id]: (insertedRows ?? []).map(mapGraphRow),
       }));
 
+      showToast(t('charts.resetSuccessToast'), 'success');
       return true;
     },
-    [resolveProject, reportWriteError, setGraphsByProject]
+    [resolveProject, reportWriteError, setGraphsByProject, showToast, t]
+  );
+
+  // Update a project's `config.columns` blueprint in Supabase while preserving `en`/`tr` metadata
+  const updateProjectColumns = useCallback(
+    async (projectId, newColumns) => {
+      const target = resolveProject(projectId);
+      if (!supabase || !target) {
+        return false;
+      }
+
+      const nextColumns = Array.isArray(newColumns) ? structuredClone(newColumns) : [];
+      const nextConfig = {
+        ...(target.config ?? {}),
+        en: target.en,
+        tr: target.tr,
+        defaultGraphs: target.defaultGraphs,
+        columns: nextColumns,
+      };
+
+      const { error } = await supabase
+        .from('projects')
+        .update({ config: nextConfig })
+        .eq('id', target.dbId);
+
+      if (error) {
+        reportWriteError(error);
+        return false;
+      }
+
+      setBaseProjects((prev) =>
+        prev.map((project) =>
+          project.id === target.id
+            ? { ...project, config: nextConfig, columns: nextColumns }
+            : project
+        )
+      );
+
+      return true;
+    },
+    [resolveProject, reportWriteError, setBaseProjects]
+  );
+
+  // Persist up to 3 customizable KPI box configs inside `projects.config.kpis`
+  const updateProjectKpis = useCallback(
+    async (projectId, newKpis) => {
+      const target = resolveProject(projectId);
+      if (!supabase || !target) {
+        return false;
+      }
+
+      const trimmedKpis = Array.isArray(newKpis)
+        ? structuredClone(newKpis.slice(0, 3))
+        : [];
+      const nextConfig = {
+        ...(target.config ?? {}),
+        en: target.en,
+        tr: target.tr,
+        defaultGraphs: target.defaultGraphs,
+        columns: target.columns ?? [],
+        kpis: trimmedKpis,
+      };
+
+      const { error } = await supabase
+        .from('projects')
+        .update({ config: nextConfig })
+        .eq('id', target.dbId);
+
+      if (error) {
+        reportWriteError(error);
+        return false;
+      }
+
+      setBaseProjects((prev) =>
+        prev.map((project) =>
+          project.id === target.id
+            ? { ...project, config: nextConfig }
+            : project
+        )
+      );
+
+      return true;
+    },
+    [resolveProject, reportWriteError, setBaseProjects]
+  );
+
+  // Bulk-insert schema-normalized `{ extra_data }` response rows into `public.responses`
+  const bulkInsertResponses = useCallback(
+    async (projectId, sessionId, extraDataRows = []) => {
+      const target = resolveProject(projectId);
+      if (!supabase || !target || !sessionId) {
+        return null;
+      }
+
+      if (!Array.isArray(extraDataRows) || extraDataRows.length === 0) {
+        return [];
+      }
+
+      const payloads = extraDataRows.map((extraData) => ({
+        project_id: target.dbId,
+        session_id: sessionId,
+        extra_data: extraData && typeof extraData === 'object' ? extraData : {},
+      }));
+
+      const { data: insertedRows, error } = await supabase
+        .from('responses')
+        .insert(payloads)
+        .select('*');
+
+      if (error) {
+        reportWriteError(error);
+        return null;
+      }
+
+      let mappedInserted = [];
+      setResponsesByProject((prev) => {
+        const current = prev[target.id] ?? EMPTY_PROJECT_DATA;
+        const sessionMap = new Map(
+          current.sessions.map((session) => [session.id, session])
+        );
+
+        mappedInserted = (insertedRows ?? []).map((row) =>
+          mapResponseRow(row, target.id, sessionMap)
+        );
+
+        const nextSessions = current.sessions.map((session) =>
+          session.id === sessionId
+            ? {
+                ...session,
+                responses: [...session.responses, ...mappedInserted],
+              }
+            : session
+        );
+
+        return {
+          ...prev,
+          [target.id]: {
+            sessions: nextSessions,
+            responses: [...current.responses, ...mappedInserted],
+          },
+        };
+      });
+
+      return mappedInserted;
+    },
+    [resolveProject, reportWriteError, setResponsesByProject]
   );
 
   const value = useMemo(
@@ -966,14 +1589,22 @@ export function DataProvider({ children }) {
       loadError,
       actionError,
       dismissActionError,
+      createProject,
       addProject,
+      deleteProject,
       updateProjectStatus,
+      updateProjectColumns,
+      updateProjectKpis,
       addSession,
       deleteSession,
       addResponse,
+      bulkInsertResponses,
       importCsvToProject,
+      addProjectGraph,
       addGraph,
+      updateProjectGraph,
       removeGraph,
+      saveProjectDefaultGraphs,
       resetGraphs,
     }),
     [
@@ -985,14 +1616,22 @@ export function DataProvider({ children }) {
       loadError,
       actionError,
       dismissActionError,
+      createProject,
       addProject,
+      deleteProject,
       updateProjectStatus,
+      updateProjectColumns,
+      updateProjectKpis,
       addSession,
       deleteSession,
       addResponse,
+      bulkInsertResponses,
       importCsvToProject,
+      addProjectGraph,
       addGraph,
+      updateProjectGraph,
       removeGraph,
+      saveProjectDefaultGraphs,
       resetGraphs,
     ]
   );

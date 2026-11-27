@@ -12,7 +12,6 @@ import { LoaderCircle } from 'lucide-react';
 import { useAuth } from './context/AuthContext.jsx';
 import { useData } from './context/DataContext.jsx';
 import { useLang } from './context/LangContext.jsx';
-import { ToastProvider } from './context/ToastContext.jsx';
 import Header from './components/Header.jsx';
 import ErrorToast from './components/ErrorToast.jsx';
 import LandingPage from './pages/LandingPage.jsx';
@@ -77,43 +76,41 @@ export default function App() {
   const showHeader = !loading && Boolean(user) && location.pathname !== '/login';
 
   return (
-    <ToastProvider>
-      <div className="app-shell">
-        {showHeader && (
-          <Header
-            isSidebarOpen={isSidebarOpen}
-            onToggleSidebar={handleToggleSidebar}
-          />
-        )}
+    <div className="app-shell">
+      {showHeader && (
+        <Header
+          isSidebarOpen={isSidebarOpen}
+          onToggleSidebar={handleToggleSidebar}
+        />
+      )}
 
-        {/* Client-side route table with auth protection on workspace routes */}
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <LandingPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/project/:projectId"
-            element={
-              <ProtectedRoute>
-                <ProjectDashboard
-                  isSidebarOpen={isSidebarOpen}
-                  onCloseSidebar={handleCloseSidebar}
-                />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+      {/* Client-side route table with auth protection on workspace routes */}
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <LandingPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/project/:projectId"
+          element={
+            <ProtectedRoute>
+              <ProjectDashboard
+                isSidebarOpen={isSidebarOpen}
+                onCloseSidebar={handleCloseSidebar}
+              />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
 
-        {/* Persistent dismissible toast region for Supabase write/RLS errors */}
-        <ErrorToast error={actionError} onDismiss={dismissActionError} />
-      </div>
-    </ToastProvider>
+      {/* Persistent dismissible toast region for Supabase write/RLS errors */}
+      <ErrorToast error={actionError} onDismiss={dismissActionError} />
+    </div>
   );
 }

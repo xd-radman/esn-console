@@ -7,7 +7,7 @@
  */
 
 import { useState } from 'react';
-import { BarChart3, Plus, RotateCcw } from 'lucide-react';
+import { BarChart3, BookmarkCheck, Plus, RotateCcw } from 'lucide-react';
 import { useLang } from '../context/LangContext.jsx';
 import ChartTile from './ChartTile.jsx';
 import AddGraphModal from './modals/AddGraphModal.jsx';
@@ -16,13 +16,33 @@ export default function ChartGrid({
   graphs = [],
   responses = [],
   sessions = [],
+  columns = [],
   isAdmin = false,
   onAddGraph,
+  onUpdateGraph,
   onRemoveGraph,
+  onSetDefaultGraphs,
   onResetGraphs,
 }) {
   const { t } = useLang();
   const [isAddGraphOpen, setIsAddGraphOpen] = useState(false);
+  const [editingGraph, setEditingGraph] = useState(null);
+
+  // Open modal in Add mode (fresh blank state) or Edit mode (pre-filled from tile)
+  const handleOpenAddModal = () => {
+    setEditingGraph(null);
+    setIsAddGraphOpen(true);
+  };
+
+  const handleOpenEditModal = (graph) => {
+    setEditingGraph(graph);
+    setIsAddGraphOpen(true);
+  };
+
+  const handleCloseGraphModal = () => {
+    setIsAddGraphOpen(false);
+    setEditingGraph(null);
+  };
 
   return (
     <section className="chart-grid-section" aria-label={t('charts.sectionTitle')}>
@@ -40,10 +60,20 @@ export default function ChartGrid({
             <button
               type="button"
               className="btn primary"
-              onClick={() => setIsAddGraphOpen(true)}
+              onClick={handleOpenAddModal}
             >
               <Plus size={15} strokeWidth={1.5} aria-hidden="true" />
               <span>{t('charts.addGraph')}</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn ghost"
+              disabled={graphs.length === 0}
+              onClick={() => onSetDefaultGraphs?.(graphs)}
+            >
+              <BookmarkCheck size={15} strokeWidth={1.5} aria-hidden="true" />
+              <span>{t('charts.setAsDefault')}</span>
             </button>
 
             <button
@@ -79,7 +109,7 @@ export default function ChartGrid({
               <button
                 type="button"
                 className="btn"
-                onClick={() => setIsAddGraphOpen(true)}
+                onClick={handleOpenAddModal}
               >
                 <Plus size={15} strokeWidth={1.5} aria-hidden="true" />
                 <span>{t('charts.addGraph')}</span>
@@ -96,19 +126,25 @@ export default function ChartGrid({
               graph={graph}
               responses={responses}
               sessions={sessions}
+              columns={columns}
               canRemove={isAdmin}
+              onEdit={handleOpenEditModal}
               onRemove={onRemoveGraph}
             />
           ))}
         </div>
       )}
 
-      {/* Add Graph tile configuration modal (Admin only) */}
+      {/* Add / Edit Graph tile configuration modal (keyed per open for clean initial state) */}
       {isAdmin && (
         <AddGraphModal
+          key={isAddGraphOpen ? (editingGraph?.id ?? 'new-graph') : 'closed-graph'}
           isOpen={isAddGraphOpen}
-          onClose={() => setIsAddGraphOpen(false)}
+          onClose={handleCloseGraphModal}
           onAdd={onAddGraph}
+          onUpdate={onUpdateGraph}
+          editingGraph={editingGraph}
+          columns={columns}
         />
       )}
     </section>

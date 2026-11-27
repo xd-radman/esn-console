@@ -7,15 +7,18 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AlertCircle, LoaderCircle, Plus } from 'lucide-react';
 import { useLang } from '../context/LangContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useData } from '../context/DataContext.jsx';
 import ProjectCard from '../components/ProjectCard.jsx';
 import NewProjectModal from '../components/modals/NewProjectModal.jsx';
+import DeleteProjectModal from '../components/modals/DeleteProjectModal.jsx';
 
 export default function LandingPage() {
   const { t } = useLang();
+  const navigate = useNavigate();
   const { hasPermission } = useAuth();
   const canManageProjects = hasPermission('manage_projects');
   const {
@@ -24,11 +27,13 @@ export default function LandingPage() {
     isSeeding,
     loadError,
     updateProjectStatus,
-    addProject,
+    createProject,
+    deleteProject,
   } = useData();
 
-  // Controls open/closed state for the `+ New Project` modal dialog
+  // Controls open/closed state for the `+ New Project` and `Delete Project` modals
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState(null);
 
   // Keep browser tab title localized on `/`
   useEffect(() => {
@@ -41,13 +46,17 @@ export default function LandingPage() {
     [projects]
   );
 
-  // Persist newly created project card to Supabase and close modal
+  // Persist newly created dynamic-schema project to Supabase, close modal, and open its dashboard
   const handleCreateProject = useCallback(
-    async (newProject) => {
-      await addProject(newProject);
-      setIsModalOpen(false);
+    async (projectPayload) => {
+      const created = await createProject(projectPayload);
+      if (created) {
+        setIsModalOpen(false);
+        navigate(`/project/${encodeURIComponent(created.id)}`);
+      }
+      return created;
     },
-    [addProject]
+    [createProject, navigate]
   );
 
   const handleCloseModal = useCallback(() => {
@@ -151,20 +160,33 @@ export default function LandingPage() {
                 project={project}
                 canEditStatus={canManageProjects}
                 onStatusChange={updateProjectStatus}
+                onDeleteProject={canManageProjects ? setProjectToDelete : undefined}
               />
             ))}
           </section>
         </>
       )}
 
-      {/* Accessible native `<dialog>` modal for creating or duplicating a project (`manage_projects`) */}
+      {/* Accessible native `<dialog>` modals for creating or permanently deleting a project (`manage_projects`) */}
       {canManageProjects && (
-        <NewProjectModal
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-          onCreate={handleCreateProject}
-          projects={projects}
-        />
+        <>
+          <NewProjectModal
+            isOpen={isModalOpen}
+            onClose={handleCloseModal}
+            onCreate={handleCreateProject}
+            projects={projects}
+          />
+
+          <DeleteProjectModal
+            key={projectToDelete?.id ?? 'delete-project-closed'}
+            isOpen={Boolean(projectToDelete)}
+            project={projectToDelete}
+            sessionsCount={projectToDelete?.sessionsCount ?? 0}
+            responsesCount={projectToDelete?.responsesCount ?? 0}
+            onClose={() => setProjectToDelete(null)}
+            onConfirm={deleteProject}
+          />
+        </>
       )}
     </main>
   );

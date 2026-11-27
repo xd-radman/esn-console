@@ -1,10 +1,10 @@
 /**
- * chartUtils.js — Chart.js Registration, Token Reader & Metric Aggregation
- * Registers all Chart.js v4 controllers/elements once, reads live Light/Dark
- * CSS custom properties from `document.documentElement`, aggregates filtered
- * survey responses by metric (`cat1`, `cat2`, `comfort`, `score`, `outcome`,
- * `sessionTrend`), and builds configs for all 5 chart styles (`bar`,
- * `horizontalBar`, `donut`, `line`, `dualAxis`).
+ * chartUtils.js — Universal Schema-Driven Chart.js Registration & Config Builder
+ * Registers Chart.js v4 controllers, elements, and `chartjs-plugin-zoom` once,
+ * reads live Light/Dark CSS custom properties from `document.documentElement`,
+ * delegates all 1-column and 2-column statistical aggregations to
+ * `computeChartDataset()` in `csvSchema.js`, and builds interactive configs for
+ * all 5 chart styles (`bar`, `horizontalBar`, `donut`, `line`, `dualAxis`).
  */
 
 import {
@@ -24,6 +24,7 @@ import {
   Tooltip,
 } from 'chart.js';
 import zoomPlugin from 'chartjs-plugin-zoom';
+import { computeChartDataset, getActiveColumns } from './csvSchema.js';
 
 // Register required Chart.js scales, elements, controllers (for mixed dualAxis), and zoom plugin
 ChartJS.register(
@@ -90,18 +91,94 @@ export function readChartTokens() {
   };
 }
 
-function capitalizeWord(str) {
-  if (!str) {
-    return 'Other';
+/**
+ * Generates 2–3 sensible default starter graph configurations dynamically from
+ * a project's `config.columns` (`number` and `category` columns).
+ */
+export function generateStarterGraphsFromColumns(columns = []) {
+  const activeCols = getActiveColumns(columns);
+  const numberCols = activeCols.filter((col) => col.type === 'number');
+  const categoryCols = activeCols.filter((col) => col.type === 'category');
+  const starters = [];
+
+  if (numberCols[0]) {
+    starters.push({
+      metricKey: '__session__',
+      chartStyle: 'dualAxis',
+      colSpan: categoryCols[0] ? 8 : 12,
+      customTitle: '',
+      config: {
+        xAxisKey: '__session__',
+        yAxisKey: numberCols[0].key,
+        aggregation: 'avg',
+        secondaryYAxisKey: '__count__',
+        secondaryAggregation: 'count',
+        maxGroups: 0,
+      },
+    });
   }
-  return str.charAt(0).toUpperCase() + str.slice(1);
+
+  if (categoryCols[0]) {
+    starters.push({
+      metricKey: categoryCols[0].key,
+      chartStyle: 'donut',
+      colSpan: numberCols[0] ? 4 : 6,
+      customTitle: '',
+      config: {
+        xAxisKey: categoryCols[0].key,
+        yAxisKey: '__count__',
+        aggregation: 'count',
+        maxGroups: 8,
+      },
+    });
+  }
+
+  if (numberCols[0] && starters.length < 3) {
+    starters.push({
+      metricKey: numberCols[0].key,
+      chartStyle: 'bar',
+      colSpan: 6,
+      customTitle: '',
+      config: {
+        xAxisKey: numberCols[0].key,
+        yAxisKey: '__count__',
+        aggregation: 'count',
+        maxGroups: 12,
+      },
+    });
+  } else if (categoryCols[1] && starters.length < 3) {
+    starters.push({
+      metricKey: categoryCols[1].key,
+      chartStyle: 'horizontalBar',
+      colSpan: 6,
+      customTitle: '',
+      config: {
+        xAxisKey: categoryCols[1].key,
+        yAxisKey: '__count__',
+        aggregation: 'count',
+        maxGroups: 12,
+      },
+    });
+  }
+
+  return starters;
 }
 
 /**
- * Aggregates filtered responses into `{ labels, values, secondaryValues, colors, centerReadout }`
- * tailored to each supported ESN survey metric.
+ * Builds complete `{ chartType, isZoomable, meta, data, options, centerReadout }`
+ * for `react-chartjs-2`'s `<Chart />` across all 5 styles (`bar`, `horizontalBar`,
+ * `donut`, `line`, `dualAxis`) using `computeChartDataset(...)`.
  */
-export function aggregateMetric(metricKey, responses, sessions, t, tokens) {
+export function buildChartConfig({
+  graph,
+  metricKey,
+  chartStyle,
+  responses,
+  sessions,
+  columns = [],
+  t,
+}) {
+  const tokens = readChartTokens();
   const palette = [
     tokens.cyan,
     tokens.green,
@@ -110,160 +187,24 @@ export function aggregateMetric(metricKey, responses, sessions, t, tokens) {
     tokens.darkBlue,
   ];
 
-  const total = responses.length;
+  const resolvedGraph = graph ?? { metricKey, chartStyle };
+  const resolvedStyle = resolvedGraph.chartStyle ?? chartStyle ?? 'bar';
 
-  // Per-session trend: count bars + positive outcome rate (%) line across sessions
-  if (metricKey === 'sessionTrend') {
-    const targetSessions =
-      sessions.length > 0
-        ? sessions
-        : Array.from(
-            responses.reduce((map, row) => {
-              if (!map.has(row.sessionId)) {
-                map.set(row.sessionId, {
-                  id: row.sessionId,
-                  title: row.sessionTitle,
-                  responses: [],
-                });
-              }
-              map.get(row.sessionId).responses.push(row);
-              return map;
-            }, new Map()).values()
-          );
+  const dataset = computeChartDataset(
+    resolvedGraph,
+    responses,
+    sessions,
+    columns
+  );
 
-    const labels = targetSessions.map((session) =>
-      session.title.length > 22 ? `${session.title.slice(0, 21)}…` : session.title
-    );
-    const values = targetSessions.map((session) => session.responses.length);
-    const secondaryValues = targetSessions.map((session) => {
-      const count = session.responses.length;
-      if (!count) {
-        return 0;
-      }
-      const yesCount = session.responses.filter((row) => row.outcome === 'yes').length;
-      return Math.round((yesCount / count) * 100);
-    });
-
-    const overallYes = responses.filter((row) => row.outcome === 'yes').length;
-    const positivePct = total ? Math.round((overallYes / total) * 100) : 0;
-
-    return {
-      labels,
-      values,
-      secondaryValues,
-      secondaryLabel: t('charts.positiveRateLabel'),
-      colors: labels.map((_, idx) => palette[idx % palette.length]),
-      centerReadout: {
-        value: `${positivePct}%`,
-        label: t('charts.positiveCenterLabel'),
-      },
-    };
+  if (dataset.labels.length === 0) {
+    return null;
   }
 
-  // Satisfaction Score (1..5 scale)
-  if (metricKey === 'score') {
-    const buckets = [1, 2, 3, 4, 5];
-    const counts = buckets.map(
-      (level) => responses.filter((row) => Number(row.score) === level).length
-    );
-    const labels = buckets.map((level) => `${level} / 5`);
-    const colors = [
-      tokens.magenta,
-      tokens.orange,
-      tokens.darkBlue,
-      tokens.cyan,
-      tokens.green,
-    ];
-    const topCount = Math.max(...counts, 0);
-    const topPct = total ? Math.round((topCount / total) * 100) : 0;
-
-    return {
-      labels,
-      values: counts,
-      secondaryValues: counts.map((c) => (total ? Math.round((c / total) * 100) : 0)),
-      secondaryLabel: t('charts.shareLabel'),
-      colors,
-      centerReadout: {
-        value: `${topPct}%`,
-        label: t('charts.topShareCenterLabel'),
-      },
-    };
-  }
-
-  // Positive Outcome (`yes`, `maybe`, `no`)
-  if (metricKey === 'outcome') {
-    const keys = ['yes', 'maybe', 'no'];
-    const counts = keys.map(
-      (key) => responses.filter((row) => row.outcome === key).length
-    );
-    const positivePct = total ? Math.round((counts[0] / total) * 100) : 0;
-
-    return {
-      labels: keys.map((key) => t(`charts.values.${key}`)),
-      values: counts,
-      secondaryValues: counts.map((c) => (total ? Math.round((c / total) * 100) : 0)),
-      secondaryLabel: t('charts.shareLabel'),
-      colors: [tokens.green, tokens.orange, tokens.magenta],
-      centerReadout: {
-        value: `${positivePct}%`,
-        label: t('charts.positiveCenterLabel'),
-      },
-    };
-  }
-
-  // Comfort Level (`high`, `medium`, `low`)
-  if (metricKey === 'comfort') {
-    const keys = ['high', 'medium', 'low'];
-    const counts = keys.map(
-      (key) => responses.filter((row) => row.comfort === key).length
-    );
-    const highPct = total ? Math.round((counts[0] / total) * 100) : 0;
-
-    return {
-      labels: keys.map((key) => t(`charts.values.${key}`)),
-      values: counts,
-      secondaryValues: counts.map((c) => (total ? Math.round((c / total) * 100) : 0)),
-      secondaryLabel: t('charts.shareLabel'),
-      colors: [tokens.cyan, tokens.orange, tokens.magenta],
-      centerReadout: {
-        value: `${highPct}%`,
-        label: t('charts.values.high'),
-      },
-    };
-  }
-
-  // Categorical distribution (`cat1` or `cat2`)
-  const freq = new Map();
-  for (const row of responses) {
-    const val = String(row[metricKey] ?? '').trim().toLowerCase() || 'other';
-    freq.set(val, (freq.get(val) ?? 0) + 1);
-  }
-
-  const sortedEntries = Array.from(freq.entries()).sort((a, b) => b[1] - a[1]);
-  const labels = sortedEntries.map(([key]) => capitalizeWord(key));
-  const values = sortedEntries.map(([, count]) => count);
-  const topPct = total && values[0] ? Math.round((values[0] / total) * 100) : 0;
-
-  return {
-    labels,
-    values,
-    secondaryValues: values.map((c) => (total ? Math.round((c / total) * 100) : 0)),
-    secondaryLabel: t('charts.shareLabel'),
-    colors: labels.map((_, idx) => palette[idx % palette.length]),
-    centerReadout: {
-      value: `${topPct}%`,
-      label: labels[0] ?? t('charts.topShareCenterLabel'),
-    },
-  };
-}
-
-/**
- * Builds complete `{ chartType, data, options, centerReadout }` for `react-chartjs-2`'s
- * `<Chart />` component across all 5 styles (`bar`, `horizontalBar`, `donut`, `line`, `dualAxis`).
- */
-export function buildChartConfig({ metricKey, chartStyle, responses, sessions, t }) {
-  const tokens = readChartTokens();
-  const agg = aggregateMetric(metricKey, responses, sessions, t, tokens);
+  const colors = dataset.labels.map((_, idx) => palette[idx % palette.length]);
+  const primarySum = dataset.primaryData.reduce((sum, val) => sum + (Number(val) || 0), 0);
+  const isPrimaryCount = dataset.config.aggregation === 'count';
+  const isSecondaryCount = dataset.config.secondaryAggregation === 'count';
 
   const baseTooltip = {
     backgroundColor: tokens.tooltipBg,
@@ -278,7 +219,7 @@ export function buildChartConfig({ metricKey, chartStyle, responses, sessions, t
   };
 
   const baseLegend = {
-    display: chartStyle === 'donut' || chartStyle === 'dualAxis',
+    display: resolvedStyle === 'donut' || resolvedStyle === 'dualAxis',
     position: 'bottom',
     labels: {
       color: tokens.tick,
@@ -291,7 +232,7 @@ export function buildChartConfig({ metricKey, chartStyle, responses, sessions, t
     },
   };
 
-  // Build interactive drag-to-zoom, Ctrl+wheel/pinch zoom, and Shift+drag pan config for Cartesian charts
+  // Interactive drag-to-zoom, Ctrl+wheel/pinch zoom, and Shift+drag pan config
   const buildZoomConfig = (axisMode) => ({
     pan: {
       enabled: true,
@@ -316,27 +257,40 @@ export function buildChartConfig({ metricKey, chartStyle, responses, sessions, t
     },
   });
 
-  // Shared metadata returned for click-to-select count & share % readouts
+  // Shared metadata returned for click-to-select readouts
   const meta = {
-    labels: agg.labels,
-    values: agg.values,
-    total: responses.length,
+    labels: dataset.labels,
+    values: dataset.primaryData,
+    total: isPrimaryCount ? primarySum : dataset.totalResponses,
+    isCountSeries: isPrimaryCount,
   };
 
   // 1. Donut with centered % readout
-  if (chartStyle === 'donut') {
+  if (resolvedStyle === 'donut') {
+    const topIdx = dataset.primaryData.reduce(
+      (best, val, idx) => (val > (dataset.primaryData[best] ?? -1) ? idx : best),
+      0
+    );
+    const topPct =
+      primarySum > 0 && dataset.primaryData[topIdx]
+        ? Math.round((dataset.primaryData[topIdx] / primarySum) * 100)
+        : 0;
+
     return {
       chartType: 'doughnut',
       isZoomable: false,
       meta,
-      centerReadout: agg.centerReadout,
+      centerReadout: {
+        value: `${topPct}%`,
+        label: dataset.labels[topIdx] ?? t('charts.topShareCenterLabel'),
+      },
       data: {
-        labels: agg.labels,
+        labels: dataset.labels,
         datasets: [
           {
-            label: t('charts.responseCountLabel'),
-            data: agg.values,
-            backgroundColor: agg.colors,
+            label: dataset.primaryLabel,
+            data: dataset.primaryData,
+            backgroundColor: colors,
             borderColor: tokens.surface,
             borderWidth: 2,
             hoverOffset: 6,
@@ -355,20 +309,20 @@ export function buildChartConfig({ metricKey, chartStyle, responses, sessions, t
     };
   }
 
-  // 2. Dual-Axis Trend Combo (Response count bars on left `y`, % line on right `y1`)
-  if (chartStyle === 'dualAxis') {
+  // 2. Dual-Axis Trend Combo (Primary bars on left `y`, secondary line on right `y1`)
+  if (resolvedStyle === 'dualAxis') {
     return {
       chartType: 'bar',
       isZoomable: true,
       meta,
       centerReadout: null,
       data: {
-        labels: agg.labels,
+        labels: dataset.labels,
         datasets: [
           {
             type: 'bar',
-            label: t('charts.responseCountLabel'),
-            data: agg.values,
+            label: dataset.primaryLabel,
+            data: dataset.primaryData,
             backgroundColor: tokens.cyanSoft,
             borderColor: tokens.cyan,
             borderWidth: 1.5,
@@ -378,8 +332,8 @@ export function buildChartConfig({ metricKey, chartStyle, responses, sessions, t
           },
           {
             type: 'line',
-            label: agg.secondaryLabel,
-            data: agg.secondaryValues,
+            label: dataset.secondaryLabel,
+            data: dataset.secondaryData,
             borderColor: tokens.green,
             backgroundColor: tokens.green,
             borderWidth: 2,
@@ -410,20 +364,19 @@ export function buildChartConfig({ metricKey, chartStyle, responses, sessions, t
             position: 'left',
             grid: { color: tokens.grid },
             ticks: {
-              precision: 0,
+              precision: isPrimaryCount ? 0 : undefined,
               color: tokens.tick,
               font: { family: tokens.fontMono, size: 11 },
             },
           },
           y1: {
             beginAtZero: true,
-            max: 100,
             position: 'right',
             grid: { drawOnChartArea: false },
             ticks: {
+              precision: isSecondaryCount ? 0 : undefined,
               color: tokens.green,
               font: { family: tokens.fontMono, size: 11 },
-              callback: (value) => `${value}%`,
             },
           },
         },
@@ -432,18 +385,18 @@ export function buildChartConfig({ metricKey, chartStyle, responses, sessions, t
   }
 
   // 3. Line Chart
-  if (chartStyle === 'line') {
+  if (resolvedStyle === 'line') {
     return {
       chartType: 'line',
       isZoomable: true,
       meta,
       centerReadout: null,
       data: {
-        labels: agg.labels,
+        labels: dataset.labels,
         datasets: [
           {
-            label: t('charts.responseCountLabel'),
-            data: agg.values,
+            label: dataset.primaryLabel,
+            data: dataset.primaryData,
             borderColor: tokens.cyan,
             backgroundColor: tokens.cyanSoft,
             borderWidth: 2,
@@ -474,7 +427,7 @@ export function buildChartConfig({ metricKey, chartStyle, responses, sessions, t
             beginAtZero: true,
             grid: { color: tokens.grid },
             ticks: {
-              precision: 0,
+              precision: isPrimaryCount ? 0 : undefined,
               color: tokens.tick,
               font: { family: tokens.fontMono, size: 11 },
             },
@@ -485,7 +438,7 @@ export function buildChartConfig({ metricKey, chartStyle, responses, sessions, t
   }
 
   // 4 & 5. Vertical Bar (`bar`) and Horizontal Bar (`horizontalBar`)
-  const isHorizontal = chartStyle === 'horizontalBar';
+  const isHorizontal = resolvedStyle === 'horizontalBar';
 
   return {
     chartType: 'bar',
@@ -493,12 +446,12 @@ export function buildChartConfig({ metricKey, chartStyle, responses, sessions, t
     meta,
     centerReadout: null,
     data: {
-      labels: agg.labels,
+      labels: dataset.labels,
       datasets: [
         {
-          label: t('charts.responseCountLabel'),
-          data: agg.values,
-          backgroundColor: agg.colors,
+          label: dataset.primaryLabel,
+          data: dataset.primaryData,
+          backgroundColor: colors,
           borderRadius: 6,
           maxBarThickness: 40,
         },
@@ -516,18 +469,24 @@ export function buildChartConfig({ metricKey, chartStyle, responses, sessions, t
       scales: {
         x: {
           beginAtZero: isHorizontal,
-          grid: { color: isHorizontal ? tokens.grid : 'transparent', display: isHorizontal },
+          grid: {
+            color: isHorizontal ? tokens.grid : 'transparent',
+            display: isHorizontal,
+          },
           ticks: {
-            precision: isHorizontal ? 0 : undefined,
+            precision: isHorizontal && isPrimaryCount ? 0 : undefined,
             color: tokens.tick,
             font: { family: tokens.fontMono, size: 11 },
           },
         },
         y: {
           beginAtZero: !isHorizontal,
-          grid: { color: isHorizontal ? 'transparent' : tokens.grid, display: !isHorizontal },
+          grid: {
+            color: isHorizontal ? 'transparent' : tokens.grid,
+            display: !isHorizontal,
+          },
           ticks: {
-            precision: !isHorizontal ? 0 : undefined,
+            precision: !isHorizontal && isPrimaryCount ? 0 : undefined,
             color: tokens.tick,
             font: { family: tokens.fontMono, size: 11 },
           },

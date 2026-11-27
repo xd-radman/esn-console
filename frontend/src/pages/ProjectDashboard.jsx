@@ -9,7 +9,8 @@
  */
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import Papa from 'papaparse';
 import {
   AlertCircle,
   ArrowLeft,
@@ -19,6 +20,7 @@ import {
   Eye,
   LoaderCircle,
   Plus,
+  SlidersHorizontal,
   Sparkles,
   Trash2,
   Upload,
@@ -26,6 +28,12 @@ import {
 import { useLang } from '../context/LangContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useData } from '../context/DataContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
+import {
+  getActiveColumns,
+  normalizeRowToSchema,
+  validateCSVHeadersAgainstSchema,
+} from '../lib/csvSchema.js';
 import StatusSelect from '../components/StatusSelect.jsx';
 import SummaryStrip from '../components/SummaryStrip.jsx';
 import ChartGrid from '../components/ChartGrid.jsx';
@@ -33,22 +41,13 @@ import FeedbackTable from '../components/FeedbackTable.jsx';
 import PredictionSidebar from '../components/PredictionSidebar.jsx';
 import AddSessionModal from '../components/modals/AddSessionModal.jsx';
 import DeleteSessionModal from '../components/modals/DeleteSessionModal.jsx';
+import DeleteProjectModal from '../components/modals/DeleteProjectModal.jsx';
+import ProjectColumnsModal from '../components/modals/ProjectColumnsModal.jsx';
 
-// Sample pools used by `+ Add Demo Response` for realistic live chart/KPI testing
-const DEMO_CAT1 = ['erasmus', 'local', 'both'];
-const DEMO_CAT2 = ['social', 'language', 'culture', 'mix', 'support'];
-const DEMO_COMFORT = ['high', 'high', 'medium', 'low'];
-const DEMO_SCORES = [5, 5, 4, 4, 3];
-const DEMO_OUTCOMES = ['yes', 'yes', 'yes', 'maybe', 'no'];
-const DEMO_HIGHLIGHTS = [
-  'Camaraderie',
-  'Serendipity',
-  'Belonging',
-  'Warmth',
-  'Discovery',
-  'Harmony',
-];
-const DEMO_SUGGESTIONS = [
+// Fallback sample pools used by `+ Add Demo Response` when a dynamic column has no prior values
+const DEMO_CATEGORY_FALLBACK = ['Option A', 'Option B', 'Option C'];
+const DEMO_NUMBERS = [3, 4, 4, 5, 5];
+const DEMO_TEXT_SAMPLES = [
   'Great pacing — keep the icebreaker prompt cards on each table',
   'Share the meetup reminder earlier on the ESN WhatsApp group',
   'Add 15 extra minutes for open mingling at the end',
@@ -58,6 +57,43 @@ const DEMO_SUGGESTIONS = [
 
 function pickRandom(list) {
   return list[Math.floor(Math.random() * list.length)];
+}
+
+/**
+ * Generates a realistic schema-aligned `extra_data` object matching the active
+ * project's `config.columns`, sampling existing category/numeric ranges when present.
+ */
+function buildDynamicDemoExtraData(columns = [], existingResponses = []) {
+  const extraData = {};
+
+  for (const col of getActiveColumns(columns)) {
+
+    if (col.type === 'category') {
+      const existingValues = Array.from(
+        new Set(
+          existingResponses
+            .map((row) => String(row?.extra_data?.[col.key] ?? '').trim())
+            .filter(Boolean)
+        )
+      );
+      extraData[col.key] = pickRandom(
+        existingValues.length > 0 ? existingValues : DEMO_CATEGORY_FALLBACK
+      );
+    } else if (col.type === 'number') {
+      const existingNums = existingResponses
+        .map((row) => Number(row?.extra_data?.[col.key]))
+        .filter((val) => Number.isFinite(val));
+      if (existingNums.length > 0) {
+        extraData[col.key] = pickRandom(existingNums);
+      } else {
+        extraData[col.key] = pickRandom(DEMO_NUMBERS);
+      }
+    } else {
+      extraData[col.key] = pickRandom(DEMO_TEXT_SAMPLES);
+    }
+  }
+
+  return extraData;
 }
 
 /**
@@ -111,8 +147,10 @@ export default function ProjectDashboard({
   onCloseSidebar,
 }) {
   const { projectId } = useParams();
+  const navigate = useNavigate();
   const { lang, t } = useLang();
   const { hasPermission } = useAuth();
+  const { showToast } = useToast();
 
   // Granular per-capability permission gates
   const canManageProjects = hasPermission('manage_projects');
@@ -127,12 +165,16 @@ export default function ProjectDashboard({
     isLoading,
     loadError,
     updateProjectStatus,
+    deleteProject,
+    updateProjectColumns,
+    updateProjectKpis,
     addSession,
     deleteSession,
-    addResponse,
-    importCsvToProject,
+    bulkInsertResponses,
     addGraph,
+    updateProjectGraph,
     removeGraph,
+    saveProjectDefaultGraphs,
     resetGraphs,
   } = useData();
 
@@ -142,6 +184,8 @@ export default function ProjectDashboard({
   // Modal & status feedback banner states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleteProjectModalOpen, setIsDeleteProjectModalOpen] = useState(false);
+  const [isColumnsModalOpen, setIsColumnsModalOpen] = useState(false);
   const [toolbarNotice, setToolbarNotice] = useState(null);
 
   const sessionSelectId = useId();
@@ -196,9 +240,9 @@ export default function ProjectDashboard({
     document.title = t('dashboard.pageTitle', { id: label });
   }, [projectCopy, projectId, t]);
 
-  // Add a new session in Supabase and immediately select it in the toolbar dropdown
+  // Add a new session in Supabase (and optionally import an attached validated CSV into it)
   const handleAddSession = useCallback(
-    async ({ title, startDate, endDate }) => {
+    async ({ title, startDate, endDate, csvAttachment = null }) => {
       if (!activeProject) {
         return;
       }
@@ -207,12 +251,38 @@ export default function ProjectDashboard({
         startDate,
         endDate,
       });
-      if (newSessionId) {
-        setSelectedSessionId(newSessionId);
-        setToolbarNotice(null);
+      if (!newSessionId) {
+        return;
+      }
+
+      setSelectedSessionId(newSessionId);
+      setToolbarNotice(null);
+
+      if (csvAttachment && Array.isArray(csvAttachment.rows) && csvAttachment.rows.length > 0) {
+        const projectColumns = activeProject.config?.columns ?? [];
+        const mappedRows = csvAttachment.rows.map((row) =>
+          normalizeRowToSchema(row, projectColumns)
+        );
+        const inserted = await bulkInsertResponses(
+          activeProject.id,
+          newSessionId,
+          mappedRows
+        );
+        if (inserted && inserted.length > 0) {
+          const extraCount = csvAttachment.extraColumns?.length ?? 0;
+          showToast(
+            extraCount > 0
+              ? t('dashboard.csvImportedWithExtra', {
+                  count: inserted.length,
+                  extra: extraCount,
+                })
+              : t('dashboard.csvImportedSuccess', { count: inserted.length }),
+            'success'
+          );
+        }
       }
     },
-    [activeProject, addSession]
+    [activeProject, addSession, bulkInsertResponses, showToast, t]
   );
 
   // Delete the selected session from Supabase and reset selection back to `"all"`
@@ -230,62 +300,126 @@ export default function ProjectDashboard({
     [activeProject, deleteSession]
   );
 
-  // Inject a realistic randomized demo response into Supabase for the selected session
+  // Inject a realistic schema-aligned demo response via `bulkInsertResponses`
   const handleAddDemoResponse = useCallback(async () => {
     if (!activeProject || !activeSession) {
       return;
     }
-    const demoRow = {
-      cat1: pickRandom(DEMO_CAT1),
-      cat2: pickRandom(DEMO_CAT2),
-      comfort: pickRandom(DEMO_COMFORT),
-      score: pickRandom(DEMO_SCORES),
-      outcome: pickRandom(DEMO_OUTCOMES),
-      note1: pickRandom(DEMO_HIGHLIGHTS),
-      note2: pickRandom(DEMO_SUGGESTIONS),
-    };
-    const inserted = await addResponse(activeProject.id, activeSession.id, demoRow);
-    if (inserted) {
+    const projectColumns = activeProject.config?.columns ?? [];
+    const demoExtraData = buildDynamicDemoExtraData(projectColumns, responses);
+    const inserted = await bulkInsertResponses(activeProject.id, activeSession.id, [
+      demoExtraData,
+    ]);
+    if (inserted && inserted.length > 0) {
       setToolbarNotice({
         type: 'success',
         text: t('dashboard.demoAdded', { session: activeSession.title }),
       });
     }
-  }, [activeProject, activeSession, addResponse, t]);
+  }, [activeProject, activeSession, responses, bulkInsertResponses, t]);
 
-  // Parse a user-selected `.csv` file with PapaParse and bulk-insert into Supabase
+  // Parse a `.csv` file with PapaParse, strictly validate headers against `config.columns`, and bulk-insert
   const handleCsvUpload = async (event) => {
     const file = event.target.files?.[0];
+    event.target.value = '';
     if (!file || !activeProject) {
       return;
     }
+
+    if (!activeSession) {
+      showToast(t('dashboard.selectSessionForCsv'), 'info');
+      return;
+    }
+
     try {
       const csvText = await file.text();
-      const { importedCount } = await importCsvToProject(activeProject.id, csvText);
-      if (importedCount === 0) {
-        setToolbarNotice({
-          type: 'error',
-          text: t('toast.csvEmpty'),
-        });
+      const parsed = Papa.parse(csvText, {
+        header: true,
+        skipEmptyLines: true,
+      });
+      const headers = (parsed.meta?.fields ?? [])
+        .map((field) => String(field ?? '').trim())
+        .filter(Boolean);
+      const rows = Array.isArray(parsed.data) ? parsed.data : [];
+
+      if (headers.length === 0 || rows.length === 0) {
+        showToast(t('toast.csvEmpty'), 'error');
         return;
       }
-      setSelectedSessionId('all');
-      setToolbarNotice({
-        type: 'success',
-        text: t('dashboard.csvUploaded', {
-          count: importedCount,
-          file: file.name,
-        }),
-      });
+
+      const projectColumns = activeProject.config?.columns ?? [];
+      const { valid, missingColumns, extraColumns } =
+        validateCSVHeadersAgainstSchema(headers, projectColumns);
+
+      if (!valid) {
+        showToast(
+          t('dashboard.csvMissingColumns', {
+            columns: missingColumns.join(', '),
+          }),
+          'error'
+        );
+        return;
+      }
+
+      const mappedRows = rows.map((row) =>
+        normalizeRowToSchema(row, projectColumns)
+      );
+      const inserted = await bulkInsertResponses(
+        activeProject.id,
+        activeSession.id,
+        mappedRows
+      );
+
+      if (inserted && inserted.length > 0) {
+        showToast(
+          extraColumns.length > 0
+            ? t('dashboard.csvImportedWithExtra', {
+                count: inserted.length,
+                extra: extraColumns.length,
+              })
+            : t('dashboard.csvImportedSuccess', { count: inserted.length }),
+          'success'
+        );
+      }
     } catch {
-      setToolbarNotice({
-        type: 'error',
-        text: t('dashboard.csvUploadError'),
-      });
-    } finally {
-      event.target.value = '';
+      showToast(t('dashboard.csvUploadError'), 'error');
     }
   };
+
+  // Persist edited project column schema via `updateProjectColumns`
+  const handleSaveProjectColumns = useCallback(
+    async (nextColumns) => {
+      if (!activeProject) {
+        return false;
+      }
+      return updateProjectColumns(activeProject.id, nextColumns);
+    },
+    [activeProject, updateProjectColumns]
+  );
+
+  // Persist customized KPI boxes (`max 3`) via `updateProjectKpis`
+  const handleSaveProjectKpis = useCallback(
+    async (nextKpis) => {
+      if (!activeProject) {
+        return false;
+      }
+      return updateProjectKpis(activeProject.id, nextKpis);
+    },
+    [activeProject, updateProjectKpis]
+  );
+
+  // Permanently delete the active project and redirect back to the project directory
+  const handleConfirmDeleteProject = useCallback(
+    async (targetProjectId) => {
+      const ok = await deleteProject(targetProjectId);
+      if (ok) {
+        setIsDeleteProjectModalOpen(false);
+        navigate('/', { replace: true });
+      }
+      return ok;
+    },
+    [deleteProject, navigate]
+  );
 
   // Graph CRUD callbacks scoped to the active project
   const handleAddGraph = useCallback(
@@ -297,6 +431,15 @@ export default function ProjectDashboard({
     [activeProject, addGraph]
   );
 
+  const handleUpdateGraph = useCallback(
+    (graphId, updates) => {
+      if (activeProject) {
+        updateProjectGraph(graphId, updates);
+      }
+    },
+    [activeProject, updateProjectGraph]
+  );
+
   const handleRemoveGraph = useCallback(
     (graphId) => {
       if (activeProject) {
@@ -304,6 +447,15 @@ export default function ProjectDashboard({
       }
     },
     [activeProject, removeGraph]
+  );
+
+  const handleSetDefaultGraphs = useCallback(
+    (currentGraphs) => {
+      if (activeProject) {
+        saveProjectDefaultGraphs(activeProject.id, currentGraphs);
+      }
+    },
+    [activeProject, saveProjectDefaultGraphs]
   );
 
   const handleResetGraphs = useCallback(() => {
@@ -372,6 +524,11 @@ export default function ProjectDashboard({
                 projectTitle={projectCopy.title}
                 disabled={!canManageProjects}
                 onChange={(nextStatus) => updateProjectStatus(activeProject.id, nextStatus)}
+                onDelete={
+                  canManageProjects
+                    ? () => setIsDeleteProjectModalOpen(true)
+                    : undefined
+                }
               />
             </div>
 
@@ -427,7 +584,7 @@ export default function ProjectDashboard({
             </div>
           </div>
 
-          {canManageSessions || canManageResponses ? (
+          {canManageSessions || canManageResponses || canManageProjects ? (
             <div className="session-toolbar-actions">
               {canManageSessions && (
                 <>
@@ -474,12 +631,29 @@ export default function ProjectDashboard({
                   <button
                     type="button"
                     className="btn ghost"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => {
+                      if (!activeSession) {
+                        showToast(t('dashboard.selectSessionForCsv'), 'info');
+                        return;
+                      }
+                      fileInputRef.current?.click();
+                    }}
                   >
                     <Upload size={15} strokeWidth={1.5} aria-hidden="true" />
                     <span>{t('dashboard.uploadCsv')}</span>
                   </button>
                 </>
+              )}
+
+              {canManageProjects && (
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={() => setIsColumnsModalOpen(true)}
+                >
+                  <SlidersHorizontal size={15} strokeWidth={1.5} aria-hidden="true" />
+                  <span>{t('dashboard.columnsBtn')}</span>
+                </button>
               )}
             </div>
           ) : (
@@ -521,22 +695,31 @@ export default function ProjectDashboard({
           </div>
         )}
 
-        {/* 3-tile Summary KPI Strip */}
-        <SummaryStrip responses={filteredResponses} />
+        {/* 3-Slot Customizable Summary KPI Strip */}
+        <SummaryStrip
+          project={activeProject}
+          responses={filteredResponses}
+          canEdit={canManageGraphs}
+          onSaveKpis={handleSaveProjectKpis}
+        />
 
-        {/* Customizable 12-column Bento Chart.js Grid */}
+        {/* Customizable 12-column Dynamic Bento Chart.js Grid */}
         <ChartGrid
           graphs={activeGraphs}
           responses={filteredResponses}
           sessions={scopedSessions}
+          columns={activeProject.config?.columns ?? []}
           isAdmin={canManageGraphs}
           onAddGraph={handleAddGraph}
+          onUpdateGraph={handleUpdateGraph}
           onRemoveGraph={handleRemoveGraph}
+          onSetDefaultGraphs={handleSetDefaultGraphs}
           onResetGraphs={handleResetGraphs}
         />
 
-        {/* Searchable Student Feedback & Suggestions Table */}
+        {/* Dynamic Searchable Feedback Table */}
         <FeedbackTable
+          project={activeProject}
           responses={filteredResponses}
           formatDateRange={formatDateRange}
         />
@@ -560,6 +743,8 @@ export default function ProjectDashboard({
             isOpen={isAddModalOpen}
             onClose={() => setIsAddModalOpen(false)}
             onAdd={handleAddSession}
+            columns={activeProject.config?.columns ?? []}
+            canAttachCsv={canManageResponses}
           />
 
           <DeleteSessionModal
@@ -572,6 +757,35 @@ export default function ProjectDashboard({
             }
             onClose={() => setIsDeleteModalOpen(false)}
             onConfirm={handleConfirmDeleteSession}
+          />
+        </>
+      )}
+
+      {/* Post-Creation Column Schema Editor & Delete Project Modals (gated by `manage_projects`) */}
+      {canManageProjects && (
+        <>
+          <ProjectColumnsModal
+            key={isColumnsModalOpen ? `cols-open-${activeProject.id}` : 'cols-closed'}
+            isOpen={isColumnsModalOpen}
+            onClose={() => setIsColumnsModalOpen(false)}
+            project={activeProject}
+            graphs={activeGraphs}
+            responses={responses}
+            onSave={handleSaveProjectColumns}
+          />
+
+          <DeleteProjectModal
+            key={
+              isDeleteProjectModalOpen
+                ? `del-proj-${activeProject.id}`
+                : 'del-proj-closed'
+            }
+            isOpen={isDeleteProjectModalOpen}
+            project={activeProject}
+            sessionsCount={sessions.length}
+            responsesCount={responses.length}
+            onClose={() => setIsDeleteProjectModalOpen(false)}
+            onConfirm={handleConfirmDeleteProject}
           />
         </>
       )}

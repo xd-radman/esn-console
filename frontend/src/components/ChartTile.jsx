@@ -16,12 +16,14 @@ import {
   BarChart3,
   Download,
   Maximize2,
+  Pencil,
   RotateCcw,
   X,
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useLang } from '../context/LangContext.jsx';
 import { buildChartConfig } from '../lib/chartUtils.js';
+import { resolveGraphConfig } from '../lib/csvSchema.js';
 
 const ALLOWED_SPANS = new Set([4, 6, 8, 12]);
 
@@ -29,7 +31,9 @@ export default function ChartTile({
   graph,
   responses = [],
   sessions = [],
+  columns = [],
   canRemove = false,
+  onEdit,
   onRemove,
 }) {
   const { theme } = useTheme();
@@ -48,23 +52,55 @@ export default function ChartTile({
   const expandHeadingId = useId();
 
   const spanClass = ALLOWED_SPANS.has(graph.colSpan) ? `span-${graph.colSpan}` : 'span-6';
-  const resolvedTitle = graph.customTitle || t(`charts.metrics.${graph.metricKey}`);
+  const resolvedConfig = useMemo(
+    () => resolveGraphConfig(graph, columns),
+    [graph, columns]
+  );
+
+  // Use custom title when set; otherwise generate an informative axis/aggregation title
+  const resolvedTitle = useMemo(() => {
+    const trimmed = graph.customTitle?.trim();
+    if (trimmed) {
+      return trimmed;
+    }
+
+    const xLabel =
+      resolvedConfig.xAxisKey === '__session__'
+        ? t('modal.sessionsAxisShort')
+        : (columns ?? []).find((col) => col?.key === resolvedConfig.xAxisKey)?.label ||
+          resolvedConfig.xAxisKey;
+
+    if (resolvedConfig.yAxisKey === '__count__') {
+      return resolvedConfig.xAxisKey === '__session__'
+        ? t('charts.sessionVolumeTitle')
+        : xLabel;
+    }
+
+    const yLabel =
+      (columns ?? []).find((col) => col?.key === resolvedConfig.yAxisKey)?.label ||
+      resolvedConfig.yAxisKey;
+    const aggShort = t(`charts.aggShort.${resolvedConfig.aggregation}`);
+    return t('charts.autoTitleBy', { agg: aggShort, y: yLabel, x: xLabel });
+  }, [graph.customTitle, resolvedConfig, columns, t]);
+
   const styleLabel = t(`charts.styles.${graph.chartStyle}`);
 
-  // Rebuild base Chart.js config from live CSS custom properties on theme/data change
+  // Rebuild base Chart.js config from live CSS custom properties and `graph.config`
   const baseConfig = useMemo(() => {
     if (responses.length === 0) {
       return null;
     }
     return buildChartConfig({
+      graph,
       metricKey: graph.metricKey,
       chartStyle: graph.chartStyle,
       responses,
       sessions,
+      columns,
       t,
       theme,
     });
-  }, [graph.metricKey, graph.chartStyle, responses, sessions, t, theme]);
+  }, [graph, responses, sessions, columns, t, theme]);
 
   // Handle clicking any bar, line point, or donut slice to toggle the selection chip
   const handleChartClick = useCallback(
@@ -76,12 +112,14 @@ export default function ChartTile({
       const label = baseConfig.meta.labels[index];
       const count = baseConfig.meta.values[index] ?? 0;
       const total = baseConfig.meta.total || 0;
-      const sharePct = total > 0 ? Math.round((count / total) * 100) : 0;
+      const isCountSeries = Boolean(baseConfig.meta.isCountSeries);
+      const sharePct =
+        isCountSeries && total > 0 ? Math.round((count / total) * 100) : null;
 
       setSelectedPoint((prev) =>
         prev && prev.index === index && prev.label === label
           ? null
-          : { index, label, count, sharePct }
+          : { index, label, count, sharePct, isCountSeries }
       );
     },
     [baseConfig]
@@ -216,14 +254,26 @@ export default function ChartTile({
           )}
 
           {canRemove && (
-            <button
-              type="button"
-              className="btn ghost chart-tile-delete"
-              aria-label={t('charts.deleteGraphAria', { title: resolvedTitle })}
-              onClick={() => onRemove?.(graph.id)}
-            >
-              <X size={15} strokeWidth={1.5} aria-hidden="true" />
-            </button>
+            <>
+              <button
+                type="button"
+                className="btn ghost chart-tile-action"
+                aria-label={t('charts.editGraphAria', { title: resolvedTitle })}
+                title={t('charts.editGraphAria', { title: resolvedTitle })}
+                onClick={() => onEdit?.(graph)}
+              >
+                <Pencil size={14} strokeWidth={1.5} aria-hidden="true" />
+              </button>
+
+              <button
+                type="button"
+                className="btn ghost chart-tile-delete"
+                aria-label={t('charts.deleteGraphAria', { title: resolvedTitle })}
+                onClick={() => onRemove?.(graph.id)}
+              >
+                <X size={15} strokeWidth={1.5} aria-hidden="true" />
+              </button>
+            </>
           )}
         </div>
       </header>
@@ -242,7 +292,7 @@ export default function ChartTile({
         >
           <Chart
             ref={chartRef}
-            key={`${graph.id}-${graph.chartStyle}-${theme}`}
+            key={`${graph.id}-${graph.chartStyle}-${resolvedConfig.xAxisKey}-${resolvedConfig.yAxisKey}-${resolvedConfig.aggregation}-${resolvedConfig.secondaryYAxisKey}-${theme}`}
             type={baseConfig.chartType}
             data={baseConfig.data}
             options={interactiveOptions}
@@ -271,7 +321,9 @@ export default function ChartTile({
             </span>
             <span className="chart-selection-label">{selectedPoint.label}</span>
             <span className="font-mono-label chart-selection-metric tabular-nums">
-              {selectedPoint.count} · {selectedPoint.sharePct}%
+              {selectedPoint.isCountSeries && selectedPoint.sharePct !== null
+                ? `${selectedPoint.count} · ${selectedPoint.sharePct}%`
+                : selectedPoint.count}
             </span>
             <button
               type="button"
@@ -349,7 +401,7 @@ export default function ChartTile({
                 >
                   <Chart
                     ref={expandedChartRef}
-                    key={`expanded-${graph.id}-${graph.chartStyle}-${theme}`}
+                    key={`expanded-${graph.id}-${graph.chartStyle}-${resolvedConfig.xAxisKey}-${resolvedConfig.yAxisKey}-${resolvedConfig.aggregation}-${resolvedConfig.secondaryYAxisKey}-${theme}`}
                     type={baseConfig.chartType}
                     data={baseConfig.data}
                     options={interactiveOptions}
@@ -366,7 +418,9 @@ export default function ChartTile({
                     {selectedPoint.label}
                   </span>
                   <span className="font-mono-label chart-selection-metric tabular-nums">
-                    {selectedPoint.count} · {selectedPoint.sharePct}%
+                    {selectedPoint.isCountSeries && selectedPoint.sharePct !== null
+                      ? `${selectedPoint.count} · ${selectedPoint.sharePct}%`
+                      : selectedPoint.count}
                   </span>
                   <button
                     type="button"

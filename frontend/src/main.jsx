@@ -20,21 +20,24 @@ import './styles/auth.css';
 
 import { ThemeProvider } from './context/ThemeContext.jsx';
 import { LangProvider } from './context/LangContext.jsx';
+import { ToastProvider } from './context/ToastContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { DataProvider } from './context/DataContext.jsx';
 import App from './App.jsx';
 
-// Mount root application with routing, theme, language, auth, and CSV/project contexts
+// Mount root application with routing, theme, language, toast, auth, and Supabase data contexts
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <ThemeProvider>
         <LangProvider>
-          <AuthProvider>
-            <DataProvider>
-              <App />
-            </DataProvider>
-          </AuthProvider>
+          <ToastProvider>
+            <AuthProvider>
+              <DataProvider>
+                <App />
+              </DataProvider>
+            </AuthProvider>
+          </ToastProvider>
         </LangProvider>
       </ThemeProvider>
     </BrowserRouter>

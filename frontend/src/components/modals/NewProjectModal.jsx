@@ -1,13 +1,18 @@
 /**
- * NewProjectModal.jsx — Accessible Project Creation & Template Cloning Dialog
- * Built on the native HTML `<dialog>` element (`showModal()`, top-layer backdrop,
- * native `Escape` handling, and automatic focus restoration to `+ New Project`).
- * Supports light-dismiss via `closedby="any"` plus a pointer-coordinate fallback
- * for browsers without `closedBy` support, and deep-clones template projects
- * with `structuredClone` so nested `en`/`tr` copy and `defaultGraphs` stay isolated.
+ * NewProjectModal.jsx — Dual-Mode Dynamic-Schema Project Creation Dialog
+ * Built on native `<dialog>` (`showModal()`, `closedby="any"` + Safari coordinate
+ * fallback, native `Escape`). Lets organizers define a project's metadata
+ * (Title, Description, Initial Status, Icon) and its dynamic `config.columns`
+ * blueprint via two Swiss segmented modes:
+ * - **Upload CSV**: Drop/select a `.csv` file, infer column types via PapaParse
+ *   + `inferColumnsFromCSV()`, edit labels/types/ignore flags, and optionally
+ *   import the uploaded rows immediately as Session 1.
+ * - **Manual Columns**: Start with 1 blank column row and add custom `Category`,
+ *   `Number`, or `Text` columns before any CSV exists.
  */
 
 import { useEffect, useId, useRef, useState } from 'react';
+import Papa from 'papaparse';
 import {
   AlertCircle,
   Award,
@@ -15,17 +20,21 @@ import {
   CircleCheck,
   CircleDashed,
   Compass,
+  FileSpreadsheet,
   Globe,
   HeartHandshake,
+  LoaderCircle,
   MessagesSquare,
   Music,
   Plus,
   Sparkles,
+  Trash2,
+  Upload,
   Users,
   X,
 } from 'lucide-react';
 import { useLang } from '../../context/LangContext.jsx';
-import { translations } from '../../lib/i18n.js';
+import { inferColumnsFromCSV, slugifyColumnKey } from '../../lib/csvSchema.js';
 
 // Curated 1.5px Lucide icon options exposed in the modal icon picker
 const ICON_OPTIONS = [
@@ -39,129 +48,56 @@ const ICON_OPTIONS = [
   { key: 'heart-handshake', labelKey: 'modal.icons.heartHandshake', Icon: HeartHandshake },
 ];
 
-// Standard Bento graph configuration assigned when "Blank Project" is chosen
-const BLANK_TEMPLATE = {
-  id: '',
-  code: '',
-  status: 'active',
-  iconKey: 'messages-square',
-  en: {
-    title: '',
-    subtitle: translations.en.modal.defaultSubtitle,
-    category: translations.en.modal.defaultCategory,
-  },
-  tr: {
-    title: '',
-    subtitle: translations.tr.modal.defaultSubtitle,
-    category: translations.tr.modal.defaultCategory,
-  },
-  sessionsCount: 0,
-  responsesCount: 0,
-  defaultGraphs: [
-    { id: 'blank-g1', metricKey: 'score', chartStyle: 'bar', colSpan: 6, customTitle: '' },
-    { id: 'blank-g2', metricKey: 'outcome', chartStyle: 'donut', colSpan: 6, customTitle: '' },
-  ],
-};
-
-// Map Turkish diacritics before ASCII slug/code normalization
-const TR_CHAR_MAP = {
-  ç: 'c',
-  Ç: 'c',
-  ğ: 'g',
-  Ğ: 'g',
-  ı: 'i',
-  İ: 'i',
-  ö: 'o',
-  Ö: 'o',
-  ş: 's',
-  Ş: 's',
-  ü: 'u',
-  Ü: 'u',
-};
-
-/**
- * Generates a unique URL-safe kebab-case slug (`id`) from the entered project title.
- */
-function buildUniqueSlug(rawTitle, existingProjects) {
-  const normalized = rawTitle
-    .replace(/[çÇğĞıİöÖşŞüÜ]/g, (ch) => TR_CHAR_MAP[ch] ?? ch)
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-
-  const baseSlug = normalized || 'esn-project';
-  const takenIds = new Set(existingProjects.map((project) => project.id));
-
-  if (!takenIds.has(baseSlug)) {
-    return baseSlug;
-  }
-
-  let suffix = 2;
-  while (takenIds.has(`${baseSlug}-${suffix}`)) {
-    suffix += 1;
-  }
-  return `${baseSlug}-${suffix}`;
+// Creates a fresh manual column row with a unique client-side ID
+function createBlankColumnRow() {
+  return {
+    _uid: `col_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
+    label: '',
+    type: 'category',
+    sourceHeader: null,
+  };
 }
 
-/**
- * Generates a short uppercase Swiss code (`ESN-XX-NN`) from title initials and index.
- */
-function buildProjectCode(rawTitle, existingProjects) {
-  const cleanWords = rawTitle
-    .replace(/[çÇğĞıİöÖşŞüÜ]/g, (ch) => TR_CHAR_MAP[ch] ?? ch)
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toUpperCase()
-    .replace(/[^A-Z0-9\s]/g, ' ')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
+export default function NewProjectModal({ isOpen, onClose, onCreate }) {
+  const { t } = useLang();
 
-  let initials = 'PR';
-  if (cleanWords.length >= 2) {
-    initials = `${cleanWords[0][0]}${cleanWords[1][0]}`;
-  } else if (cleanWords.length === 1) {
-    initials = cleanWords[0].slice(0, 2).padEnd(2, 'X');
-  }
-
-  const takenCodes = new Set(existingProjects.map((project) => project.code));
-  let index = existingProjects.length + 1;
-  let candidate = `ESN-${initials}-${String(index).padStart(2, '0')}`;
-
-  while (takenCodes.has(candidate)) {
-    index += 1;
-    candidate = `ESN-${initials}-${String(index).padStart(2, '0')}`;
-  }
-  return candidate;
-}
-
-export default function NewProjectModal({ isOpen, onClose, onCreate, projects = [] }) {
-  const { lang, t } = useLang();
-
-  // Controlled form field states
+  // Core project metadata fields
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [duplicateFrom, setDuplicateFrom] = useState('blank');
   const [status, setStatus] = useState('active');
   const [iconKey, setIconKey] = useState('messages-square');
-  const [hasCustomIcon, setHasCustomIcon] = useState(false);
 
-  // Validation state (shown only after blur or submit attempt, cleared on input)
-  const [titleTouched, setTitleTouched] = useState(false);
-  const [titleError, setTitleError] = useState('');
+  // Dual-mode schema definition state (`'csv'` | `'manual'`)
+  const [schemaMode, setSchemaMode] = useState('csv');
 
-  // Stable IDs linking labels, heading, and error description to controls
+  // Upload CSV tab state: file metadata, parsed raw rows, inferred columns, and Session 1 toggle
+  const [csvFileName, setCsvFileName] = useState('');
+  const [csvRawRows, setCsvRawRows] = useState([]);
+  const [csvColumns, setCsvColumns] = useState([]);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [importNow, setImportNow] = useState(true);
+  const [sessionOneTitle, setSessionOneTitle] = useState('Session 1');
+
+  // Manual Columns tab state: starts with 1 blank editable row
+  const [manualColumns, setManualColumns] = useState(() => [createBlankColumnRow()]);
+
+  // Validation & submission lock states
+  const [formError, setFormError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Stable IDs for accessible form associations and tablist
   const headingId = useId();
   const titleId = useId();
-  const titleErrorId = useId();
   const descId = useId();
-  const duplicateId = useId();
+  const csvTabId = useId();
+  const manualTabId = useId();
+  const sessionOneId = useId();
 
-  // Refs for native `<dialog>` lifecycle and validation focus routing
   const dialogRef = useRef(null);
   const titleInputRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const csvTabRef = useRef(null);
+  const manualTabRef = useRef(null);
   const pressedOutsideRef = useRef(false);
 
   // Sync React `isOpen` boolean with native `dialog.showModal()` / `dialog.close()`
@@ -180,16 +116,22 @@ export default function NewProjectModal({ isOpen, onClose, onCreate, projects = 
     }
   }, [isOpen]);
 
-  // Reset controlled fields whenever the dialog finishes closing so next open starts fresh
+  // Reset all controlled fields whenever the dialog closes
   const resetForm = () => {
     setTitle('');
     setDescription('');
-    setDuplicateFrom('blank');
     setStatus('active');
     setIconKey('messages-square');
-    setHasCustomIcon(false);
-    setTitleTouched(false);
-    setTitleError('');
+    setSchemaMode('csv');
+    setCsvFileName('');
+    setCsvRawRows([]);
+    setCsvColumns([]);
+    setIsDragOver(false);
+    setImportNow(true);
+    setSessionOneTitle('Session 1');
+    setManualColumns([createBlankColumnRow()]);
+    setFormError('');
+    setIsSubmitting(false);
   };
 
   const handleDialogClose = () => {
@@ -205,7 +147,7 @@ export default function NewProjectModal({ isOpen, onClose, onCreate, projects = 
     handleDialogClose();
   };
 
-  // Coordinate-based light-dismiss fallback for browsers without `<dialog closedby="any">`
+  // Safari coordinate-based backdrop dismiss fallback
   const isPointerOutsideDialog = (event) => {
     const dialog = dialogRef.current;
     if (!dialog || event.target !== dialog) {
@@ -237,88 +179,217 @@ export default function NewProjectModal({ isOpen, onClose, onCreate, projects = 
     pressedOutsideRef.current = false;
   };
 
-  // Clear validation message immediately as soon as the user types a non-empty title
-  const handleTitleChange = (event) => {
-    const nextValue = event.target.value;
-    setTitle(nextValue);
-    if (titleError && nextValue.trim()) {
-      setTitleError('');
+  // Keyboard navigation (`ArrowLeft` / `ArrowRight` / `Home` / `End`) for schema mode tabs
+  const handleTabKeyDown = (event) => {
+    if (
+      event.key === 'ArrowRight' ||
+      event.key === 'ArrowLeft' ||
+      event.key === 'Home' ||
+      event.key === 'End'
+    ) {
+      event.preventDefault();
+      let nextMode;
+      if (event.key === 'Home') {
+        nextMode = 'csv';
+      } else if (event.key === 'End') {
+        nextMode = 'manual';
+      } else {
+        nextMode = schemaMode === 'csv' ? 'manual' : 'csv';
+      }
+      setSchemaMode(nextMode);
+      setFormError('');
+      if (nextMode === 'csv') {
+        csvTabRef.current?.focus();
+      } else {
+        manualTabRef.current?.focus();
+      }
     }
   };
 
-  // Validate required title only after the user leaves the input after interacting
-  const handleTitleBlur = () => {
-    if (titleTouched && !title.trim()) {
-      setTitleError(t('modal.titleRequired'));
+  // Parse a selected or dropped `.csv` file with PapaParse and infer its column blueprint
+  const processCsvFile = async (file) => {
+    if (!file) {
+      return;
+    }
+    setFormError('');
+    try {
+      const csvText = await file.text();
+      const parsed = Papa.parse(csvText, {
+        header: true,
+        skipEmptyLines: true,
+      });
+      const headers = (parsed.meta?.fields ?? [])
+        .map((field) => String(field ?? '').trim())
+        .filter(Boolean);
+      const rows = Array.isArray(parsed.data) ? parsed.data : [];
+
+      if (headers.length === 0) {
+        setFormError(t('modal.csvNoHeaders'));
+        return;
+      }
+
+      const inferred = inferColumnsFromCSV(headers, rows).map((col, idx) => ({
+        _uid: `csv_${idx}_${col.key}`,
+        label: col.label,
+        type: col.type,
+        sourceHeader: col.label,
+      }));
+
+      setCsvFileName(file.name);
+      setCsvRawRows(rows);
+      setCsvColumns(inferred);
+    } catch {
+      setFormError(t('modal.csvParseError'));
     }
   };
 
-  // Update template source and inherit its icon if the user hasn't manually picked one
-  const handleDuplicateChange = (event) => {
-    const nextSourceId = event.target.value;
-    setDuplicateFrom(nextSourceId);
-
-    if (!hasCustomIcon) {
-      const matched = projects.find((item) => item.id === nextSourceId);
-      setIconKey(matched ? matched.iconKey : 'messages-square');
-    }
+  const handleFileInputChange = (event) => {
+    const file = event.target.files?.[0];
+    processCsvFile(file);
+    event.target.value = '';
   };
 
-  // Validate, deep-clone the selected template with `structuredClone`, and emit new project
-  const handleSubmit = (event) => {
+  const handleDrop = (event) => {
     event.preventDefault();
+    setIsDragOver(false);
+    const file = event.dataTransfer?.files?.[0];
+    processCsvFile(file);
+  };
+
+  // Shared column row mutators targeting the currently active mode's column array
+  const activeColumnList = schemaMode === 'csv' ? csvColumns : manualColumns;
+  const setActiveColumnList =
+    schemaMode === 'csv' ? setCsvColumns : setManualColumns;
+
+  const handleUpdateColumn = (uid, field, value) => {
+    setFormError('');
+    setActiveColumnList((prev) =>
+      prev.map((col) => (col._uid === uid ? { ...col, [field]: value } : col))
+    );
+  };
+
+  const handleRemoveColumn = (uid) => {
+    setFormError('');
+    setActiveColumnList((prev) => prev.filter((col) => col._uid !== uid));
+  };
+
+  const handleAddManualColumn = () => {
+    setFormError('');
+    setManualColumns((prev) => [...prev, createBlankColumnRow()]);
+  };
+
+  // Validate title + active columns, slugify keys, and emit dynamic project payload
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setFormError('');
 
     const trimmedTitle = title.trim();
-    const trimmedDesc = description.trim();
-
     if (!trimmedTitle) {
-      setTitleTouched(true);
-      setTitleError(t('modal.titleRequired'));
+      setFormError(t('modal.titleRequired'));
       titleInputRef.current?.focus();
       return;
     }
 
-    const sourceTemplate =
-      duplicateFrom === 'blank'
-        ? BLANK_TEMPLATE
-        : projects.find((item) => item.id === duplicateFrom) ?? BLANK_TEMPLATE;
+    const candidateRows = schemaMode === 'csv' ? csvColumns : manualColumns;
+    const activeRows = candidateRows.filter((col) => col.type !== 'ignore');
 
-    // Deep-clone so nested `en`, `tr`, and `defaultGraphs` arrays never alias the template
-    const cloned = structuredClone(sourceTemplate);
-
-    cloned.id = buildUniqueSlug(trimmedTitle, projects);
-    cloned.code = buildProjectCode(trimmedTitle, projects);
-    cloned.status = status;
-    cloned.iconKey = iconKey;
-
-    // Apply entered title to both EN/TR dictionaries so switching languages always shows it
-    cloned.en.title = trimmedTitle;
-    cloned.tr.title = trimmedTitle;
-
-    if (trimmedDesc) {
-      cloned.en.subtitle = trimmedDesc;
-      cloned.tr.subtitle = trimmedDesc;
+    if (activeRows.length === 0) {
+      setFormError(t('modal.schemaAtLeastOne'));
+      return;
     }
 
-    // New projects start with fresh session/response counters while keeping cloned graph layouts
-    cloned.sessionsCount = 0;
-    cloned.responsesCount = 0;
+    // Validate non-empty and unique labels across all active columns (case-insensitive)
+    const seenLabels = new Set();
+    for (const col of activeRows) {
+      const trimmedLabel = String(col.label ?? '').trim();
+      if (!trimmedLabel) {
+        setFormError(t('modal.schemaBlankLabel'));
+        return;
+      }
+      const normalized = trimmedLabel.toLowerCase();
+      if (seenLabels.has(normalized)) {
+        setFormError(t('modal.schemaDuplicateLabel', { label: trimmedLabel }));
+        return;
+      }
+      seenLabels.add(normalized);
+    }
 
-    onCreate?.(cloned);
-    handleExplicitClose();
+    // Generate clean, unique snake_case keys via `slugifyColumnKey`
+    const usedKeys = new Set();
+    const finalColumns = activeRows.map((col) => {
+      const trimmedLabel = String(col.label).trim();
+      const key = slugifyColumnKey(trimmedLabel, usedKeys);
+      usedKeys.add(key);
+      return {
+        key,
+        label: trimmedLabel,
+        type: col.type,
+        sourceHeader: col.sourceHeader,
+      };
+    });
+
+    // If importing CSV rows now, remap any renamed headers so `normalizeRowToSchema` finds every cell
+    let initialImport = null;
+    if (schemaMode === 'csv' && importNow && csvRawRows.length > 0) {
+      const remappedRows = csvRawRows.map((rawRow) => {
+        const mapped = { ...rawRow };
+        for (const col of finalColumns) {
+          if (
+            col.sourceHeader &&
+            col.sourceHeader !== col.label &&
+            Object.hasOwn(rawRow, col.sourceHeader)
+          ) {
+            mapped[col.label] = rawRow[col.sourceHeader];
+          }
+        }
+        return mapped;
+      });
+
+      initialImport = {
+        sessionTitle: sessionOneTitle.trim() || t('modal.sessionOneDefault'),
+        rows: remappedRows,
+      };
+    }
+
+    const cleanColumns = finalColumns.map(({ key, label, type }) => ({
+      key,
+      label,
+      type,
+    }));
+
+    setIsSubmitting(true);
+    try {
+      const created = await onCreate?.({
+        title: trimmedTitle,
+        subtitle: description.trim(),
+        status,
+        iconKey,
+        columns: cleanColumns,
+        initialImport,
+      });
+      if (created) {
+        handleExplicitClose();
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  const isCsvMode = schemaMode === 'csv';
+  const activeTabId = isCsvMode ? csvTabId : manualTabId;
+  const activeCount = activeColumnList.filter((col) => col.type !== 'ignore').length;
 
   return (
     <dialog
       ref={dialogRef}
-      className="modal-dialog bento-card elevated"
+      className="modal-dialog modal-dialog-project bento-card elevated"
       aria-labelledby={headingId}
       onClose={handleDialogClose}
       onPointerDown={handleDialogPointerDown}
       onPointerUp={handleDialogPointerUp}
       {...{ closedby: 'any' }}
     >
-      {/* Modal header with Swiss kicker, level-1 dialog heading, and explicit close button */}
+      {/* Modal header */}
       <header className="modal-header hairline-bottom">
         <div className="modal-header-copy">
           <span className="mono-tag">{t('modal.newProjectKicker')}</span>
@@ -338,9 +409,17 @@ export default function NewProjectModal({ isOpen, onClose, onCreate, projects = 
         </button>
       </header>
 
-      {/* Controlled project creation form */}
+      {/* Controlled project & schema creation form */}
       <form className="modal-form" onSubmit={handleSubmit} noValidate>
         <div className="modal-body">
+          {/* Inline validation error banner */}
+          {formError && (
+            <div className="settings-status-banner error" role="alert">
+              <AlertCircle size={15} strokeWidth={1.5} aria-hidden="true" />
+              <span>{formError}</span>
+            </div>
+          )}
+
           {/* Required Project Title input */}
           <div className="form-field">
             <div className="form-label-row">
@@ -360,22 +439,16 @@ export default function NewProjectModal({ isOpen, onClose, onCreate, projects = 
               required
               maxLength={80}
               autoFocus
-              className={`form-input ${titleError ? 'is-invalid' : ''}`}
+              className="form-input"
               placeholder={t('modal.titlePlaceholder')}
               value={title}
-              aria-invalid={Boolean(titleError)}
-              aria-describedby={titleError ? titleErrorId : undefined}
-              onChange={handleTitleChange}
-              onFocus={() => setTitleTouched(true)}
-              onBlur={handleTitleBlur}
+              onChange={(event) => {
+                setTitle(event.target.value);
+                if (formError) {
+                  setFormError('');
+                }
+              }}
             />
-
-            {titleError && (
-              <p id={titleErrorId} className="form-error" role="alert">
-                <AlertCircle size={14} strokeWidth={1.5} aria-hidden="true" />
-                <span>{titleError}</span>
-              </p>
-            )}
           </div>
 
           {/* Optional Description textarea */}
@@ -392,46 +465,13 @@ export default function NewProjectModal({ isOpen, onClose, onCreate, projects = 
             <textarea
               id={descId}
               name="description"
-              rows={3}
+              rows={2}
               maxLength={220}
               className="form-textarea"
               placeholder={t('modal.descPlaceholder')}
               value={description}
               onChange={(event) => setDescription(event.target.value)}
             />
-          </div>
-
-          {/* Template duplication selector (`Blank` + all current projects) */}
-          <div className="form-field">
-            <label htmlFor={duplicateId} className="form-label">
-              {t('modal.duplicateLabel')}
-            </label>
-
-            <div className="form-select-wrap">
-              <select
-                id={duplicateId}
-                name="duplicateFrom"
-                className="form-select"
-                value={duplicateFrom}
-                onChange={handleDuplicateChange}
-              >
-                <option value="blank">{t('modal.blankOption')}</option>
-                {projects.map((project) => {
-                  const copy = project[lang] ?? project.en;
-                  return (
-                    <option key={project.id} value={project.id}>
-                      {copy.title} ({project.code})
-                    </option>
-                  );
-                })}
-              </select>
-              <ChevronDown
-                size={15}
-                strokeWidth={1.5}
-                aria-hidden="true"
-                className="form-select-chevron"
-              />
-            </div>
           </div>
 
           {/* Initial Status (`Active` | `Inactive`) radio group */}
@@ -482,10 +522,7 @@ export default function NewProjectModal({ isOpen, onClose, onCreate, projects = 
                       value={option.key}
                       className="visually-hidden"
                       checked={iconKey === option.key}
-                      onChange={() => {
-                        setIconKey(option.key);
-                        setHasCustomIcon(true);
-                      }}
+                      onChange={() => setIconKey(option.key)}
                     />
                     <IconItem size={18} strokeWidth={1.5} aria-hidden="true" />
                     <span className="icon-choice-label">{t(option.labelKey)}</span>
@@ -494,6 +531,270 @@ export default function NewProjectModal({ isOpen, onClose, onCreate, projects = 
               })}
             </div>
           </fieldset>
+
+          {/* Dual-Mode Column Schema Builder: Upload CSV | Manual Columns */}
+          <div className="schema-builder-section">
+            <div className="form-label-row">
+              <span className="form-label">{t('modal.schemaSectionLabel')}</span>
+              <span className="font-mono-label form-badge tabular-nums">
+                {t('modal.activeColumnsCount', { count: activeCount })}
+              </span>
+            </div>
+
+            <div
+              className="team-modal-tabs"
+              role="tablist"
+              aria-label={t('modal.schemaModeLabel')}
+              onKeyDown={handleTabKeyDown}
+            >
+              <button
+                ref={csvTabRef}
+                id={csvTabId}
+                type="button"
+                role="tab"
+                aria-selected={isCsvMode}
+                tabIndex={isCsvMode ? 0 : -1}
+                className="team-modal-tab"
+                onClick={() => {
+                  setSchemaMode('csv');
+                  setFormError('');
+                }}
+              >
+                <Upload size={14} strokeWidth={1.5} aria-hidden="true" />
+                <span>{t('modal.uploadCsvTab')}</span>
+              </button>
+
+              <button
+                ref={manualTabRef}
+                id={manualTabId}
+                type="button"
+                role="tab"
+                aria-selected={!isCsvMode}
+                tabIndex={!isCsvMode ? 0 : -1}
+                className="team-modal-tab"
+                onClick={() => {
+                  setSchemaMode('manual');
+                  setFormError('');
+                }}
+              >
+                <Plus size={14} strokeWidth={1.5} aria-hidden="true" />
+                <span>{t('modal.manualColumnsTab')}</span>
+              </button>
+            </div>
+
+            <div
+              className="schema-tab-panel"
+              role="tabpanel"
+              aria-labelledby={activeTabId}
+            >
+              {isCsvMode ? (
+                <>
+                  {/* CSV file picker & drag-and-drop dropzone */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv,text/csv"
+                    className="visually-hidden"
+                    onChange={handleFileInputChange}
+                  />
+                  <div
+                    className={`schema-dropzone ${isDragOver ? 'is-dragover' : ''}`}
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                      setIsDragOver(true);
+                    }}
+                    onDragLeave={() => setIsDragOver(false)}
+                    onDrop={handleDrop}
+                  >
+                    <FileSpreadsheet size={20} strokeWidth={1.5} aria-hidden="true" />
+                    <p className="schema-dropzone-text">
+                      {csvFileName ? csvFileName : t('modal.csvDropzoneHint')}
+                    </p>
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Upload size={14} strokeWidth={1.5} aria-hidden="true" />
+                      <span>
+                        {csvFileName
+                          ? t('modal.csvReplaceBtn')
+                          : t('modal.csvChooseBtn')}
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Summary badge & editable inferred columns */}
+                  {csvColumns.length > 0 && (
+                    <>
+                      <div className="schema-file-summary font-mono-label tabular-nums">
+                        <span>
+                          {t('modal.csvDetectedSummary', {
+                            rows: csvRawRows.length,
+                            cols: csvColumns.length,
+                          })}
+                        </span>
+                      </div>
+
+                      <div className="schema-column-list">
+                        {csvColumns.map((col) => (
+                          <div
+                            key={col._uid}
+                            className={`schema-column-row ${
+                              col.type === 'ignore' ? 'is-ignored' : ''
+                            }`}
+                          >
+                            <input
+                              type="text"
+                              className="form-input schema-col-input"
+                              aria-label={t('modal.colLabelAria')}
+                              placeholder={t('modal.colLabelPlaceholder')}
+                              value={col.label}
+                              onChange={(event) =>
+                                handleUpdateColumn(
+                                  col._uid,
+                                  'label',
+                                  event.target.value
+                                )
+                              }
+                            />
+
+                            <div className="schema-type-wrap">
+                              <select
+                                className="team-role-select schema-type-select"
+                                aria-label={t('modal.colTypeAria')}
+                                value={col.type}
+                                onChange={(event) =>
+                                  handleUpdateColumn(
+                                    col._uid,
+                                    'type',
+                                    event.target.value
+                                  )
+                                }
+                              >
+                                <option value="category">{t('modal.colTypes.category')}</option>
+                                <option value="number">{t('modal.colTypes.number')}</option>
+                                <option value="text">{t('modal.colTypes.text')}</option>
+                                <option value="ignore">{t('modal.colTypes.ignore')}</option>
+                              </select>
+                              <ChevronDown
+                                size={14}
+                                strokeWidth={1.5}
+                                aria-hidden="true"
+                                className="team-role-chevron"
+                              />
+                            </div>
+
+                            <button
+                              type="button"
+                              className="btn ghost schema-remove-btn"
+                              aria-label={t('modal.removeColumnAria')}
+                              onClick={() => handleRemoveColumn(col._uid)}
+                            >
+                              <Trash2 size={14} strokeWidth={1.5} aria-hidden="true" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Friendly optional Session 1 immediate import checkbox */}
+                      {csvRawRows.length > 0 && (
+                        <div className="schema-import-box">
+                          <label className="schema-checkbox-row">
+                            <input
+                              type="checkbox"
+                              checked={importNow}
+                              onChange={(event) => setImportNow(event.target.checked)}
+                            />
+                            <span>{t('modal.importNowCheckbox')}</span>
+                          </label>
+
+                          {importNow && (
+                            <div className="form-field schema-session-field">
+                              <label htmlFor={sessionOneId} className="form-label">
+                                {t('modal.sessionOneLabel')}
+                              </label>
+                              <input
+                                id={sessionOneId}
+                                type="text"
+                                maxLength={80}
+                                className="form-input schema-col-input"
+                                placeholder={t('modal.sessionOneDefault')}
+                                value={sessionOneTitle}
+                                onChange={(event) =>
+                                  setSessionOneTitle(event.target.value)
+                                }
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
+              ) : (
+                /* Manual Columns Tab */
+                <>
+                  <div className="schema-column-list">
+                    {manualColumns.map((col) => (
+                      <div key={col._uid} className="schema-column-row">
+                        <input
+                          type="text"
+                          className="form-input schema-col-input"
+                          aria-label={t('modal.colLabelAria')}
+                          placeholder={t('modal.colLabelPlaceholder')}
+                          value={col.label}
+                          onChange={(event) =>
+                            handleUpdateColumn(col._uid, 'label', event.target.value)
+                          }
+                        />
+
+                        <div className="schema-type-wrap">
+                          <select
+                            className="team-role-select schema-type-select"
+                            aria-label={t('modal.colTypeAria')}
+                            value={col.type}
+                            onChange={(event) =>
+                              handleUpdateColumn(col._uid, 'type', event.target.value)
+                            }
+                          >
+                            <option value="category">{t('modal.colTypes.category')}</option>
+                            <option value="number">{t('modal.colTypes.number')}</option>
+                            <option value="text">{t('modal.colTypes.text')}</option>
+                          </select>
+                          <ChevronDown
+                            size={14}
+                            strokeWidth={1.5}
+                            aria-hidden="true"
+                            className="team-role-chevron"
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          className="btn ghost schema-remove-btn"
+                          aria-label={t('modal.removeColumnAria')}
+                          disabled={manualColumns.length <= 1}
+                          onClick={() => handleRemoveColumn(col._uid)}
+                        >
+                          <Trash2 size={14} strokeWidth={1.5} aria-hidden="true" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="btn schema-add-col-btn"
+                    onClick={handleAddManualColumn}
+                  >
+                    <Plus size={14} strokeWidth={1.5} aria-hidden="true" />
+                    <span>{t('modal.addColumnBtn')}</span>
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Modal action footer */}
@@ -502,9 +803,23 @@ export default function NewProjectModal({ isOpen, onClose, onCreate, projects = 
             <span>{t('modal.cancel')}</span>
           </button>
 
-          <button type="submit" className="btn primary">
-            <Plus size={15} strokeWidth={1.5} aria-hidden="true" />
-            <span>{t('modal.create')}</span>
+          <button type="submit" className="btn primary" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <LoaderCircle
+                  size={15}
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                  className="auth-spinner"
+                />
+                <span>{t('settings.saving')}</span>
+              </>
+            ) : (
+              <>
+                <Plus size={15} strokeWidth={1.5} aria-hidden="true" />
+                <span>{t('modal.create')}</span>
+              </>
+            )}
           </button>
         </footer>
       </form>
