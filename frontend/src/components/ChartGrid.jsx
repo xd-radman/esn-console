@@ -213,6 +213,39 @@ export default function ChartGrid({
   // Ensure listeners are cleaned up if the component unmounts mid-drag
   useEffect(() => cleanupDragSession, [cleanupDragSession]);
 
+  // Touch-safe mobile (`< 640px`) step reorder handler (`delta = -1` up, `+1` down)
+  const handleStepMoveGraph = useCallback(
+    (graphId, delta) => {
+      if (!canReorder) {
+        return;
+      }
+      const currentList = graphsRef.current ?? [];
+      const fromIndex = currentList.findIndex(
+        (item) => String(item.id) === String(graphId)
+      );
+      const toIndex = fromIndex + delta;
+      if (fromIndex < 0 || toIndex < 0 || toIndex >= currentList.length) {
+        return;
+      }
+
+      const reordered = [...currentList];
+      const [movedTile] = reordered.splice(fromIndex, 1);
+      reordered.splice(toIndex, 0, movedTile);
+      onReorderRef.current?.(reordered);
+    },
+    [canReorder]
+  );
+
+  const handleMoveGraphUp = useCallback(
+    (graphId) => handleStepMoveGraph(graphId, -1),
+    [handleStepMoveGraph]
+  );
+
+  const handleMoveGraphDown = useCallback(
+    (graphId) => handleStepMoveGraph(graphId, 1),
+    [handleStepMoveGraph]
+  );
+
   // Start desktop pointer-based drag strictly from `.chart-drag-handle`
   const handleGripPointerDown = useCallback(
     (graphId, event) => {
@@ -509,7 +542,7 @@ export default function ChartGrid({
           ref={gridRef}
           className={`chart-grid ${draggedId ? 'is-reordering' : ''}`}
         >
-          {graphs.map((graph) => {
+          {graphs.map((graph, index) => {
             const isDraggedTile =
               Boolean(draggedId) && String(draggedId) === String(graph.id);
             const isTargetTile =
@@ -526,10 +559,14 @@ export default function ChartGrid({
                 columns={columns}
                 canRemove={isAdmin}
                 canReorder={canReorder}
+                isFirst={index === 0}
+                isLast={index === graphs.length - 1}
                 isDragging={isDraggedTile}
                 isDragOver={isTargetTile}
                 dropPlacement={isTargetTile ? dropTarget.placement : null}
                 onGripPointerDown={handleGripPointerDown}
+                onMoveUp={handleMoveGraphUp}
+                onMoveDown={handleMoveGraphDown}
                 onEdit={handleOpenEditModal}
                 onRemove={onRemoveGraph}
               />

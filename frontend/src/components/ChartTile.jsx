@@ -14,6 +14,8 @@ import { createPortal } from 'react-dom';
 import { Chart } from 'react-chartjs-2';
 import {
   BarChart3,
+  ChevronDown,
+  ChevronUp,
   Download,
   GripVertical,
   Maximize2,
@@ -35,10 +37,14 @@ export default function ChartTile({
   columns = [],
   canRemove = false,
   canReorder = false,
+  isFirst = false,
+  isLast = false,
   isDragging = false,
   isDragOver = false,
   dropPlacement = null,
   onGripPointerDown,
+  onMoveUp,
+  onMoveDown,
   onEdit,
   onRemove,
 }) {
@@ -263,6 +269,32 @@ export default function ChartTile({
         </div>
 
         <div className="chart-tile-toolbar">
+          {canReorder && (
+            <div className="chart-mobile-reorder">
+              <button
+                type="button"
+                className="btn ghost chart-tile-action chart-mobile-reorder-btn"
+                disabled={isFirst}
+                aria-label={t('charts.moveUpAria', { title: resolvedTitle })}
+                title={t('charts.moveUpAria', { title: resolvedTitle })}
+                onClick={() => onMoveUp?.(graph.id)}
+              >
+                <ChevronUp size={15} strokeWidth={1.5} aria-hidden="true" />
+              </button>
+
+              <button
+                type="button"
+                className="btn ghost chart-tile-action chart-mobile-reorder-btn"
+                disabled={isLast}
+                aria-label={t('charts.moveDownAria', { title: resolvedTitle })}
+                title={t('charts.moveDownAria', { title: resolvedTitle })}
+                onClick={() => onMoveDown?.(graph.id)}
+              >
+                <ChevronDown size={15} strokeWidth={1.5} aria-hidden="true" />
+              </button>
+            </div>
+          )}
+
           {baseConfig && isZoomable && (
             <button
               type="button"

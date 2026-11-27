@@ -2793,7 +2793,18 @@
     display: none;
   }
 
+  /* Mobile (`< 640px`) Move Up / Move Down step controls (hidden on desktop) */
+  .chart-mobile-reorder {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
   @media (min-width: 640px) {
+    .chart-mobile-reorder {
+      display: none;
+    }
+
     .chart-grid.is-reordering {
       user-select: none;
     }
@@ -2899,6 +2910,153 @@
 
     .chart-tile.is-drag-over.drop-below::after {
       inset-block-end: -0.55rem;
+    }
+  }
+
+  /* ------------------------------------------------------------------------
+     Mobile Dashboard Layout & Touch Ergonomics (`< 640px`)
+     ------------------------------------------------------------------------ */
+  @media (max-width: 639.98px) {
+    .dashboard-main,
+    .dashboard-content,
+    .chart-grid-section,
+    .data-table-section {
+      min-inline-size: 0;
+      overflow-x: clip;
+    }
+
+    /* Session & layout toolbar stacks cleanly with generous tap targets */
+    .session-toolbar {
+      padding: 0.85rem 0.95rem;
+      gap: 0.7rem;
+    }
+
+    .session-select-group {
+      flex: 1 1 100%;
+      max-inline-size: none;
+    }
+
+    .session-select {
+      min-block-size: 2.6rem;
+    }
+
+    .session-toolbar-actions {
+      inline-size: 100%;
+      gap: 0.45rem;
+
+      & .btn {
+        min-block-size: 2.4rem;
+        padding-inline: 0.7rem;
+      }
+    }
+
+    /* KPI Strip single-column stack with generous action buttons */
+    .dashboard-kpi-strip {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.85rem;
+    }
+
+    .dashboard-kpi-tile {
+      min-inline-size: 0;
+      padding: 1.05rem 1.15rem;
+    }
+
+    .kpi-tile-header {
+      flex-wrap: wrap;
+      gap: 0.45rem;
+    }
+
+    .kpi-tile-action-btn {
+      min-block-size: 2.25rem;
+      min-inline-size: 2.25rem;
+      padding: 0.35rem;
+    }
+
+    /* 12-column Bento ChartGrid collapses into a crisp single full-width column */
+    .chart-grid-header {
+      flex-wrap: wrap;
+      gap: 0.65rem;
+    }
+
+    .chart-grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 1rem;
+    }
+
+    .chart-grid > .chart-tile {
+      grid-column: 1 / -1;
+      min-inline-size: 0;
+      padding: 1.05rem 1.1rem;
+    }
+
+    .chart-tile-header {
+      flex-wrap: wrap;
+      gap: 0.65rem;
+    }
+
+    .chart-tile-toolbar {
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-inline-start: auto;
+    }
+
+    .chart-tile-action,
+    .chart-tile-delete,
+    .chart-mobile-reorder-btn {
+      min-block-size: 2.35rem;
+      min-inline-size: 2.35rem;
+      padding: 0.4rem;
+    }
+
+    /* Data Table controls wrap cleanly without clipping on 360px–430px screens */
+    .feedback-section {
+      padding: 1.05rem 1.1rem;
+    }
+
+    .data-table-header {
+      align-items: stretch;
+      gap: 0.75rem;
+    }
+
+    .data-table-toolbar {
+      inline-size: 100%;
+      justify-content: flex-start;
+      gap: 0.5rem;
+    }
+
+    .data-col-select-wrap,
+    .data-search-wrap {
+      flex: 1 1 100%;
+      min-inline-size: 0;
+      max-inline-size: none;
+    }
+
+    .data-col-select,
+    .feedback-search-input,
+    .data-col-picker-btn {
+      min-block-size: 2.5rem;
+    }
+
+    .data-col-popover {
+      inset-inline-start: 0;
+      inset-inline-end: auto;
+      inline-size: min(19rem, calc(100dvw - 2.5rem));
+    }
+
+    .data-table-footer {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.65rem;
+    }
+
+    .data-pagination-controls {
+      justify-content: space-between;
+      inline-size: 100%;
+    }
+
+    .data-pagesize-select,
+    .data-page-btn {
+      min-block-size: 2.35rem;
     }
   }
 
