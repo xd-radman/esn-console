@@ -577,6 +577,17 @@ export default function ProjectDashboard({
     [effectiveKpis, effectiveGraphs, persistPersonalLayout]
   );
 
+  const handleReorderGraphs = useCallback(
+    async (reorderedGraphs) => {
+      const normalizedOrder = (reorderedGraphs ?? []).map((graph, idx) => ({
+        ...graph,
+        sortOrder: idx,
+      }));
+      await persistPersonalLayout(effectiveKpis, normalizedOrder);
+    },
+    [effectiveKpis, persistPersonalLayout]
+  );
+
   // Reset the current user's personal layout override back to the shared team default
   const handleResetToDefaultLayout = useCallback(async () => {
     const ok = await clearPersonalLayoutOverride();
@@ -928,6 +939,7 @@ export default function ProjectDashboard({
           onAddGraph={handleAddGraph}
           onUpdateGraph={handleUpdateGraph}
           onRemoveGraph={handleRemoveGraph}
+          onReorderGraphs={handleReorderGraphs}
         />
 
         {/* Dynamic Searchable Feedback Table */}

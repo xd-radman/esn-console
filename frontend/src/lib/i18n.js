@@ -267,6 +267,7 @@ export const translations = {
       emptySubtitle:
         'Add a custom chart tile or restore this project’s default Swiss Bento layout.',
       noData: 'No responses in this session yet.',
+      dragToReorder: 'Drag to reorder graph (drop above, below, or beside)',
       editGraphAria: 'Edit {title} chart',
       deleteGraphAria: 'Remove {title} chart',
       graphAddedToast: 'Added graph tile to dashboard.',
@@ -969,6 +970,7 @@ export const translations = {
       emptySubtitle:
         'Özel bir grafik kartı ekleyin veya bu projenin varsayılan Swiss Bento yerleşimini geri yükleyin.',
       noData: 'Bu oturumda henüz yanıt bulunmuyor.',
+      dragToReorder: 'Grafiği yeniden sıralamak için sürükleyin (üste, alta veya yana bırakın)',
       editGraphAria: '{title} grafiğini düzenle',
       deleteGraphAria: '{title} grafiğini kaldır',
       graphAddedToast: 'Grafik kartı panoya eklendi.',

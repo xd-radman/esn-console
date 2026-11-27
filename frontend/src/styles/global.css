@@ -2781,9 +2781,135 @@
     }
   }
 
+  /* Desktop ChartTile drag handle, picked-up reactive motion & side-by-side drop rails */
+  .chart-tile-start {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.45rem;
+    min-inline-size: 0;
+  }
+
+  .chart-drag-handle {
+    display: none;
+  }
+
+  @media (min-width: 640px) {
+    .chart-grid.is-reordering {
+      user-select: none;
+    }
+
+    .chart-drag-handle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-block-start: 0.15rem;
+      padding: 0.2rem;
+      border-radius: var(--radius-control);
+      color: var(--ink-faint);
+      cursor: grab;
+      user-select: none;
+      transition: var(--transition-theme);
+
+      &:hover {
+        color: var(--ink-secondary);
+        background-color: var(--bg-inset);
+      }
+
+      &:active {
+        cursor: grabbing;
+        color: var(--accent-primary-ink);
+      }
+    }
+
+    .chart-tile {
+      position: relative;
+      transition:
+        transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 200ms ease,
+        border-color 160ms ease,
+        opacity 160ms ease;
+    }
+
+    /* Picked-up graph stays crisp (`0.96` opacity) and counter-reacts (`--drag-rx`, `--drag-tilt`) to horizontal motion */
+    .chart-tile.is-dragging {
+      z-index: 45;
+      opacity: 0.96;
+      pointer-events: none;
+      border-color: var(--accent-primary-border);
+      box-shadow: var(--shadow-popover), 0 0 0 1px var(--accent-primary-border);
+      transform: translate3d(
+          calc(var(--drag-tx, 0px) + var(--drag-rx, 0px)),
+          var(--drag-ty, 0px),
+          0
+        )
+        scale(1.015)
+        rotate(var(--drag-tilt, 0deg));
+      transition:
+        transform 55ms cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 180ms ease,
+        opacity 150ms ease;
+      will-change: transform;
+    }
+
+    /* Target tile stays stationary in place with a clean border highlight & 4-way insertion rail */
+    .chart-tile.is-drag-over {
+      border-color: var(--accent-primary-border);
+      box-shadow: 0 0 0 2px var(--accent-primary-soft);
+      z-index: 3;
+    }
+
+    /* Vertical left / right insertion indicator bars (side-by-side & between tiles) */
+    .chart-tile.is-drag-over.drop-left::before,
+    .chart-tile.is-drag-over.drop-right::after {
+      content: '';
+      position: absolute;
+      inset-block: 0.65rem;
+      inline-size: 3px;
+      border-radius: var(--radius-pill);
+      background-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px var(--accent-primary-soft);
+      pointer-events: none;
+    }
+
+    .chart-tile.is-drag-over.drop-left::before {
+      inset-inline-start: -0.55rem;
+    }
+
+    .chart-tile.is-drag-over.drop-right::after {
+      inset-inline-end: -0.55rem;
+    }
+
+    /* Horizontal top / bottom insertion indicator bars (above & below tiles) */
+    .chart-tile.is-drag-over.drop-above::before,
+    .chart-tile.is-drag-over.drop-below::after {
+      content: '';
+      position: absolute;
+      inset-inline: 0.65rem;
+      block-size: 3px;
+      border-radius: var(--radius-pill);
+      background-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px var(--accent-primary-soft);
+      pointer-events: none;
+    }
+
+    .chart-tile.is-drag-over.drop-above::before {
+      inset-block-start: -0.55rem;
+    }
+
+    .chart-tile.is-drag-over.drop-below::after {
+      inset-block-end: -0.55rem;
+    }
+  }
+
   /* Respect OS reduced-motion setting on interactive primitives */
   @media (prefers-reduced-motion: reduce) {
     :where(.bento-card, .btn, .form-input, .form-textarea, .form-select, .toast-card) {
+      transition: none;
+    }
+
+    .chart-tile.is-dragging {
+      transform: translate3d(var(--drag-tx, 0px), var(--drag-ty, 0px), 0);
       transition: none;
     }
   }

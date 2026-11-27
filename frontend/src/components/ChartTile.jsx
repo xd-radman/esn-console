@@ -15,6 +15,7 @@ import { Chart } from 'react-chartjs-2';
 import {
   BarChart3,
   Download,
+  GripVertical,
   Maximize2,
   Pencil,
   RotateCcw,
@@ -33,6 +34,11 @@ export default function ChartTile({
   sessions = [],
   columns = [],
   canRemove = false,
+  canReorder = false,
+  isDragging = false,
+  isDragOver = false,
+  dropPlacement = null,
+  onGripPointerDown,
   onEdit,
   onRemove,
 }) {
@@ -46,7 +52,7 @@ export default function ChartTile({
   const expandDialogRef = useRef(null);
   const pressedOutsideRef = useRef(false);
 
-  // Selected data point chip state (`{ index, label, count, sharePct } | null`)
+  // Selected data point chip state and fullscreen inspect state
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -209,13 +215,51 @@ export default function ChartTile({
 
   const isZoomable = Boolean(baseConfig?.isZoomable);
 
+  const activePlacement =
+    isDragOver &&
+    (dropPlacement === 'above' ||
+      dropPlacement === 'below' ||
+      dropPlacement === 'left' ||
+      dropPlacement === 'right')
+      ? dropPlacement
+      : null;
+
+  const tileClasses = [
+    'bento-card',
+    'chart-tile',
+    spanClass,
+    isDragging ? 'is-dragging' : '',
+    isDragOver ? 'is-drag-over' : '',
+    activePlacement ? `drop-${activePlacement}` : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <article className={`bento-card chart-tile ${spanClass}`}>
-      {/* Tile header: editorial title, mono style badge, and interactive action toolbar */}
+    <article
+      className={tileClasses}
+      data-graph-id={graph.id}
+      data-drop-placement={activePlacement ?? undefined}
+    >
+      {/* Tile header: desktop drag handle, editorial title, mono style badge, and action toolbar */}
       <header className="chart-tile-header">
-        <div className="chart-tile-heading">
-          <h3 className="font-editorial chart-tile-title">{resolvedTitle}</h3>
-          <span className="font-mono-label chart-tile-meta">{styleLabel}</span>
+        <div className="chart-tile-start">
+          {canReorder && (
+            <span
+              className="chart-drag-handle"
+              role="img"
+              aria-label={t('charts.dragToReorder')}
+              title={t('charts.dragToReorder')}
+              onPointerDown={(event) => onGripPointerDown?.(graph.id, event)}
+            >
+              <GripVertical size={16} strokeWidth={1.5} aria-hidden="true" />
+            </span>
+          )}
+
+          <div className="chart-tile-heading">
+            <h3 className="font-editorial chart-tile-title">{resolvedTitle}</h3>
+            <span className="font-mono-label chart-tile-meta">{styleLabel}</span>
+          </div>
         </div>
 
         <div className="chart-tile-toolbar">
