@@ -234,7 +234,7 @@ export function DataProvider({ children }) {
   const [loadErrorState, setLoadErrorState] = useState({ userId: null, message: null });
   const [actionError, setActionError] = useState(null);
 
-  const isCurrentWorkspace = Boolean(userId) && workspace.userId === userId;
+  const isCurrentWorkspace = Boolean(userId) && isAdmin && workspace.userId === userId;
   const baseProjects = useMemo(
     () => (isCurrentWorkspace ? workspace.projects : []),
     [isCurrentWorkspace, workspace.projects]
@@ -248,10 +248,13 @@ export function DataProvider({ children }) {
     [isCurrentWorkspace, workspace.graphsByProject]
   );
   const loadError =
-    userId && loadErrorState.userId === userId ? loadErrorState.message : null;
+    userId && isAdmin && loadErrorState.userId === userId
+      ? loadErrorState.message
+      : null;
   const isLoading =
     !authLoading &&
     Boolean(userId) &&
+    isAdmin &&
     Boolean(supabase) &&
     !isCurrentWorkspace &&
     !loadError;
@@ -297,9 +300,9 @@ export function DataProvider({ children }) {
     [baseProjects]
   );
 
-  // Hydrate all tables from Supabase once authentication resolves (auto-seeding for Admins if empty)
+  // Hydrate all tables from Supabase only for authenticated Admins (skip locked-out members)
   useEffect(() => {
-    if (authLoading || !userId || !supabase) {
+    if (authLoading || !userId || !isAdmin || !supabase) {
       return undefined;
     }
 

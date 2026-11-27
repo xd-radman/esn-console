@@ -12,18 +12,21 @@ import { LoaderCircle } from 'lucide-react';
 import { useAuth } from './context/AuthContext.jsx';
 import { useData } from './context/DataContext.jsx';
 import { useLang } from './context/LangContext.jsx';
+import { ToastProvider } from './context/ToastContext.jsx';
 import Header from './components/Header.jsx';
 import ErrorToast from './components/ErrorToast.jsx';
 import LandingPage from './pages/LandingPage.jsx';
 import ProjectDashboard from './pages/ProjectDashboard.jsx';
 import LoginPage from './pages/LoginPage.jsx';
+import AccessPendingPage from './pages/AccessPendingPage.jsx';
 
 /**
- * Route guard redirecting unauthenticated visitors to `/login` while displaying
+ * Route guard redirecting unauthenticated visitors to `/login`, rendering the
+ * `AccessPendingPage` limbo screen for non-admin `member` accounts, and showing
  * a centered loading card until the initial Supabase session check completes.
  */
 function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth();
+  const { user, isAdmin, loading } = useAuth();
   const { t } = useLang();
 
   if (loading) {
@@ -44,6 +47,11 @@ function ProtectedRoute({ children }) {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Lock non-admin members out of all workspace routes until promoted by an Admin
+  if (!isAdmin) {
+    return <AccessPendingPage />;
   }
 
   return children;
@@ -69,41 +77,43 @@ export default function App() {
   const showHeader = !loading && Boolean(user) && location.pathname !== '/login';
 
   return (
-    <div className="app-shell">
-      {showHeader && (
-        <Header
-          isSidebarOpen={isSidebarOpen}
-          onToggleSidebar={handleToggleSidebar}
-        />
-      )}
+    <ToastProvider>
+      <div className="app-shell">
+        {showHeader && (
+          <Header
+            isSidebarOpen={isSidebarOpen}
+            onToggleSidebar={handleToggleSidebar}
+          />
+        )}
 
-      {/* Client-side route table with auth protection on workspace routes */}
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <LandingPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/project/:projectId"
-          element={
-            <ProtectedRoute>
-              <ProjectDashboard
-                isSidebarOpen={isSidebarOpen}
-                onCloseSidebar={handleCloseSidebar}
-              />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+        {/* Client-side route table with auth protection on workspace routes */}
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <LandingPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/project/:projectId"
+            element={
+              <ProtectedRoute>
+                <ProjectDashboard
+                  isSidebarOpen={isSidebarOpen}
+                  onCloseSidebar={handleCloseSidebar}
+                />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
 
-      {/* Persistent dismissible toast region for Supabase write/RLS errors */}
-      <ErrorToast error={actionError} onDismiss={dismissActionError} />
-    </div>
+        {/* Persistent dismissible toast region for Supabase write/RLS errors */}
+        <ErrorToast error={actionError} onDismiss={dismissActionError} />
+      </div>
+    </ToastProvider>
   );
 }

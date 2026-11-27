@@ -1,9 +1,9 @@
 /**
  * supabase.js — Supabase Browser Client Initialization
  * Creates and exports the singleton Supabase client configured from Vite
- * environment variables (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`).
- * Emits a clear console warning when either variable is missing so setup
- * issues are immediately visible without crashing the app shell.
+ * environment variables (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) with
+ * explicit `localStorage` session persistence so signed-in users stay
+ * authenticated across browser restarts.
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -20,8 +20,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-// Export the configured client (or `null` when env vars are missing so AuthContext can fail gracefully)
+// Export the configured client with persistent browser sessions via localStorage
 export const supabase =
   supabaseUrl && supabaseAnonKey
-    ? createClient(supabaseUrl, supabaseAnonKey)
+    ? createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true,
+          storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        },
+      })
     : null;

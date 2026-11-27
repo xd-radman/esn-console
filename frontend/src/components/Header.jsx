@@ -16,6 +16,8 @@ import { useLang } from '../context/LangContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useData } from '../context/DataContext.jsx';
 import ProfilePopover from './ProfilePopover.jsx';
+import AccountSettingsModal from './modals/AccountSettingsModal.jsx';
+import TeamPermissionsModal from './modals/TeamPermissionsModal.jsx';
 
 /**
  * Derives a two-character uppercase monogram from a user's full name or email.
@@ -40,7 +42,7 @@ export default function Header({ isSidebarOpen = false, onToggleSidebar }) {
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
   const { lang, setLang, t } = useLang();
-  const { user, profile } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
   const { projects } = useData();
 
   const googleFullName =
@@ -51,8 +53,10 @@ export default function Header({ isSidebarOpen = false, onToggleSidebar }) {
     t('profile.monogram')
   );
 
-  // Open/closed state for the account ProfilePopover
+  // Open/closed state for the account ProfilePopover and portaled settings modals
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isTeamOpen, setIsTeamOpen] = useState(false);
 
   // Stable IDs for accessible label/control and aria-controls associations
   const switcherId = useId();
@@ -70,6 +74,16 @@ export default function Header({ isSidebarOpen = false, onToggleSidebar }) {
 
   const closeProfile = useCallback(() => {
     setIsProfileOpen(false);
+  }, []);
+
+  const handleOpenSettings = useCallback(() => {
+    setIsProfileOpen(false);
+    setIsSettingsOpen(true);
+  }, []);
+
+  const handleOpenTeam = useCallback(() => {
+    setIsProfileOpen(false);
+    setIsTeamOpen(true);
   }, []);
 
   // Navigate to `/` and close any open popover
@@ -106,8 +120,8 @@ export default function Header({ isSidebarOpen = false, onToggleSidebar }) {
             <span className="brand-wordmark font-editorial">{t('brand')}</span>
           </button>
 
-          {/* Dashboard-only controls shown exclusively on `/project/:projectId` */}
-          {activeProjectId && (
+          {/* Dashboard-only controls shown exclusively to Admins on `/project/:projectId` */}
+          {isAdmin && activeProjectId && (
             <nav
               className="dashboard-nav"
               aria-label={t('nav.controlsLabel')}
@@ -233,10 +247,26 @@ export default function Header({ isSidebarOpen = false, onToggleSidebar }) {
               isOpen={isProfileOpen}
               onClose={closeProfile}
               triggerRef={profileTriggerRef}
+              onOpenSettings={handleOpenSettings}
+              onOpenTeam={handleOpenTeam}
             />
           </div>
         </div>
       </div>
+
+      {/* Portaled Notion-style Account Settings & Admin-only Team Permissions modals */}
+      <AccountSettingsModal
+        key={isSettingsOpen ? 'settings-open' : 'settings-closed'}
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
+
+      {isAdmin && (
+        <TeamPermissionsModal
+          isOpen={isTeamOpen}
+          onClose={() => setIsTeamOpen(false)}
+        />
+      )}
     </header>
   );
 }

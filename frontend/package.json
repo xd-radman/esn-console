@@ -12,6 +12,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.119.2",
     "chart.js": "^4.6.2",
+    "chartjs-plugin-zoom": "^3.0.2",
     "lucide-react": "^1.80.0",
     "papaparse": "^5.7.1",
     "react": "^19.3.1",

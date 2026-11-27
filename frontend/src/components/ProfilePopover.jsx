@@ -13,8 +13,8 @@ import {
   KeyRound,
   LogOut,
   Settings,
+  Shield,
   ShieldCheck,
-  ShieldCogCorner,
   User,
 } from 'lucide-react';
 import { useLang } from '../context/LangContext.jsx';
@@ -35,7 +35,14 @@ function getInitials(name, fallback) {
   return trimmed.slice(0, 2).toUpperCase();
 }
 
-export default function ProfilePopover({ id, isOpen, onClose, triggerRef }) {
+export default function ProfilePopover({
+  id,
+  isOpen,
+  onClose,
+  triggerRef,
+  onOpenSettings,
+  onOpenTeam,
+}) {
   const { t } = useLang();
   const { user, profile, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
@@ -156,17 +163,31 @@ export default function ProfilePopover({ id, isOpen, onClose, triggerRef }) {
 
       <hr className="profile-divider" />
 
-      {/* Account action buttons */}
+      {/* Account action buttons opening centered Notion-style settings modals */}
       <div className="profile-actions">
-        <button type="button" className="profile-action-btn" onClick={onClose}>
+        <button
+          type="button"
+          className="profile-action-btn"
+          onClick={() => {
+            onClose();
+            onOpenSettings?.();
+          }}
+        >
           <Settings size={15} strokeWidth={1.5} aria-hidden="true" />
           <span>{t('profile.accountSettings')}</span>
         </button>
 
         {isAdmin && (
-          <button type="button" className="profile-action-btn" onClick={onClose}>
-            <ShieldCogCorner size={15} strokeWidth={1.5} aria-hidden="true" />
-            <span>{t('profile.teamandPremissions')}</span>
+          <button
+            type="button"
+            className="profile-action-btn"
+            onClick={() => {
+              onClose();
+              onOpenTeam?.();
+            }}
+          >
+            <Shield size={15} strokeWidth={1.5} aria-hidden="true" />
+            <span>{t('team.menuLabel')}</span>
           </button>
         )}
       </div>

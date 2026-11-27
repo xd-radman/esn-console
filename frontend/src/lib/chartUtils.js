@@ -23,8 +23,9 @@ import {
   Title,
   Tooltip,
 } from 'chart.js';
+import zoomPlugin from 'chartjs-plugin-zoom';
 
-// Register required Chart.js scales, elements, controllers (for mixed dualAxis), and plugins
+// Register required Chart.js scales, elements, controllers (for mixed dualAxis), and zoom plugin
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -38,7 +39,8 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
+  zoomPlugin
 );
 
 /**
@@ -289,10 +291,44 @@ export function buildChartConfig({ metricKey, chartStyle, responses, sessions, t
     },
   };
 
+  // Build interactive drag-to-zoom, Ctrl+wheel/pinch zoom, and Shift+drag pan config for Cartesian charts
+  const buildZoomConfig = (axisMode) => ({
+    pan: {
+      enabled: true,
+      mode: axisMode,
+      modifierKey: 'shift',
+    },
+    zoom: {
+      wheel: {
+        enabled: true,
+        modifierKey: 'ctrl',
+      },
+      pinch: {
+        enabled: true,
+      },
+      drag: {
+        enabled: true,
+        backgroundColor: tokens.cyanSoft,
+        borderColor: tokens.cyan,
+        borderWidth: 1,
+      },
+      mode: axisMode,
+    },
+  });
+
+  // Shared metadata returned for click-to-select count & share % readouts
+  const meta = {
+    labels: agg.labels,
+    values: agg.values,
+    total: responses.length,
+  };
+
   // 1. Donut with centered % readout
   if (chartStyle === 'donut') {
     return {
       chartType: 'doughnut',
+      isZoomable: false,
+      meta,
       centerReadout: agg.centerReadout,
       data: {
         labels: agg.labels,
@@ -303,7 +339,7 @@ export function buildChartConfig({ metricKey, chartStyle, responses, sessions, t
             backgroundColor: agg.colors,
             borderColor: tokens.surface,
             borderWidth: 2,
-            hoverOffset: 4,
+            hoverOffset: 6,
           },
         ],
       },
@@ -323,6 +359,8 @@ export function buildChartConfig({ metricKey, chartStyle, responses, sessions, t
   if (chartStyle === 'dualAxis') {
     return {
       chartType: 'bar',
+      isZoomable: true,
+      meta,
       centerReadout: null,
       data: {
         labels: agg.labels,
@@ -360,6 +398,7 @@ export function buildChartConfig({ metricKey, chartStyle, responses, sessions, t
         plugins: {
           legend: baseLegend,
           tooltip: baseTooltip,
+          zoom: buildZoomConfig('x'),
         },
         scales: {
           x: {
@@ -396,6 +435,8 @@ export function buildChartConfig({ metricKey, chartStyle, responses, sessions, t
   if (chartStyle === 'line') {
     return {
       chartType: 'line',
+      isZoomable: true,
+      meta,
       centerReadout: null,
       data: {
         labels: agg.labels,
@@ -422,6 +463,7 @@ export function buildChartConfig({ metricKey, chartStyle, responses, sessions, t
         plugins: {
           legend: baseLegend,
           tooltip: baseTooltip,
+          zoom: buildZoomConfig('x'),
         },
         scales: {
           x: {
@@ -447,6 +489,8 @@ export function buildChartConfig({ metricKey, chartStyle, responses, sessions, t
 
   return {
     chartType: 'bar',
+    isZoomable: true,
+    meta,
     centerReadout: null,
     data: {
       labels: agg.labels,
@@ -467,6 +511,7 @@ export function buildChartConfig({ metricKey, chartStyle, responses, sessions, t
       plugins: {
         legend: baseLegend,
         tooltip: baseTooltip,
+        zoom: buildZoomConfig(isHorizontal ? 'y' : 'x'),
       },
       scales: {
         x: {
