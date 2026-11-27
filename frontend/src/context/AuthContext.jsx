@@ -1,11 +1,13 @@
 /**
- * AuthContext.jsx — Passwordless Google OAuth, Role Sync & Intent Verification
- * Tracks the active Supabase `session`, authenticated `user`, and matching
- * `public.profiles` row (`select('*')`), normalizing `isAdmin` from `profile.role`.
- * Enforces strict Sign-In ("account must exist") vs. Sign-Up ("account must not
- * exist") verification across Google OAuth redirects using `sessionStorage`'s
- * `esn_auth_intent` key, and exposes `{ session, user, profile, isAdmin, loading,
- * authError, clearAuthError, refreshProfile, signInWithGoogle, signOut }`.
+ * AuthContext.jsx — Passwordless Google OAuth, Dynamic Roles & Permissions
+ * Tracks the active Supabase `session`, authenticated `user`, matching
+ * `public.profiles` row, and the live `public.roles` hierarchy table.
+ * Enforces strict Sign-In vs. Sign-Up intent verification across Google OAuth
+ * redirects (activating new signups as `'new_member'`), computes effective
+ * per-user permissions via `resolveUserPermissions()`, and exposes
+ * `{ session, user, profile, role, roleMeta, roleLevel, roles, rolesMap,
+ * refreshRoles, permissions, hasPermission, isOwner, isLimbo, isAdmin,
+ * loading, authError, clearAuthError, refreshProfile, signInWithGoogle, signOut }`.
  */
 
 import {
@@ -18,18 +20,17 @@ import {
   useState,
 } from 'react';
 import { supabase } from '../lib/supabase.js';
+import {
+  getRoleLevel,
+  getRoleMeta,
+  normalizeRoleSlug,
+  resolveUserPermissions,
+} from '../lib/roleHierarchy.js';
 
 const AuthContext = createContext(null);
 
 // `sessionStorage` key capturing whether the user initiated Google OAuth from Sign In or Sign Up
 export const AUTH_INTENT_STORAGE_KEY = 'esn_auth_intent';
-
-/**
- * Normalizes a `public.profiles.role` string for reliable case-insensitive checks.
- */
-function normalizeRole(role) {
-  return String(role || '').trim().toLowerCase();
-}
 
 export function AuthProvider({ children }) {
   // Active Supabase session (`null` when signed out)
@@ -42,6 +43,12 @@ export function AuthProvider({ children }) {
   const [profileState, setProfileState] = useState({
     userId: null,
     data: null,
+  });
+
+  // Live `public.roles` table rows scoped to the authenticated session
+  const [rolesState, setRolesState] = useState({
+    userId: null,
+    list: [],
   });
 
   // i18n error key surfaced on `/login` when Sign-In / Sign-Up intent verification rejects a session
@@ -102,17 +109,38 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  // Re-fetch the current user's `public.profiles` row on demand so name/role edits sync live
+  // Re-fetch the `public.roles` table ordered by `level` descending
+  const refreshRoles = useCallback(async () => {
+    if (!supabase || !userId) {
+      return [];
+    }
+
+    const { data, error } = await supabase
+      .from('roles')
+      .select('*')
+      .order('level', { ascending: false });
+
+    if (error) {
+      console.error('[ESN Console] Failed to fetch roles:', error);
+      setRolesState((prev) => ({ userId, list: prev.userId === userId ? prev.list : [] }));
+      return [];
+    }
+
+    const nextList = data ?? [];
+    setRolesState({ userId, list: nextList });
+    return nextList;
+  }, [userId]);
+
+  // Re-fetch the current user's `public.profiles` row (and roles) on demand
   const refreshProfile = useCallback(async () => {
     if (!supabase || !userId) {
       return null;
     }
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
+    const [{ data, error }] = await Promise.all([
+      supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
+      refreshRoles(),
+    ]);
 
     if (error) {
       console.error('[ESN Console] Failed to refresh user profile:', error);
@@ -121,9 +149,9 @@ export function AuthProvider({ children }) {
 
     setProfileState({ userId, data: data ?? null });
     return data ?? null;
-  }, [userId]);
+  }, [userId, refreshRoles]);
 
-  // Fetch `public.profiles` and enforce Sign-In vs. Sign-Up OAuth intent rules whenever `userId` changes
+  // Load `public.roles`, fetch `public.profiles`, and enforce Sign-In vs. Sign-Up OAuth intent
   useEffect(() => {
     if (!supabase || !userId) {
       return undefined;
@@ -146,56 +174,63 @@ export function AuthProvider({ children }) {
       }
     }
 
-    async function verifyAndLoadProfile() {
+    async function hydrateAuthIdentity() {
       try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .maybeSingle();
+        const [profileRes, rolesRes] = await Promise.all([
+          supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
+          supabase.from('roles').select('*').order('level', { ascending: false }),
+        ]);
 
         if (!isActive) {
           return;
         }
 
-        if (error) {
-          console.error('[ESN Console] Failed to load user profile:', error);
+        if (rolesRes.error) {
+          console.error('[ESN Console] Failed to load roles table:', rolesRes.error);
+        }
+        setRolesState({ userId, list: rolesRes.data ?? [] });
+
+        if (profileRes.error) {
+          console.error('[ESN Console] Failed to load user profile:', profileRes.error);
           pendingIntentRef.current = null;
           setProfileState({ userId, data: null });
           return;
         }
 
-        const role = normalizeRole(data?.role);
+        const data = profileRes.data;
+        const currentRole = normalizeRoleSlug(data?.role);
 
         // Case A: Sign-In attempted with a brand-new Google account (`role === 'pending'`)
-        if (intent === 'signin' && role === 'pending') {
+        if (intent === 'signin' && currentRole === 'pending') {
           pendingIntentRef.current = null;
           setAuthError('auth.accountNotFound');
           await supabase.auth.signOut();
           if (isActive) {
             setSession(null);
             setProfileState({ userId: null, data: null });
+            setRolesState({ userId: null, list: [] });
           }
           return;
         }
 
-        // Case B: Sign-Up attempted with an already registered account (`member` or `admin`)
-        if (intent === 'signup' && (role === 'member' || role === 'admin')) {
+        // Case B: Sign-Up attempted with an already registered account (any active role != 'pending')
+        if (intent === 'signup' && currentRole && currentRole !== 'pending') {
           pendingIntentRef.current = null;
           setAuthError('auth.accountAlreadyExists');
           await supabase.auth.signOut();
           if (isActive) {
             setSession(null);
             setProfileState({ userId: null, data: null });
+            setRolesState({ userId: null, list: [] });
           }
           return;
         }
 
-        // Case C: Valid new Sign-Up (`intent === 'signup'` & `role === 'pending'`) -> activate as `member`
-        if (intent === 'signup' && role === 'pending') {
+        // Case C: Valid new Sign-Up (`intent === 'signup'` & `role === 'pending'`) -> activate as `'new_member'`
+        if (intent === 'signup' && currentRole === 'pending') {
           const { data: activatedProfile, error: updateError } = await supabase
             .from('profiles')
-            .update({ role: 'member' })
+            .update({ role: 'new_member' })
             .eq('id', userId)
             .select('*')
             .maybeSingle();
@@ -205,29 +240,30 @@ export function AuthProvider({ children }) {
           }
 
           if (updateError) {
-            console.error('[ESN Console] Failed to activate new member profile:', updateError);
+            console.error('[ESN Console] Failed to activate new_member profile:', updateError);
           }
 
           pendingIntentRef.current = null;
           setAuthError(null);
           setProfileState({
             userId,
-            data: activatedProfile ?? (data ? { ...data, role: 'member' } : null),
+            data: activatedProfile ?? (data ? { ...data, role: 'new_member' } : null),
           });
           return;
         }
 
         // Case D: Normal page reload with no OAuth intent — reject unactivated `pending` accounts
-        if (!intent && role === 'pending') {
+        if (!intent && currentRole === 'pending') {
           await supabase.auth.signOut();
           if (isActive) {
             setSession(null);
             setProfileState({ userId: null, data: null });
+            setRolesState({ userId: null, list: [] });
           }
           return;
         }
 
-        // Valid existing `admin` or `member` session
+        // Valid existing profile session
         pendingIntentRef.current = null;
         setAuthError(null);
         setProfileState({ userId, data: data ?? null });
@@ -238,10 +274,11 @@ export function AuthProvider({ children }) {
         console.error('[ESN Console] Unexpected error verifying user profile:', error);
         pendingIntentRef.current = null;
         setProfileState({ userId, data: null });
+        setRolesState({ userId, list: [] });
       }
     }
 
-    verifyAndLoadProfile();
+    hydrateAuthIdentity();
 
     return () => {
       isActive = false;
@@ -265,10 +302,11 @@ export function AuthProvider({ children }) {
     });
   }, []);
 
-  // Sign out of the active Supabase session and clear cached profile state
+  // Sign out of the active Supabase session and clear cached profile/roles state
   const signOut = useCallback(async () => {
     pendingIntentRef.current = null;
     setProfileState({ userId: null, data: null });
+    setRolesState({ userId: null, list: [] });
     if (!supabase) {
       setSession(null);
       return { error: null };
@@ -283,20 +321,64 @@ export function AuthProvider({ children }) {
     return result;
   }, []);
 
-  // Only expose profile data matching the currently authenticated user
+  // Only expose profile & roles data matching the currently authenticated user
   const profile = userId && profileState.userId === userId ? profileState.data : null;
+  const roles = useMemo(
+    () => (userId && rolesState.userId === userId ? rolesState.list : []),
+    [userId, rolesState]
+  );
 
-  // Keep loading true until both initial session and (if signed in) profile verification resolve
-  const loading = !sessionChecked || (Boolean(userId) && profileState.userId !== userId);
+  // Build `{ [slug]: roleRow }` lookup from live `public.roles` rows
+  const rolesMap = useMemo(() => {
+    const map = {};
+    for (const item of roles) {
+      const slug = normalizeRoleSlug(item?.slug);
+      if (slug) {
+        map[slug] = item;
+      }
+    }
+    return map;
+  }, [roles]);
 
-  // Normalized Admin role boolean gating all Admin-only UI controls
-  const isAdmin = normalizeRole(profile?.role) === 'admin';
+  // Keep loading true until session, profile verification, and roles fetch resolve
+  const loading =
+    !sessionChecked ||
+    (Boolean(userId) && (profileState.userId !== userId || rolesState.userId !== userId));
+
+  // Derived role metadata & effective permissions
+  const role = normalizeRoleSlug(profile?.role);
+  const roleMeta = useMemo(() => getRoleMeta(role, rolesMap), [role, rolesMap]);
+  const roleLevel = useMemo(() => getRoleLevel(role, rolesMap), [role, rolesMap]);
+  const permissions = useMemo(
+    () => resolveUserPermissions(profile, rolesMap),
+    [profile, rolesMap]
+  );
+
+  const hasPermission = useCallback(
+    (key) => Boolean(permissions[key]),
+    [permissions]
+  );
+
+  const isOwner = role === 'owner';
+  const isLimbo = !permissions.view_workspace;
+  // Backward-compatible alias for project-management admin privileges
+  const isAdmin = Boolean(permissions.manage_projects);
 
   const value = useMemo(
     () => ({
       session,
       user,
       profile,
+      role,
+      roleMeta,
+      roleLevel,
+      roles,
+      rolesMap,
+      refreshRoles,
+      permissions,
+      hasPermission,
+      isOwner,
+      isLimbo,
       isAdmin,
       loading,
       authError,
@@ -309,6 +391,16 @@ export function AuthProvider({ children }) {
       session,
       user,
       profile,
+      role,
+      roleMeta,
+      roleLevel,
+      roles,
+      rolesMap,
+      refreshRoles,
+      permissions,
+      hasPermission,
+      isOwner,
+      isLimbo,
       isAdmin,
       loading,
       authError,

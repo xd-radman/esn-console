@@ -1317,6 +1317,374 @@
     }
   }
 
+  /* ------------------------------------------------------------------------
+     Dynamic Role Hierarchy, Two-Tab Team Modal & Swiss Toggle Switches
+     ------------------------------------------------------------------------ */
+  .team-modal-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--border-hairline);
+    background-color: var(--bg-inset);
+  }
+
+  .team-modal-tab {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    min-block-size: 2.25rem;
+    padding-block: 0.4rem;
+    padding-inline: 0.75rem;
+    border-radius: calc(var(--radius-control) - 2px);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink-muted);
+    transition: var(--transition-theme);
+
+    &:hover:not([aria-selected="true"]) {
+      background-color: var(--bg-hover);
+      color: var(--ink-primary);
+    }
+
+    &[aria-selected="true"] {
+      background-color: var(--bg-elevated);
+      color: var(--ink-primary);
+      box-shadow: 0 1px 2px rgba(24, 23, 21, 0.08);
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset-block-end: 0;
+        inset-inline: 1rem;
+        border-block-end: 2px solid var(--accent-primary);
+      }
+    }
+  }
+
+  .team-tab-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .team-roster-row.is-manageable {
+    cursor: pointer;
+    transition: background-color 140ms ease;
+
+    &:hover {
+      background-color: var(--bg-hover);
+    }
+  }
+
+  .team-roster-role-end {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.4rem;
+  }
+
+  .team-drill-btn {
+    min-block-size: 1.9rem;
+    min-inline-size: 1.9rem;
+    padding: 0.25rem;
+    color: var(--ink-muted);
+  }
+
+  .team-drilldown {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .team-drilldown-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .team-back-btn {
+    padding-inline: 0.55rem;
+    color: var(--ink-secondary);
+  }
+
+  .perm-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .perm-section-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .perm-reset-btn {
+    min-block-size: 1.85rem;
+    padding-block: 0.25rem;
+    padding-inline: 0.55rem;
+    font-size: 0.78rem;
+    color: var(--ink-muted);
+  }
+
+  .perm-list {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-hairline);
+    border-radius: var(--radius-control);
+    background-color: var(--bg-elevated);
+    overflow: hidden;
+  }
+
+  .perm-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.72rem 0.9rem;
+    border-block-end: 1px solid var(--border-subtle);
+    cursor: pointer;
+    transition: background-color 140ms ease;
+
+    &:last-child {
+      border-block-end: 0;
+    }
+
+    &:hover:not(.is-locked) {
+      background-color: var(--bg-inset);
+    }
+
+    &.is-locked {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+  }
+
+  .perm-row-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-inline-size: 0;
+    flex: 1;
+  }
+
+  .perm-row-title {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink-primary);
+  }
+
+  .perm-row-desc {
+    font-size: 0.76rem;
+    color: var(--ink-muted);
+    line-height: 1.4;
+  }
+
+  .perm-override-pill {
+    padding-block: 0.08rem;
+    padding-inline: 0.4rem;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--accent-primary-border);
+    background-color: var(--accent-primary-soft);
+    color: var(--accent-primary-ink);
+    font-size: 0.625rem;
+  }
+
+  /* Cross-browser Swiss toggle switch styled on `<input type="checkbox" role="switch">` */
+  .perm-switch {
+    appearance: none;
+    position: relative;
+    inline-size: 2.45rem;
+    block-size: 1.4rem;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-strong);
+    background-color: var(--bg-subtle);
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: background-color 160ms ease, border-color 160ms ease;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset-block-start: 0.14rem;
+      inset-inline-start: 0.14rem;
+      inline-size: 1rem;
+      block-size: 1rem;
+      border-radius: var(--radius-pill);
+      background-color: var(--bg-elevated);
+      box-shadow: 0 1px 2px rgba(24, 23, 21, 0.22);
+      transition: transform 160ms ease, background-color 160ms ease;
+    }
+
+    &:checked {
+      background-color: var(--accent-primary);
+      border-color: var(--accent-primary);
+
+      &::before {
+        transform: translateX(1.05rem);
+        background-color: var(--accent-primary-on);
+      }
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+  }
+
+  .team-drilldown-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-block-start: 0.25rem;
+  }
+
+  /* Roles Tab: Create Custom Role bar + Role Directory cards */
+  .role-create-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.55rem;
+  }
+
+  .role-create-input {
+    flex: 1 1 13rem;
+    min-block-size: 2.45rem;
+    font-size: 0.9rem;
+  }
+
+  .role-create-btn {
+    min-block-size: 2.45rem;
+    font-weight: 600;
+  }
+
+  .role-list {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-hairline);
+    border-radius: var(--radius-control);
+    background-color: var(--bg-elevated);
+    overflow: hidden;
+  }
+
+  .role-list-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.78rem 0.95rem;
+    border-block-end: 1px solid var(--border-subtle);
+
+    &:last-child {
+      border-block-end: 0;
+    }
+
+    &.is-editable {
+      cursor: pointer;
+      transition: background-color 140ms ease;
+
+      &:hover {
+        background-color: var(--bg-hover);
+      }
+    }
+  }
+
+  .role-list-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-inline-size: 0;
+  }
+
+  .role-list-title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .role-list-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--ink-primary);
+  }
+
+  .role-list-end {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .role-system-lock {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 1.9rem;
+    block-size: 1.9rem;
+    color: var(--ink-faint);
+  }
+
+  .team-role-footer-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-block-start: 0.25rem;
+  }
+
+  .team-delete-confirm-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.5rem 0.7rem;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--status-danger-border);
+    background-color: var(--status-danger-bg);
+  }
+
+  .team-delete-warning {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--status-danger);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .perm-switch,
+    .perm-switch::before,
+    .team-modal-tab {
+      transition: none;
+    }
+  }
+
+  @media (forced-colors: active) {
+    .team-modal-tabs,
+    .perm-list,
+    .role-list,
+    .perm-switch {
+      border-color: CanvasText;
+    }
+
+    .team-modal-tab[aria-selected="true"]::after {
+      border-block-end-color: Highlight;
+    }
+
+    .perm-switch:checked {
+      background-color: Highlight;
+      border-color: Highlight;
+    }
+  }
+
   /* Respect OS reduced-motion setting on interactive primitives */
   @media (prefers-reduced-motion: reduce) {
     :where(.bento-card, .btn, .form-input, .form-textarea, .form-select, .toast-card) {

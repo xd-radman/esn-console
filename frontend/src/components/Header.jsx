@@ -42,8 +42,12 @@ export default function Header({ isSidebarOpen = false, onToggleSidebar }) {
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
   const { lang, setLang, t } = useLang();
-  const { user, profile, isAdmin } = useAuth();
+  const { user, profile, hasPermission } = useAuth();
   const { projects } = useData();
+
+  const canViewWorkspace = hasPermission('view_workspace');
+  const canUsePredictor = hasPermission('use_predictor');
+  const canManageRoles = hasPermission('manage_roles');
 
   const googleFullName =
     user?.user_metadata?.full_name || user?.user_metadata?.name;
@@ -120,8 +124,8 @@ export default function Header({ isSidebarOpen = false, onToggleSidebar }) {
             <span className="brand-wordmark font-editorial">{t('brand')}</span>
           </button>
 
-          {/* Dashboard-only controls shown exclusively to Admins on `/project/:projectId` */}
-          {isAdmin && activeProjectId && (
+          {/* Dashboard-only controls shown exclusively when user can view workspace on `/project/:projectId` */}
+          {canViewWorkspace && activeProjectId && (
             <nav
               className="dashboard-nav"
               aria-label={t('nav.controlsLabel')}
@@ -170,17 +174,19 @@ export default function Header({ isSidebarOpen = false, onToggleSidebar }) {
                 />
               </div>
 
-              {/* Collapsible organizer prediction sidebar toggle */}
-              <button
-                type="button"
-                className="btn header-sidebar-btn"
-                aria-pressed={isSidebarOpen}
-                aria-label={t('nav.toggleSidebar')}
-                onClick={onToggleSidebar}
-              >
-                <PanelRight size={15} strokeWidth={1.5} aria-hidden="true" />
-                <span className="header-sidebar-label">{t('nav.sidebarShort')}</span>
-              </button>
+              {/* Collapsible organizer prediction sidebar toggle (requires `use_predictor`) */}
+              {canUsePredictor && (
+                <button
+                  type="button"
+                  className="btn header-sidebar-btn"
+                  aria-pressed={isSidebarOpen}
+                  aria-label={t('nav.toggleSidebar')}
+                  onClick={onToggleSidebar}
+                >
+                  <PanelRight size={15} strokeWidth={1.5} aria-hidden="true" />
+                  <span className="header-sidebar-label">{t('nav.sidebarShort')}</span>
+                </button>
+              )}
             </nav>
           )}
         </div>
@@ -261,7 +267,7 @@ export default function Header({ isSidebarOpen = false, onToggleSidebar }) {
         onClose={() => setIsSettingsOpen(false)}
       />
 
-      {isAdmin && (
+      {canManageRoles && (
         <TeamPermissionsModal
           isOpen={isTeamOpen}
           onClose={() => setIsTeamOpen(false)}

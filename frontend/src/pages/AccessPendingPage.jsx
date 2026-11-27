@@ -17,9 +17,10 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useLang } from '../context/LangContext.jsx';
+import { resolveUserPermissions } from '../lib/roleHierarchy.js';
 
 export default function AccessPendingPage() {
-  const { user, profile, refreshProfile, signOut } = useAuth();
+  const { user, profile, rolesMap, refreshProfile, signOut } = useAuth();
   const { t } = useLang();
   const navigate = useNavigate();
 
@@ -34,14 +35,14 @@ export default function AccessPendingPage() {
     document.title = t('limbo.pageTitle');
   }, [t]);
 
-  // Re-fetch `public.profiles` so promotion by an Admin unlocks the app immediately
+  // Re-fetch `public.profiles` & `public.roles` so role approval unlocks the app immediately
   const handleCheckStatus = async () => {
     setIsChecking(true);
     setCheckedStillPending(false);
     try {
       const updated = await refreshProfile();
-      const role = String(updated?.role || '').trim().toLowerCase();
-      if (role !== 'admin') {
+      const resolved = resolveUserPermissions(updated, rolesMap);
+      if (!resolved.view_workspace) {
         setCheckedStillPending(true);
       }
     } finally {

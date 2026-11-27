@@ -22,11 +22,11 @@ import AccessPendingPage from './pages/AccessPendingPage.jsx';
 
 /**
  * Route guard redirecting unauthenticated visitors to `/login`, rendering the
- * `AccessPendingPage` limbo screen for non-admin `member` accounts, and showing
- * a centered loading card until the initial Supabase session check completes.
+ * `AccessPendingPage` limbo screen for accounts lacking `view_workspace`, and
+ * showing a centered loading card until the initial Supabase session check completes.
  */
 function ProtectedRoute({ children }) {
-  const { user, isAdmin, loading } = useAuth();
+  const { user, isLimbo, loading } = useAuth();
   const { t } = useLang();
 
   if (loading) {
@@ -49,8 +49,8 @@ function ProtectedRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
 
-  // Lock non-admin members out of all workspace routes until promoted by an Admin
-  if (!isAdmin) {
+  // Lock accounts without `view_workspace` out of all workspace routes until approved
+  if (isLimbo) {
     return <AccessPendingPage />;
   }
 

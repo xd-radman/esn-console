@@ -40,9 +40,15 @@ function buildInitials(name, fallback) {
 }
 
 export default function AccountSettingsModal({ isOpen, onClose }) {
-  const { user, profile, isAdmin, refreshProfile } = useAuth();
+  const { user, profile, roleMeta, hasPermission, refreshProfile } = useAuth();
   const { t } = useLang();
   const { showToast } = useToast();
+
+  // Granular permission gate: `new_member` and `visitor` cannot edit their display name
+  const canEditName = hasPermission('edit_own_name');
+  const hasElevatedRole =
+    hasPermission('manage_projects') || hasPermission('manage_roles');
+  const roleDisplayName = roleMeta?.name || t('auth.roleMember');
 
   // Resolve current identity defaults from `public.profiles` or Google OAuth metadata
   const displayEmail = profile?.email || user?.email || '';
@@ -139,8 +145,8 @@ export default function AccountSettingsModal({ isOpen, onClose }) {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    // Hard guard: prevent non-admin members or unchanged inputs from firing requests or toasts
-    if (!isAdmin || !hasChanges) {
+    // Hard guard: prevent accounts without `edit_own_name` or unchanged inputs from firing requests
+    if (!canEditName || !hasChanges) {
       return;
     }
 
@@ -255,36 +261,36 @@ export default function AccountSettingsModal({ isOpen, onClose }) {
                   {t('settings.roleLabel')}
                 </span>
                 <span
-                  className={`profile-role-pill font-mono-label ${isAdmin ? '' : 'member'}`}
+                  className={`profile-role-pill font-mono-label ${
+                    hasElevatedRole ? '' : 'member'
+                  }`}
                 >
-                  {isAdmin ? (
+                  {hasElevatedRole ? (
                     <ShieldCheck size={12} strokeWidth={1.5} aria-hidden="true" />
                   ) : (
                     <User size={12} strokeWidth={1.5} aria-hidden="true" />
                   )}
-                  <span>
-                    {isAdmin ? t('auth.roleAdmin') : t('auth.roleMember')}
-                  </span>
+                  <span>{roleDisplayName}</span>
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Static Member lock notice when non-admin profile editing is disabled */}
-          {!isAdmin && (
+          {/* Static lock notice when user lacks `edit_own_name` permission */}
+          {!canEditName && (
             <div className="limbo-notice" role="status">
               <Lock size={15} strokeWidth={1.5} aria-hidden="true" />
               <span>{t('settings.memberEditLocked')}</span>
             </div>
           )}
 
-          {/* Display Name (`full_name`) input — editable for Admins, locked read-only for Members */}
+          {/* Display Name (`full_name`) input — gated by `edit_own_name` permission */}
           <div className="form-field">
             <div className="form-label-row">
               <label htmlFor={nameInputId} className="form-label">
                 {t('settings.usernameLabel')}
               </label>
-              {isAdmin ? (
+              {canEditName ? (
                 <span className="font-mono-label form-badge required">
                   {t('modal.requiredBadge')}
                 </span>
@@ -303,17 +309,17 @@ export default function AccountSettingsModal({ isOpen, onClose }) {
               type="text"
               autoComplete="name"
               maxLength={80}
-              required={isAdmin}
-              readOnly={!isAdmin}
-              disabled={!isAdmin}
-              autoFocus={isAdmin}
+              required={canEditName}
+              readOnly={!canEditName}
+              disabled={!canEditName}
+              autoFocus={canEditName}
               className={`form-input ${
-                !isAdmin ? 'settings-readonly-input' : ''
+                !canEditName ? 'settings-readonly-input' : ''
               }`}
               placeholder={t('settings.usernamePlaceholder')}
               value={fullName}
               onChange={(event) => {
-                if (!isAdmin) {
+                if (!canEditName) {
                   return;
                 }
                 setFullName(event.target.value);
@@ -348,17 +354,17 @@ export default function AccountSettingsModal({ isOpen, onClose }) {
           </div>
         </div>
 
-        {/* Modal action footer — Save button rendered exclusively for Admins */}
+        {/* Modal action footer — Save button rendered only when `edit_own_name` is granted */}
         <footer className="modal-footer hairline-top">
           <button type="button" className="btn" onClick={handleExplicitClose}>
-            <span>{isAdmin ? t('modal.cancel') : t('modal.closeLabel')}</span>
+            <span>{canEditName ? t('modal.cancel') : t('modal.closeLabel')}</span>
           </button>
 
-          {isAdmin && (
+          {canEditName && (
             <button
               type="submit"
               className="btn primary"
-              disabled={!isAdmin || !hasChanges || isSaving}
+              disabled={!canEditName || !hasChanges || isSaving}
             >
               {isSaving ? (
                 <>

@@ -218,8 +218,10 @@ async function fetchAllWorkspaceTables() {
 }
 
 export function DataProvider({ children }) {
-  const { user, isAdmin, loading: authLoading } = useAuth();
+  const { user, hasPermission, loading: authLoading } = useAuth();
   const userId = user?.id ?? null;
+  const canViewWorkspace = hasPermission('view_workspace');
+  const canManageProjects = hasPermission('manage_projects');
 
   // Core workspace collections backed by Supabase PostgreSQL, tagged by `userId`
   const [workspace, setWorkspace] = useState({
@@ -234,7 +236,8 @@ export function DataProvider({ children }) {
   const [loadErrorState, setLoadErrorState] = useState({ userId: null, message: null });
   const [actionError, setActionError] = useState(null);
 
-  const isCurrentWorkspace = Boolean(userId) && isAdmin && workspace.userId === userId;
+  const isCurrentWorkspace =
+    Boolean(userId) && canViewWorkspace && workspace.userId === userId;
   const baseProjects = useMemo(
     () => (isCurrentWorkspace ? workspace.projects : []),
     [isCurrentWorkspace, workspace.projects]
@@ -248,13 +251,13 @@ export function DataProvider({ children }) {
     [isCurrentWorkspace, workspace.graphsByProject]
   );
   const loadError =
-    userId && isAdmin && loadErrorState.userId === userId
+    userId && canViewWorkspace && loadErrorState.userId === userId
       ? loadErrorState.message
       : null;
   const isLoading =
     !authLoading &&
     Boolean(userId) &&
-    isAdmin &&
+    canViewWorkspace &&
     Boolean(supabase) &&
     !isCurrentWorkspace &&
     !loadError;
@@ -300,9 +303,9 @@ export function DataProvider({ children }) {
     [baseProjects]
   );
 
-  // Hydrate all tables from Supabase only for authenticated Admins (skip locked-out members)
+  // Hydrate all tables from Supabase only for users with `view_workspace` permission
   useEffect(() => {
-    if (authLoading || !userId || !isAdmin || !supabase) {
+    if (authLoading || !userId || !canViewWorkspace || !supabase) {
       return undefined;
     }
 
@@ -312,8 +315,8 @@ export function DataProvider({ children }) {
       try {
         let snapshot = await fetchAllWorkspaceTables();
 
-        // Idempotently seed initial projects, default graphs, and dummy CSV if Admin hits an empty DB
-        if (snapshot.projects.length === 0 && isAdmin) {
+        // Idempotently seed initial projects, default graphs, and dummy CSV if an authorized manager hits an empty DB
+        if (snapshot.projects.length === 0 && canManageProjects) {
           if (!isCancelled) {
             setIsSeeding(true);
           }
@@ -353,7 +356,7 @@ export function DataProvider({ children }) {
     return () => {
       isCancelled = true;
     };
-  }, [authLoading, userId, isAdmin]);
+  }, [authLoading, userId, canViewWorkspace, canManageProjects]);
 
   // Derive live `sessionsCount` and `responsesCount` for every project card
   const projects = useMemo(

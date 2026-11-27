@@ -44,8 +44,13 @@ export default function ProfilePopover({
   onOpenTeam,
 }) {
   const { t } = useLang();
-  const { user, profile, isAdmin, signOut } = useAuth();
+  const { user, profile, roleMeta, hasPermission, isLimbo, signOut } = useAuth();
   const navigate = useNavigate();
+
+  const canManageRoles = hasPermission('manage_roles');
+  const hasElevatedAccess =
+    hasPermission('manage_projects') || hasPermission('manage_roles');
+  const roleDisplayName = roleMeta?.name || t('auth.roleMember');
 
   // Reference to the popover card DOM node for outside-click detection
   const popoverRef = useRef(null);
@@ -126,14 +131,16 @@ export default function ProfilePopover({
           <div className="profile-name-row">
             <span className="profile-name">{displayName}</span>
             <span
-              className={`profile-role-pill font-mono-label ${isAdmin ? '' : 'member'}`}
+              className={`profile-role-pill font-mono-label ${
+                hasElevatedAccess ? '' : 'member'
+              }`}
             >
-              {isAdmin ? (
+              {hasElevatedAccess ? (
                 <ShieldCheck size={12} strokeWidth={1.5} aria-hidden="true" />
               ) : (
                 <User size={12} strokeWidth={1.5} aria-hidden="true" />
               )}
-              <span>{isAdmin ? t('auth.roleAdmin') : t('auth.roleMember')}</span>
+              <span>{roleDisplayName}</span>
             </span>
           </div>
           <span className="profile-email">{displayEmail}</span>
@@ -155,7 +162,11 @@ export default function ProfilePopover({
           <dd className="profile-status-value">
             <KeyRound size={13} strokeWidth={1.5} aria-hidden="true" />
             <span>
-              {isAdmin ? t('profile.accessFull') : t('auth.readOnlyBadge')}
+              {hasElevatedAccess
+                ? t('profile.accessFull')
+                : isLimbo
+                  ? t('limbo.statusPending')
+                  : t('auth.readOnlyBadge')}
             </span>
           </dd>
         </div>
@@ -177,7 +188,7 @@ export default function ProfilePopover({
           <span>{t('profile.accountSettings')}</span>
         </button>
 
-        {isAdmin && (
+        {canManageRoles && (
           <button
             type="button"
             className="profile-action-btn"

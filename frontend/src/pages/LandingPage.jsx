@@ -16,7 +16,8 @@ import NewProjectModal from '../components/modals/NewProjectModal.jsx';
 
 export default function LandingPage() {
   const { t } = useLang();
-  const { isAdmin } = useAuth();
+  const { hasPermission } = useAuth();
+  const canManageProjects = hasPermission('manage_projects');
   const {
     projects,
     isLoading,
@@ -82,7 +83,7 @@ export default function LandingPage() {
             <p className="landing-hero-subtitle">{t('landing.subtitle')}</p>
           </div>
 
-          {isAdmin && (
+          {canManageProjects && (
             <div className="landing-hero-actions">
               <button
                 type="button"
@@ -148,7 +149,7 @@ export default function LandingPage() {
               <ProjectCard
                 key={project.id}
                 project={project}
-                canEditStatus={isAdmin}
+                canEditStatus={canManageProjects}
                 onStatusChange={updateProjectStatus}
               />
             ))}
@@ -156,8 +157,8 @@ export default function LandingPage() {
         </>
       )}
 
-      {/* Accessible native `<dialog>` modal for creating or duplicating a project (Admin only) */}
-      {isAdmin && (
+      {/* Accessible native `<dialog>` modal for creating or duplicating a project (`manage_projects`) */}
+      {canManageProjects && (
         <NewProjectModal
           isOpen={isModalOpen}
           onClose={handleCloseModal}

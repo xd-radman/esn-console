@@ -112,7 +112,14 @@ export default function ProjectDashboard({
 }) {
   const { projectId } = useParams();
   const { lang, t } = useLang();
-  const { isAdmin } = useAuth();
+  const { hasPermission } = useAuth();
+
+  // Granular per-capability permission gates
+  const canManageProjects = hasPermission('manage_projects');
+  const canManageSessions = hasPermission('manage_sessions');
+  const canManageResponses = hasPermission('manage_responses');
+  const canManageGraphs = hasPermission('manage_graphs');
+  const canUsePredictor = hasPermission('use_predictor');
   const {
     projects,
     responsesByProject,
@@ -363,7 +370,7 @@ export default function ProjectDashboard({
               <StatusSelect
                 status={activeProject.status}
                 projectTitle={projectCopy.title}
-                disabled={!isAdmin}
+                disabled={!canManageProjects}
                 onChange={(nextStatus) => updateProjectStatus(activeProject.id, nextStatus)}
               />
             </div>
@@ -420,52 +427,60 @@ export default function ProjectDashboard({
             </div>
           </div>
 
-          {isAdmin ? (
+          {canManageSessions || canManageResponses ? (
             <div className="session-toolbar-actions">
-              <button
-                type="button"
-                className="btn primary"
-                onClick={() => setIsAddModalOpen(true)}
-              >
-                <Plus size={15} strokeWidth={1.5} aria-hidden="true" />
-                <span>{t('dashboard.addSession')}</span>
-              </button>
+              {canManageSessions && (
+                <>
+                  <button
+                    type="button"
+                    className="btn primary"
+                    onClick={() => setIsAddModalOpen(true)}
+                  >
+                    <Plus size={15} strokeWidth={1.5} aria-hidden="true" />
+                    <span>{t('dashboard.addSession')}</span>
+                  </button>
 
-              <button
-                type="button"
-                className="btn"
-                disabled={!canDeleteSession}
-                onClick={() => setIsDeleteModalOpen(true)}
-              >
-                <Trash2 size={15} strokeWidth={1.5} aria-hidden="true" />
-                <span>{t('dashboard.deleteSession')}</span>
-              </button>
+                  <button
+                    type="button"
+                    className="btn"
+                    disabled={!canDeleteSession}
+                    onClick={() => setIsDeleteModalOpen(true)}
+                  >
+                    <Trash2 size={15} strokeWidth={1.5} aria-hidden="true" />
+                    <span>{t('dashboard.deleteSession')}</span>
+                  </button>
+                </>
+              )}
 
-              <button
-                type="button"
-                className="btn"
-                disabled={!canAddDemoResponse}
-                onClick={handleAddDemoResponse}
-              >
-                <Sparkles size={15} strokeWidth={1.5} aria-hidden="true" />
-                <span>{t('dashboard.addDemoResponse')}</span>
-              </button>
+              {canManageResponses && (
+                <>
+                  <button
+                    type="button"
+                    className="btn"
+                    disabled={!canAddDemoResponse}
+                    onClick={handleAddDemoResponse}
+                  >
+                    <Sparkles size={15} strokeWidth={1.5} aria-hidden="true" />
+                    <span>{t('dashboard.addDemoResponse')}</span>
+                  </button>
 
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv,text/csv"
-                className="visually-hidden"
-                onChange={handleCsvUpload}
-              />
-              <button
-                type="button"
-                className="btn ghost"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Upload size={15} strokeWidth={1.5} aria-hidden="true" />
-                <span>{t('dashboard.uploadCsv')}</span>
-              </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv,text/csv"
+                    className="visually-hidden"
+                    onChange={handleCsvUpload}
+                  />
+                  <button
+                    type="button"
+                    className="btn ghost"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload size={15} strokeWidth={1.5} aria-hidden="true" />
+                    <span>{t('dashboard.uploadCsv')}</span>
+                  </button>
+                </>
+              )}
             </div>
           ) : (
             <span className="readonly-pill font-mono-label">
@@ -514,7 +529,7 @@ export default function ProjectDashboard({
           graphs={activeGraphs}
           responses={filteredResponses}
           sessions={scopedSessions}
-          isAdmin={isAdmin}
+          isAdmin={canManageGraphs}
           onAddGraph={handleAddGraph}
           onRemoveGraph={handleRemoveGraph}
           onResetGraphs={handleResetGraphs}
@@ -527,17 +542,19 @@ export default function ProjectDashboard({
         />
       </div>
 
-      {/* Collapsible 60fps Organizer Prediction Sidebar (keyed by projectId for fresh defaults) */}
-      <PredictionSidebar
-        key={activeProject.id}
-        isOpen={isSidebarOpen}
-        onClose={onCloseSidebar}
-        projectId={activeProject.id}
-        projectTitle={projectCopy.title}
-      />
+      {/* Collapsible 60fps Organizer Prediction Sidebar (gated by `use_predictor`) */}
+      {canUsePredictor && (
+        <PredictionSidebar
+          key={activeProject.id}
+          isOpen={isSidebarOpen}
+          onClose={onCloseSidebar}
+          projectId={activeProject.id}
+          projectTitle={projectCopy.title}
+        />
+      )}
 
-      {/* Session Management Modals (Admin only) */}
-      {isAdmin && (
+      {/* Session Management Modals (gated by `manage_sessions`) */}
+      {canManageSessions && (
         <>
           <AddSessionModal
             isOpen={isAddModalOpen}
