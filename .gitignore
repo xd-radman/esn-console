@@ -1,16 +1,16 @@
-# Dependencies (huge, reproducible via package.json)
+# Dependencies
 node_modules/
 
 # Production build output
 dist/
 dist-ssr/
 
-# Environment secrets (Supabase keys, API URLs — NEVER commit these)
+# Environment secrets
 .env
 .env.local
 .env.*.local
 
-# Future Python ML service (Phase 6)
+# Future Python ML service
 .venv/
 __pycache__/
 *.pyc
@@ -20,7 +20,7 @@ __pycache__/
 Thumbs.db
 *.log
 
-# Local planning docs (kept locally for Antigravity, not pushed to GitHub)
+# Local planning docs
 docs/
 .agents/
 
