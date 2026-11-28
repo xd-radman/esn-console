@@ -540,6 +540,9 @@ export const translations = {
       continueWithGoogle: 'Continue with Google',
       signUpWithGoogle: 'Sign Up with Google',
       redirectingToGoogle: 'Redirecting to Google...',
+      signingInWithGoogle: 'Signing in with Google...',
+      missingGoogleClientId:
+        'Google Sign-In is not configured. Add VITE_GOOGLE_CLIENT_ID to your environment file.',
       googleOnlyNote:
         'Passwordless authentication via Google OAuth only. New accounts receive standard Member access automatically.',
       oauthError:
@@ -1279,6 +1282,9 @@ export const translations = {
       continueWithGoogle: 'Google ile Devam Et',
       signUpWithGoogle: 'Google ile Kayıt Ol',
       redirectingToGoogle: 'Google’a yönlendiriliyor...',
+      signingInWithGoogle: 'Google ile giriş yapılıyor...',
+      missingGoogleClientId:
+        'Google ile Giriş yapılandırılmamış. Ortam dosyanıza VITE_GOOGLE_CLIENT_ID ekleyin.',
       googleOnlyNote:
         'Yalnızca Google OAuth ile şifresiz kimlik doğrulama. Yeni hesaplara otomatik olarak standart Üye rolü atanır.',
       oauthError:

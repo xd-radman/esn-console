@@ -1,13 +1,13 @@
 /**
- * LoginPage.jsx — Passwordless Google-Only OAuth Screen (`/login`)
+ * LoginPage.jsx — Passwordless Google Identity Services (GIS) Auth Screen (`/login`)
  * Renders a centered Swiss × Bento authentication card with `/esnstar_logo.png`,
  * bilingual `EN | TR` and Light/Dark toggles, an accessible **Sign In | Sign Up**
- * segmented mode selector (`authMode` state), a primary Google OAuth action
- * button with an inline SVG Google "G" mark, OAuth error handling, and automatic
- * redirect to `/` for already-authenticated users. Zero passwords are collected.
+ * segmented mode selector (`authMode` state), and the official Google Identity
+ * Services button wired to `supabase.auth.signInWithIdToken` with a fresh SHA-256
+ * nonce pair so Google displays the app's own brand rather than `supabase.co`.
  */
 
-import { useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import {
   AlertCircle,
@@ -16,12 +16,15 @@ import {
   ShieldCheck,
   Sun,
 } from 'lucide-react';
-import { AUTH_INTENT_STORAGE_KEY, useAuth } from '../context/AuthContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import { useLang } from '../context/LangContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 
+// Google OAuth Web Client ID loaded from Vite environment configuration
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() || '';
+
 /**
- * Crisp inline SVG official Google "G" mark rendered alongside Google OAuth CTAs.
+ * Crisp inline SVG official Google "G" mark rendered inside the custom Swiss button layer.
  */
 function GoogleMark() {
   return (
@@ -54,7 +57,23 @@ function GoogleMark() {
 }
 
 /**
- * Reads any OAuth error parameter returned by Supabase/Google in the redirect URL.
+ * Generates a cryptographically random raw nonce and its SHA-256 hex digest.
+ * Google embeds `hashedNonce` in the returned ID token; Supabase verifies `rawNonce`.
+ */
+async function generateGoogleNoncePair() {
+  const bytes = new Uint8Array(32);
+  window.crypto.getRandomValues(bytes);
+  const rawNonce = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  const encoded = new TextEncoder().encode(rawNonce);
+  const digest = await window.crypto.subtle.digest('SHA-256', encoded);
+  const hashedNonce = Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, '0')
+  ).join('');
+  return { rawNonce, hashedNonce };
+}
+
+/**
+ * Reads any legacy OAuth error parameter present in the redirect URL.
  */
 function readRedirectOAuthError(search, hash) {
   const searchParams = new URLSearchParams(search);
@@ -68,7 +87,7 @@ function readRedirectOAuthError(search, hash) {
 }
 
 export default function LoginPage() {
-  const { user, loading, authError, clearAuthError, signInWithGoogle } = useAuth();
+  const { user, loading, authError, clearAuthError, signInWithGoogleIdToken } = useAuth();
   const { lang, setLang, t } = useLang();
   const { isDark, toggleTheme } = useTheme();
   const location = useLocation();
@@ -76,13 +95,16 @@ export default function LoginPage() {
   // Active segmented mode (`'signin'` or `'signup'`)
   const [authMode, setAuthMode] = useState('signin');
 
-  // Pending OAuth redirect state and local error key (merged with AuthContext `authError`)
-  const [isRedirecting, setIsRedirecting] = useState(false);
+  // Pending Supabase ID-token exchange state, local error key, and retry nonce counter
+  const [isExchanging, setIsExchanging] = useState(false);
+  const [nonceVersion, setNonceVersion] = useState(0);
   const [localErrorKey, setLocalErrorKey] = useState(() =>
     readRedirectOAuthError(location.search, location.hash) ? 'auth.oauthError' : null
   );
 
   const activeErrorKey = localErrorKey || authError;
+  // Derive active exchange spinner so AuthContext intent-rejection errors clear it without an effect
+  const isBusy = isExchanging && !authError;
 
   // Stable IDs associating the Sign In / Sign Up tabs with the visible panel
   const signInTabId = useId();
@@ -90,10 +112,132 @@ export default function LoginPage() {
   const signInTabRef = useRef(null);
   const signUpTabRef = useRef(null);
 
+  // Ref for the Google Identity Services rendered button mount node & latest active tab
+  const buttonContainerRef = useRef(null);
+  const authModeRef = useRef(authMode);
+  const handleCredentialRef = useRef(null);
+
+  // Keep `authModeRef` synchronized so the GIS callback always reads the active tab
+  useEffect(() => {
+    authModeRef.current = authMode;
+  }, [authMode]);
+
   // Keep browser tab title localized on `/login`
   useEffect(() => {
     document.title = t('auth.pageTitle');
   }, [t]);
+
+  // Exchange the Google ID token + raw nonce with Supabase Auth using the active tab intent
+  const handleGoogleCredential = useCallback(
+    async (credential, rawNonce) => {
+      if (!credential) {
+        setLocalErrorKey('auth.oauthError');
+        return;
+      }
+
+      setLocalErrorKey(null);
+      clearAuthError();
+      setIsExchanging(true);
+
+      try {
+        const { error } = await signInWithGoogleIdToken(
+          credential,
+          rawNonce,
+          authModeRef.current
+        );
+        if (error) {
+          setLocalErrorKey(
+            error.message === 'MISSING_SUPABASE_CONFIG'
+              ? 'auth.missingConfig'
+              : 'auth.oauthError'
+          );
+          setIsExchanging(false);
+          setNonceVersion((prev) => prev + 1);
+        }
+      } catch {
+        setLocalErrorKey('auth.oauthError');
+        setIsExchanging(false);
+        setNonceVersion((prev) => prev + 1);
+      }
+    },
+    [clearAuthError, signInWithGoogleIdToken]
+  );
+
+  useEffect(() => {
+    handleCredentialRef.current = handleGoogleCredential;
+  }, [handleGoogleCredential]);
+
+  // Initialize and render the Google Identity Services button whenever tab, theme, or language changes
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID || loading || user || isBusy) {
+      return undefined;
+    }
+
+    let isCancelled = false;
+    let pollTimerId = null;
+
+    async function mountGoogleButton() {
+      let noncePair;
+      try {
+        noncePair = await generateGoogleNoncePair();
+      } catch {
+        if (!isCancelled) {
+          setLocalErrorKey('auth.oauthError');
+        }
+        return;
+      }
+
+      const tryRender = (attemptsRemaining) => {
+        if (isCancelled) {
+          return;
+        }
+
+        const googleIdApi = window.google?.accounts?.id;
+        const container = buttonContainerRef.current;
+
+        if (!googleIdApi || !container) {
+          if (attemptsRemaining > 0) {
+            pollTimerId = window.setTimeout(() => tryRender(attemptsRemaining - 1), 120);
+          }
+          return;
+        }
+
+        // Clear any previously rendered iframe before mounting the updated theme/locale button
+        container.innerHTML = '';
+
+        googleIdApi.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          nonce: noncePair.hashedNonce,
+          callback: (response) => {
+            handleCredentialRef.current?.(response?.credential, noncePair.rawNonce);
+          },
+        });
+
+        // Match the invisible GSI click target edge-to-edge across the full custom button width
+        const measuredWidth = Math.min(400, Math.max(240, Math.floor(container.offsetWidth || 400)));
+
+        googleIdApi.renderButton(container, {
+          theme: isDark ? 'filled_black' : 'outline',
+          size: 'large',
+          shape: 'rectangular',
+          text: authMode === 'signup' ? 'signup_with' : 'signin_with',
+          locale: lang,
+          width: measuredWidth,
+        });
+      };
+
+      tryRender(50);
+    }
+
+    mountGoogleButton();
+
+    return () => {
+      isCancelled = true;
+      if (pollTimerId !== null) {
+        window.clearTimeout(pollTimerId);
+      }
+    };
+  }, [authMode, isDark, lang, loading, user, isBusy, authError, nonceVersion]);
 
   // Wait for initial session check before deciding whether to redirect or show login
   if (loading) {
@@ -142,44 +286,6 @@ export default function LoginPage() {
       } else {
         signUpTabRef.current?.focus();
       }
-    }
-  };
-
-  // Persist tab intent (`'signin'` | `'signup'`) before triggering passwordless Google OAuth
-  const handleGoogleAuth = async () => {
-    setLocalErrorKey(null);
-    clearAuthError();
-    setIsRedirecting(true);
-
-    try {
-      window.sessionStorage.setItem(AUTH_INTENT_STORAGE_KEY, authMode);
-    } catch {
-      // Proceed even if sessionStorage is restricted
-    }
-
-    try {
-      const { error } = await signInWithGoogle();
-      if (error) {
-        try {
-          window.sessionStorage.removeItem(AUTH_INTENT_STORAGE_KEY);
-        } catch {
-          // Ignore storage cleanup errors
-        }
-        setLocalErrorKey(
-          error.message === 'MISSING_SUPABASE_CONFIG'
-            ? 'auth.missingConfig'
-            : 'auth.oauthError'
-        );
-        setIsRedirecting(false);
-      }
-    } catch {
-      try {
-        window.sessionStorage.removeItem(AUTH_INTENT_STORAGE_KEY);
-      } catch {
-        // Ignore storage cleanup errors
-      }
-      setLocalErrorKey('auth.oauthError');
-      setIsRedirecting(false);
     }
   };
 
@@ -287,7 +393,7 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {/* Active tab panel containing localized heading, OAuth CTA, and security note */}
+          {/* Active tab panel containing localized heading, GIS button, and security note */}
           <div
             className="auth-panel"
             role="tabpanel"
@@ -303,7 +409,7 @@ export default function LoginPage() {
               </p>
             </div>
 
-            {/* Inline alert banner shown for OAuth failures or Sign-In/Sign-Up intent mismatches */}
+            {/* Inline alert banner shown for auth failures or Sign-In/Sign-Up intent mismatches */}
             {activeErrorKey && (
               <div className="auth-error-banner" role="alert" aria-live="assertive">
                 <AlertCircle size={16} strokeWidth={1.5} aria-hidden="true" />
@@ -311,34 +417,49 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Primary Google OAuth action button (passwordless) */}
-            <button
-              type="button"
-              className="btn auth-google-btn"
-              disabled={isRedirecting}
-              onClick={handleGoogleAuth}
-            >
-              {isRedirecting ? (
-                <>
-                  <LoaderCircle
-                    size={17}
-                    strokeWidth={1.5}
-                    aria-hidden="true"
-                    className="auth-spinner"
-                  />
-                  <span>{t('auth.redirectingToGoogle')}</span>
-                </>
-              ) : (
-                <>
-                  <GoogleMark />
-                  <span>
-                    {isSignIn
-                      ? t('auth.continueWithGoogle')
-                      : t('auth.signUpWithGoogle')}
-                  </span>
-                </>
-              )}
-            </button>
+            {/* Full-width Swiss × Bento visual button layered beneath the invisible GIS click target */}
+            {!GOOGLE_CLIENT_ID ? (
+              <div className="auth-config-warning" role="alert">
+                <AlertCircle size={16} strokeWidth={1.5} aria-hidden="true" />
+                <span>{t('auth.missingGoogleClientId')}</span>
+              </div>
+            ) : (
+              <div className="auth-google-slot">
+                {isBusy ? (
+                  <div
+                    className="auth-google-loading"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <LoaderCircle
+                      size={16}
+                      strokeWidth={1.5}
+                      aria-hidden="true"
+                      className="auth-spinner"
+                    />
+                    <span>{t('auth.signingInWithGoogle')}</span>
+                  </div>
+                ) : (
+                  <div className="google-sso-stack">
+                    {/* Non-interactive visual layer matching the Swiss × Bento card palette */}
+                    <div className="google-sso-visual" aria-hidden="true">
+                      <GoogleMark />
+                      <span className="google-sso-label">
+                        {isSignIn
+                          ? t('auth.continueWithGoogle')
+                          : t('auth.signUpWithGoogle')}
+                      </span>
+                    </div>
+
+                    {/* Transparent official GIS renderButton iframe capturing every click */}
+                    <div
+                      ref={buttonContainerRef}
+                      className="google-gsi-overlay"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Concise Swiss inset note explaining passwordless Google SSO & Member default */}
             <div className="auth-note-box">

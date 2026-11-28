@@ -342,6 +342,51 @@ export function AuthProvider({ children }) {
     };
   }, [userId]);
 
+  // Authenticate via Google Identity Services ID token while preserving Sign-In vs. Sign-Up intent
+  const signInWithGoogleIdToken = useCallback(async (idToken, rawNonce, authMode = 'signin') => {
+    if (!supabase) {
+      return {
+        data: null,
+        error: new Error('MISSING_SUPABASE_CONFIG'),
+      };
+    }
+
+    const normalizedIntent = authMode === 'signup' ? 'signup' : 'signin';
+    pendingIntentRef.current = null;
+
+    // Persist intent before token exchange so `hydrateAuthIdentity` enforces account existence rules
+    try {
+      window.sessionStorage.setItem(AUTH_INTENT_STORAGE_KEY, normalizedIntent);
+    } catch {
+      // Proceed even if sessionStorage is restricted
+    }
+
+    try {
+      const result = await supabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: idToken,
+        nonce: rawNonce,
+      });
+
+      if (result.error) {
+        try {
+          window.sessionStorage.removeItem(AUTH_INTENT_STORAGE_KEY);
+        } catch {
+          // Ignore storage cleanup errors
+        }
+      }
+
+      return result;
+    } catch (error) {
+      try {
+        window.sessionStorage.removeItem(AUTH_INTENT_STORAGE_KEY);
+      } catch {
+        // Ignore storage cleanup errors
+      }
+      return { data: null, error };
+    }
+  }, []);
+
   // Initiate passwordless Google OAuth flow and return to the current app origin
   const signInWithGoogle = useCallback(async () => {
     if (!supabase) {
@@ -464,6 +509,7 @@ export function AuthProvider({ children }) {
       clearAuthError,
       refreshProfile,
       updateUserPreferences,
+      signInWithGoogleIdToken,
       signInWithGoogle,
       signOut,
     }),
@@ -489,6 +535,7 @@ export function AuthProvider({ children }) {
       clearAuthError,
       refreshProfile,
       updateUserPreferences,
+      signInWithGoogleIdToken,
       signInWithGoogle,
       signOut,
     ]
