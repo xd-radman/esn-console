@@ -32,122 +32,447 @@
   }
 
   /* ------------------------------------------------------------------------
-     Landing Hero Section
+     Full-Bleed Landing Shell (locked to shared site-wide page tokens)
      ------------------------------------------------------------------------ */
-  .landing-hero {
-    background-color: var(--bg-surface);
-    padding-block: clamp(2rem, 4vw, 3.25rem);
-    padding-inline: clamp(1rem, 2.5vw, 2rem);
-    transition: var(--transition-theme);
-  }
-
-  .landing-hero-inner {
+  .landing-shell {
     inline-size: 100%;
-    max-inline-size: 82rem;
+    max-inline-size: var(--page-max-width);
     margin-inline: auto;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 1.5rem 2rem;
-  }
-
-  .landing-hero-copy {
+    padding-block: 1.5rem 3rem;
+    padding-inline: var(--page-gutter);
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    gap: 0.875rem;
-    max-inline-size: 46rem;
-  }
-
-  /* 64px official ESN Star mark paired with Swiss kicker & project count strip */
-  .landing-hero-brand {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 1rem;
-  }
-
-  .landing-hero-logo {
-    inline-size: 4rem;
-    block-size: 4rem;
-    object-fit: contain;
-    flex-shrink: 0;
-  }
-
-  .landing-hero-tags {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.375rem;
-  }
-
-  .landing-hero-counts {
-    color: var(--ink-muted);
-  }
-
-  .landing-hero-title {
-    font-size: clamp(2rem, 1.55rem + 2vw, 3rem);
-    color: var(--ink-primary);
-  }
-
-  .landing-hero-subtitle {
-    font-size: clamp(0.95rem, 0.9rem + 0.25vw, 1.0625rem);
-    color: var(--ink-secondary);
-    max-inline-size: 62ch;
-  }
-
-  .landing-hero-actions {
-    display: flex;
-    align-items: center;
-  }
-
-  .landing-new-btn {
-    padding-inline: 1.1rem;
-    font-weight: 600;
+    gap: 1.25rem;
   }
 
   /* ------------------------------------------------------------------------
-     Equal-Width 3-Column Project Directory Grid
-     Uses an explicit 3-track CSS Grid (`repeat(3, minmax(0, 1fr))`) on desktop
-     (`>= 640px`) so cards in incomplete rows (1 or 2 cards) occupy the exact
-     same column width as cards in full 3-card rows without stretching.
+     Compact Branded Hero Bar
+     Inline ESN Star mark (46px) + Newsreader heading & mono kicker on left;
+     Search input, Status Filter toggle, and `+ New Project` CTA on right.
+     ------------------------------------------------------------------------ */
+  .landing-hero-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem 1.5rem;
+  }
+
+  .landing-hero-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    min-inline-size: 0;
+  }
+
+  .landing-hero-logo {
+    inline-size: 2.875rem;
+    block-size: 2.875rem;
+    object-fit: contain;
+    flex-shrink: 0;
+    display: block;
+  }
+
+  .landing-hero-titles {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-inline-size: 0;
+  }
+
+  .landing-header-title {
+    font-size: clamp(1.5rem, 1.2rem + 1vw, 2rem);
+    line-height: 1.12;
+    color: var(--ink-primary);
+  }
+
+  /* Single compact JetBrains Mono metadata strip combining kicker and live counts */
+  .landing-header-meta {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-mono-micro);
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    line-height: 1;
+    color: var(--ink-muted);
+  }
+
+  .landing-header-kicker {
+    color: var(--accent-primary-ink);
+    font-weight: 600;
+  }
+
+  .landing-header-sep {
+    color: var(--ink-faint);
+  }
+
+  .landing-header-count.is-active {
+    color: var(--ink-secondary);
+  }
+
+  /* Right hero action cluster: Search + Status Filter + Primary CTA */
+  .landing-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  /* Inline real-time project search field */
+  .landing-search {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    min-inline-size: 13.5rem;
+    flex: 1 1 13.5rem;
+    max-inline-size: 18rem;
+  }
+
+  .landing-search-icon {
+    position: absolute;
+    inset-inline-start: 0.7rem;
+    color: var(--ink-muted);
+    pointer-events: none;
+    flex-shrink: 0;
+    display: block;
+  }
+
+  .landing-search-input {
+    inline-size: 100%;
+    min-block-size: 2.25rem;
+    padding-block: 0.45rem;
+    padding-inline: 2.1rem 2rem;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--border-hairline);
+    background-color: var(--bg-surface);
+    color: var(--ink-primary);
+    font-size: 0.875rem;
+    line-height: 1.2;
+    transition: var(--transition-theme);
+
+    &::placeholder {
+      color: var(--ink-muted);
+    }
+
+    &:hover {
+      border-color: var(--border-strong);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 2px;
+      background-color: var(--bg-elevated);
+    }
+
+    /* Hide native WebKit search cancel button in favor of monochrome Lucide X */
+    &::-webkit-search-cancel-button {
+      -webkit-appearance: none;
+      appearance: none;
+    }
+  }
+
+  .landing-search-clear {
+    position: absolute;
+    inset-inline-end: 0.45rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 1.4rem;
+    block-size: 1.4rem;
+    border-radius: var(--radius-control);
+    color: var(--ink-muted);
+    line-height: 1;
+    transition: var(--transition-theme);
+
+    & > svg {
+      flex-shrink: 0;
+      display: block;
+    }
+
+    &:hover {
+      background-color: var(--bg-subtle);
+      color: var(--ink-primary);
+    }
+  }
+
+  /* Compact segmented status filter bar (All / Active / optional Inactive) */
+  .landing-status-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    min-block-size: 2.25rem;
+    padding: 0.2rem;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--border-hairline);
+    background-color: var(--bg-surface);
+    transition: var(--transition-theme);
+  }
+
+  .landing-status-filter-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding-inline: 0.4rem 0.25rem;
+    color: var(--ink-muted);
+    line-height: 1;
+
+    & > svg {
+      flex-shrink: 0;
+      display: block;
+    }
+  }
+
+  .landing-filter-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-block-size: 1.75rem;
+    padding-block: 0.25rem;
+    padding-inline: 0.6rem;
+    border-radius: calc(var(--radius-control) - 2px);
+    color: var(--ink-secondary);
+    font-family: var(--font-mono);
+    font-size: var(--text-mono-micro);
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    line-height: 1;
+    transition: var(--transition-theme);
+
+    &:hover:not(.is-selected) {
+      color: var(--ink-primary);
+      background-color: var(--bg-subtle);
+    }
+
+    &.is-selected {
+      background-color: var(--bg-elevated);
+      color: var(--ink-primary);
+      font-weight: 600;
+      box-shadow: 0 1px 2px rgba(24, 23, 21, 0.08);
+    }
+  }
+
+  .landing-filter-btn-label {
+    line-height: 1;
+    text-box: trim-both cap alphabetic;
+  }
+
+  /* Primary CTA with strict vertical centering for Plus SVG + text */
+  .landing-new-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding-inline: 1rem;
+    font-weight: 600;
+    line-height: 1;
+
+    & > svg {
+      flex-shrink: 0;
+      display: block;
+    }
+  }
+
+  .landing-new-btn-label {
+    line-height: 1;
+    text-box: trim-both cap alphabetic;
+  }
+
+  /* Keep landing loading bar and error banner icons strictly block/unshrunk */
+  .landing-main .workspace-loading-bar,
+  .landing-main .dashboard-banner {
+    line-height: 1;
+
+    & > svg {
+      flex-shrink: 0;
+      display: block;
+    }
+  }
+
+  .landing-main .skeleton-card {
+    min-block-size: 13.125rem;
+    padding: 1.25rem 1.35rem;
+  }
+
+  /* ------------------------------------------------------------------------
+     Bento Directory Container & Live Mini KPI Stat Pills
+     Full-width Bento surface housing the section subtitle, KPI pills, and
+     responsive 3-column equal-width metric card grid.
+     ------------------------------------------------------------------------ */
+  .landing-bento-directory {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-bento);
+    padding: clamp(1.125rem, 2vw, 1.5rem);
+    box-shadow: var(--shadow-card);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    transition: var(--transition-theme);
+  }
+
+  .landing-bento-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.85rem 1.5rem;
+    padding-block-end: 1rem;
+    border-block-end: 1px solid var(--border-subtle);
+  }
+
+  .landing-bento-subtitle {
+    font-size: var(--text-secondary);
+    line-height: 1.45;
+    color: var(--ink-secondary);
+    max-inline-size: 58ch;
+  }
+
+  .landing-kpi-pills {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .landing-kpi-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding-block: 0.425rem;
+    padding-inline: 0.7rem;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-hairline);
+    background-color: var(--bg-elevated);
+    color: var(--ink-secondary);
+    line-height: 1;
+    transition: var(--transition-theme);
+
+    & > svg {
+      flex-shrink: 0;
+      display: block;
+      color: var(--ink-muted);
+    }
+
+    &.is-active {
+      border-color: var(--status-active-border);
+      background-color: var(--status-active-bg);
+
+      & > svg {
+        color: var(--status-active);
+      }
+
+      & .landing-kpi-value {
+        color: var(--status-active);
+      }
+    }
+  }
+
+  .landing-kpi-label {
+    font-family: var(--font-mono);
+    font-size: var(--text-mono-micro);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1;
+    color: var(--ink-muted);
+    text-box: trim-both cap alphabetic;
+  }
+
+  .landing-kpi-value {
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-primary);
+    text-box: trim-both cap alphabetic;
+  }
+
+  /* Empty search / filter state inside the Bento tray */
+  .landing-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 0.55rem;
+    padding-block: 3rem;
+    padding-inline: 1rem;
+  }
+
+  .landing-empty-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 2.5rem;
+    block-size: 2.5rem;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--border-hairline);
+    background-color: var(--bg-elevated);
+    color: var(--ink-muted);
+
+    & > svg {
+      flex-shrink: 0;
+      display: block;
+    }
+  }
+
+  .landing-empty-title {
+    font-size: 1.25rem;
+    color: var(--ink-primary);
+  }
+
+  .landing-empty-subtitle {
+    font-size: 0.875rem;
+    color: var(--ink-secondary);
+    max-inline-size: 44ch;
+  }
+
+  .landing-empty-reset {
+    margin-block-start: 0.45rem;
+    font-size: 0.8125rem;
+  }
+
+  /* ------------------------------------------------------------------------
+     Equal-Width Metric Project Grid
+     1 column on mobile (< 640px), 2 equal tracks on tablet (640px–1023px),
+     and 3 strictly equal-width tracks (`repeat(3, minmax(0, 1fr))`) on
+     desktop (>= 1024px) inside the full-bleed Bento directory container.
      ------------------------------------------------------------------------ */
   .landing-directory {
-    inline-size: 100%;
-    max-inline-size: 82rem;
-    margin-inline: auto;
-    padding-block: clamp(1.5rem, 3.5vw, 2.75rem);
-    padding-inline: clamp(1rem, 2.5vw, 2rem);
     display: grid;
     grid-template-columns: 1fr;
     gap: 1.125rem;
   }
 
-  /* Desktop (>= 640px): 3 strictly equal-width tracks (`minmax(0, 1fr)`) */
   @media (min-width: 40rem) {
     .landing-directory {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+  }
 
-    .project-card {
-      min-inline-size: 0;
-      block-size: 20rem; /* Consistent 320px card height across all rows */
+  @media (min-width: 64rem) {
+    .landing-directory {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
 
   /* ------------------------------------------------------------------------
-     ProjectCard — Swiss Hairline at Rest + Animated ESN Spectrum on Hover
-     - Rest state: clean 1px Swiss hairline (`var(--border-subtle)`), 14px radius,
-       strictly equal flex width (`flex: 1 1 0px`) with zero resizing on hover.
-     - Hover / focus-within: swaps border color to `transparent` (keeping exact
-       1px border-width so layout never jumps) and paints two background layers:
-       1) `padding-box` solid interior (`var(--bg-elevated)`).
-       2) `border-box` `conic-gradient(from var(--esn-border-angle), ...)` cycling
-          through all 5 ESN colors and looping smoothly back to ESN Cyan via the
-          `@property --esn-border-angle` `<angle>` registration and `@keyframes`.
+     ProjectCard — Overhauled Metric Tile + Animated ESN Spectrum Border
+     - Rest state: crisp elevated card on `--bg-elevated` inside the Bento tray,
+       `min-block-size: 13.125rem` (210px) with zero dead middle space.
+     - Keeps default `overflow: visible` so open `StatusSelect` menus never clip
+       on compact cards; gradient borders still clip natively to `border-radius`.
+     - Hover / focus-within: swaps border color to `transparent` (exact 1px width
+       so layout never shifts) and paints a rotating 5-color ESN conic border.
      ------------------------------------------------------------------------ */
   .project-card {
-    --card-surface: var(--bg-surface);
+    --card-surface: var(--bg-elevated);
     --esn-spectrum-border: conic-gradient(
       from var(--esn-border-angle),
       var(--esn-cyan) 0deg,
@@ -159,13 +484,13 @@
     );
 
     position: relative;
-    overflow: hidden;
-    min-block-size: 18.5rem;
-    padding: 1.35rem 1.4rem;
+    min-inline-size: 0;
+    min-block-size: 13.125rem;
+    padding: 1.25rem 1.35rem;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    gap: 1rem;
+    gap: 1.15rem;
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-bento);
     background-color: var(--card-surface);
@@ -191,7 +516,7 @@
 
       & .project-card-cta {
         color: var(--accent-primary-ink);
-        transform: translate(2px, -2px);
+        transform: translateX(3px);
       }
     }
 
@@ -222,6 +547,7 @@
         content: '';
         position: absolute;
         inset: 0;
+        border-radius: inherit;
         z-index: 1;
       }
     }
@@ -248,76 +574,89 @@
     }
   }
 
+  /* Top row: icon + code pill on left, StatusSelect on right, centered on one axis */
   .project-card-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.625rem;
-  }
-
-  .project-code-tag {
-    flex-shrink: 0;
-  }
-
-  .project-card-content {
-    display: flex;
-    flex-direction: column;
-    gap: 0.55rem;
-    min-inline-size: 0;
-    margin-block: auto 0;
+    gap: 0.75rem;
   }
 
   .project-card-identity {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 0.625rem;
     min-inline-size: 0;
+    line-height: 1;
   }
 
   .project-card-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    inline-size: 2.25rem;
-    block-size: 2.25rem;
+    inline-size: 2.125rem;
+    block-size: 2.125rem;
     border-radius: var(--radius-control);
     background-color: var(--accent-primary-soft);
     border: 1px solid var(--accent-primary-border);
     color: var(--accent-primary-ink);
     flex-shrink: 0;
     transition: var(--transition-theme);
+
+    & > svg {
+      flex-shrink: 0;
+      display: block;
+    }
   }
 
-  .project-card-category {
-    color: var(--ink-muted);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .project-code-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding-block: 0.3rem;
+    padding-inline: 0.5rem;
+    font-size: var(--text-mono-micro);
+    line-height: 1;
+    text-box: trim-both cap alphabetic;
+  }
+
+  /* Body sits directly below top row; `margin-block-end: auto` pins footer on taller rows */
+  .project-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    min-inline-size: 0;
+    margin-block-end: auto;
   }
 
   .project-card-title {
-    font-size: 1.375rem;
-    line-height: 1.18;
+    font-size: 1.3125rem;
+    line-height: 1.2;
     color: var(--ink-primary);
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     overflow: hidden;
   }
 
-  /* Clamp subtitle to 2 lines so horizontal accordion contraction never alters row height */
+  /* Clamp description cleanly to 2 lines so card rows remain balanced */
   .project-card-subtitle {
-    font-size: 0.875rem;
-    line-height: 1.48;
+    font-size: var(--text-secondary);
+    line-height: 1.45;
     color: var(--ink-secondary);
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     overflow: hidden;
   }
 
+  /* Hairline metric footer holding stacked counts on left and directional arrow on right */
   .project-card-footer {
-    padding-block-start: 0.85rem;
+    border-block-start: 1px solid var(--border-subtle);
+    padding-block-start: 0.9rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -327,40 +666,52 @@
   .project-card-metrics {
     display: flex;
     align-items: center;
-    gap: 1.125rem;
+    gap: 1.35rem;
     min-inline-size: 0;
+    font-variant-numeric: tabular-nums;
   }
 
+  /* Stacked metric block: uppercase micro-label above bold tabular count */
   .project-metric {
     display: flex;
-    align-items: baseline;
-    gap: 0.375rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    line-height: 1;
+  }
 
-    & dt {
-      font-size: 0.6875rem;
-      color: var(--ink-muted);
-    }
+  .project-metric-label {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1;
+    color: var(--ink-muted);
+    text-box: trim-both cap alphabetic;
+  }
 
-    & dd {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-      font-size: 0.875rem;
-      font-weight: 600;
-      color: var(--ink-primary);
-
-      & > svg {
-        color: var(--ink-muted);
-      }
-    }
+  .project-metric-value {
+    font-size: 1.0625rem;
+    font-weight: 600;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-primary);
+    text-box: trim-both cap alphabetic;
   }
 
   .project-card-cta {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    line-height: 1;
     color: var(--ink-muted);
     flex-shrink: 0;
+
+    & > svg {
+      flex-shrink: 0;
+      display: block;
+    }
 
     @media (prefers-reduced-motion: no-preference) {
       transition: transform 180ms ease, color 180ms ease;
@@ -369,12 +720,17 @@
 
   /* ------------------------------------------------------------------------
      StatusSelect — Reusable Active / Inactive Pill Dropdown
+     Enforces strict `inline-flex; align-items: center; line-height: 1;` and
+     block unshrunk SVGs so status circle, uppercase mono label, and chevron
+     align dead-center on both Landing cards and Dashboard headers.
      ------------------------------------------------------------------------ */
   .status-select {
     position: relative;
     z-index: 2;
     display: inline-flex;
     align-items: center;
+    flex-shrink: 0;
+    line-height: 1;
     border-radius: var(--radius-pill);
     border: 1px solid var(--border-hairline);
     background-color: var(--bg-subtle);
@@ -404,72 +760,77 @@
 
     /* Non-interactive status pill layout for non-admin members */
     &.is-readonly {
+      display: inline-flex;
+      align-items: center;
       gap: 0.35rem;
       min-block-size: 1.75rem;
-      padding-block: 0.2rem;
+      padding-block: 0.25rem;
       padding-inline: 0.6rem;
+      line-height: 1;
       cursor: default;
+
+      & > svg {
+        flex-shrink: 0;
+        display: block;
+      }
     }
   }
 
-  .status-select-readonly-icon {
+  .status-select-trigger {
     display: inline-flex;
     align-items: center;
-  }
-
-  .status-select-readonly-text {
-    font-size: 0.6875rem;
-    font-weight: 600;
-    line-height: 1.2;
-  }
-
-  .status-select-icon {
-    position: absolute;
-    inset-inline-start: 0.55rem;
-    z-index: 3;
-    display: inline-flex;
-    align-items: center;
-    pointer-events: none;
-  }
-
-  .status-select-control {
-    appearance: none;
+    justify-content: center;
+    gap: 0.35rem;
     min-block-size: 1.75rem;
-    padding-block: 0.2rem;
-    padding-inline: 1.55rem 1.45rem;
-    border: 0;
-    border-radius: var(--radius-pill);
-    background: transparent;
-    color: inherit;
-    font-size: 0.6875rem;
-    font-weight: 600;
-    line-height: 1.2;
-    cursor: pointer;
+    padding-block: 0.25rem;
+    padding-inline: 0.6rem 0.5rem;
+    line-height: 1;
 
-    &:focus-visible {
-      outline: none;
-    }
-
-    & option {
-      background-color: var(--bg-elevated);
-      color: var(--ink-primary);
-      font-family: var(--font-sans);
-      text-transform: none;
-      letter-spacing: normal;
+    & > svg {
+      flex-shrink: 0;
+      display: block;
     }
   }
 
-  .status-select-chevron {
-    position: absolute;
-    inset-inline-end: 0.5rem;
-    z-index: 3;
-    pointer-events: none;
+  .status-select-label {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: var(--text-mono-micro);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1;
+    text-box: trim-both cap alphabetic;
+  }
+
+  .status-select-trigger-chevron {
+    flex-shrink: 0;
+    display: block;
     opacity: 0.8;
+    transition: transform 140ms ease;
+  }
+
+  .status-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    line-height: 1;
+
+    & > svg {
+      flex-shrink: 0;
+      display: block;
+    }
+  }
+
+  .status-dropdown-item-label {
+    line-height: 1.15;
+    text-box: trim-both cap alphabetic;
   }
 
   /* Enlarge interactive pill target on touch devices */
   @media (pointer: coarse) {
-    .status-select-control {
+    .status-select-trigger {
       min-block-size: 2.35rem;
     }
   }

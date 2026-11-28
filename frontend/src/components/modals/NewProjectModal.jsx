@@ -48,6 +48,51 @@ const ICON_OPTIONS = [
   { key: 'heart-handshake', labelKey: 'modal.icons.heartHandshake', Icon: HeartHandshake },
 ];
 
+// Turkish diacritic map for clean ASCII uppercase initials preview
+const TR_CHAR_MAP = {
+  ç: 'c',
+  Ç: 'c',
+  ğ: 'g',
+  Ğ: 'g',
+  ı: 'i',
+  İ: 'i',
+  ö: 'o',
+  Ö: 'o',
+  ş: 's',
+  Ş: 's',
+  ü: 'u',
+  Ü: 'u',
+};
+
+// Formats custom project code input to uppercase alphanumeric (max 5 chars)
+function sanitizeProjectCodeInput(raw) {
+  return String(raw ?? '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 5);
+}
+
+// Derives 2-letter uppercase initials from the title for the optional code placeholder
+function deriveCodePreview(rawTitle) {
+  const words = String(rawTitle ?? '')
+    .replace(/[çÇğĞıİöÖşŞüÜ]/g, (ch) => TR_CHAR_MAP[ch] ?? ch)
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9\s]/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (words.length >= 2) {
+    return `${words[0][0]}${words[1][0]}`;
+  }
+  if (words.length === 1) {
+    return words[0].slice(0, 2);
+  }
+  return '';
+}
+
 // Creates a fresh manual column row with a unique client-side ID
 function createBlankColumnRow() {
   return {
@@ -63,6 +108,7 @@ export default function NewProjectModal({ isOpen, onClose, onCreate }) {
 
   // Core project metadata fields
   const [title, setTitle] = useState('');
+  const [code, setCode] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState('active');
   const [iconKey, setIconKey] = useState('messages-square');
@@ -88,6 +134,7 @@ export default function NewProjectModal({ isOpen, onClose, onCreate }) {
   // Stable IDs for accessible form associations and tablist
   const headingId = useId();
   const titleId = useId();
+  const codeId = useId();
   const descId = useId();
   const csvTabId = useId();
   const manualTabId = useId();
@@ -119,6 +166,7 @@ export default function NewProjectModal({ isOpen, onClose, onCreate }) {
   // Reset all controlled fields whenever the dialog closes
   const resetForm = () => {
     setTitle('');
+    setCode('');
     setDescription('');
     setStatus('active');
     setIconKey('messages-square');
@@ -361,6 +409,7 @@ export default function NewProjectModal({ isOpen, onClose, onCreate }) {
     try {
       const created = await onCreate?.({
         title: trimmedTitle,
+        code: sanitizeProjectCodeInput(code),
         subtitle: description.trim(),
         status,
         iconKey,
@@ -378,6 +427,7 @@ export default function NewProjectModal({ isOpen, onClose, onCreate }) {
   const isCsvMode = schemaMode === 'csv';
   const activeTabId = isCsvMode ? csvTabId : manualTabId;
   const activeCount = activeColumnList.filter((col) => col.type !== 'ignore').length;
+  const autoCodePreview = deriveCodePreview(title);
 
   return (
     <dialog
@@ -420,35 +470,65 @@ export default function NewProjectModal({ isOpen, onClose, onCreate }) {
             </div>
           )}
 
-          {/* Required Project Title input */}
-          <div className="form-field">
-            <div className="form-label-row">
-              <label htmlFor={titleId} className="form-label">
-                {t('modal.titleLabel')}
-              </label>
-              <span className="font-mono-label form-badge required">
-                {t('modal.requiredBadge')}
-              </span>
+          {/* Side-by-side Project Title (required) & optional uppercase Project Code/Tag */}
+          <div className="form-title-code-row">
+            <div className="form-field">
+              <div className="form-label-row">
+                <label htmlFor={titleId} className="form-label">
+                  {t('modal.titleLabel')}
+                </label>
+                <span className="font-mono-label form-badge required">
+                  {t('modal.requiredBadge')}
+                </span>
+              </div>
+
+              <input
+                ref={titleInputRef}
+                id={titleId}
+                name="title"
+                type="text"
+                required
+                maxLength={80}
+                autoFocus
+                className="form-input"
+                placeholder={t('modal.titlePlaceholder')}
+                value={title}
+                onChange={(event) => {
+                  setTitle(event.target.value);
+                  if (formError) {
+                    setFormError('');
+                  }
+                }}
+              />
             </div>
 
-            <input
-              ref={titleInputRef}
-              id={titleId}
-              name="title"
-              type="text"
-              required
-              maxLength={80}
-              autoFocus
-              className="form-input"
-              placeholder={t('modal.titlePlaceholder')}
-              value={title}
-              onChange={(event) => {
-                setTitle(event.target.value);
-                if (formError) {
-                  setFormError('');
+            <div className="form-field">
+              <div className="form-label-row">
+                <label htmlFor={codeId} className="form-label">
+                  {t('modal.codeLabel')}
+                </label>
+                <span className="font-mono-label form-badge">
+                  {t('modal.optionalBadge')}
+                </span>
+              </div>
+
+              <input
+                id={codeId}
+                name="code"
+                type="text"
+                maxLength={5}
+                className="form-input form-input-mono"
+                placeholder={
+                  autoCodePreview
+                    ? t('modal.codeAutoPlaceholder', { auto: autoCodePreview })
+                    : t('modal.codePlaceholder')
                 }
-              }}
-            />
+                value={code}
+                onChange={(event) =>
+                  setCode(sanitizeProjectCodeInput(event.target.value))
+                }
+              />
+            </div>
           </div>
 
           {/* Optional Description textarea */}

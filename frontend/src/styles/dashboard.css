@@ -12,19 +12,20 @@
   }
 
   /* ------------------------------------------------------------------------
-     Dashboard Top Header Strip
+     Dashboard Top Header Strip (full-bleed surface, inner locked to page tokens)
      ------------------------------------------------------------------------ */
   .dashboard-header {
     background-color: var(--bg-surface);
     padding-block: clamp(1.5rem, 3vw, 2.25rem);
-    padding-inline: clamp(1rem, 2.5vw, 2rem);
     transition: var(--transition-theme);
   }
 
   .dashboard-header-inner {
     inline-size: 100%;
-    max-inline-size: 82rem;
+    max-inline-size: var(--page-max-width);
     margin-inline: auto;
+    padding-inline: var(--page-gutter);
+    box-sizing: border-box;
   }
 
   .dashboard-header-copy {
@@ -58,20 +59,21 @@
   }
 
   .dashboard-subtitle {
-    font-size: 0.95rem;
+    font-size: var(--text-body);
     color: var(--ink-secondary);
     max-inline-size: 64ch;
   }
 
   /* ------------------------------------------------------------------------
-     Main Dashboard Body Container & Status Banners
+     Main Dashboard Body Container & Status Banners (locked to page tokens)
      ------------------------------------------------------------------------ */
   .dashboard-content {
     inline-size: 100%;
-    max-inline-size: 82rem;
+    max-inline-size: var(--page-max-width);
     margin-inline: auto;
     padding-block: clamp(1.25rem, 3vw, 2.25rem);
-    padding-inline: clamp(1rem, 2.5vw, 2rem);
+    padding-inline: var(--page-gutter);
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
@@ -132,7 +134,7 @@
     border: 1px solid var(--border-strong);
     background-color: var(--bg-elevated);
     color: var(--ink-primary);
-    font-size: 0.875rem;
+    font-size: var(--text-control);
     font-weight: 500;
     cursor: pointer;
     transition: var(--transition-theme);
@@ -351,7 +353,7 @@
     inline-size: 100%;
     border-collapse: separate;
     border-spacing: 0;
-    font-size: 0.84rem;
+    font-size: 0.875rem;
     text-align: start;
 
     & thead {
@@ -371,7 +373,7 @@
 
     & thead th {
       font-family: var(--font-mono);
-      font-size: 0.7rem;
+      font-size: var(--text-mono-micro);
       font-weight: 600;
       letter-spacing: 0.04em;
       text-transform: uppercase;
@@ -580,7 +582,7 @@
   }
 
   .chart-tile-meta {
-    font-size: 0.6875rem;
+    font-size: var(--text-mono-micro);
     color: var(--ink-muted);
   }
 
@@ -875,7 +877,7 @@
 
     & thead th {
       font-family: var(--font-mono);
-      font-size: 0.7rem;
+      font-size: var(--text-mono-micro);
       font-weight: 600;
       letter-spacing: 0.04em;
       text-transform: uppercase;

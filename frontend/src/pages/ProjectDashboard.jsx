@@ -45,6 +45,7 @@ import ChartGrid from '../components/ChartGrid.jsx';
 import FeedbackTable from '../components/FeedbackTable.jsx';
 import AddSessionModal from '../components/modals/AddSessionModal.jsx';
 import DeleteSessionModal from '../components/modals/DeleteSessionModal.jsx';
+import EditProjectModal from '../components/modals/EditProjectModal.jsx';
 import DeleteProjectModal from '../components/modals/DeleteProjectModal.jsx';
 import ProjectColumnsModal from '../components/modals/ProjectColumnsModal.jsx';
 
@@ -172,6 +173,7 @@ export default function ProjectDashboard() {
     isLoading,
     loadError,
     updateProjectStatus,
+    updateProject,
     deleteProject,
     updateProjectColumns,
     addSession,
@@ -186,6 +188,7 @@ export default function ProjectDashboard() {
   // Modal & status feedback banner states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
   const [isDeleteProjectModalOpen, setIsDeleteProjectModalOpen] = useState(false);
   const [isColumnsModalOpen, setIsColumnsModalOpen] = useState(false);
   const [toolbarNotice, setToolbarNotice] = useState(null);
@@ -698,6 +701,11 @@ export default function ProjectDashboard() {
                 projectTitle={projectCopy.title}
                 disabled={!canManageProjects}
                 onChange={(nextStatus) => updateProjectStatus(activeProject.id, nextStatus)}
+                onEdit={
+                  canManageProjects
+                    ? () => setIsEditProjectModalOpen(true)
+                    : undefined
+                }
                 onDelete={
                   canManageProjects
                     ? () => setIsDeleteProjectModalOpen(true)
@@ -981,6 +989,18 @@ export default function ProjectDashboard() {
             graphs={activeGraphs}
             responses={responses}
             onSave={handleSaveProjectColumns}
+          />
+
+          <EditProjectModal
+            key={
+              isEditProjectModalOpen
+                ? `edit-proj-${activeProject.id}`
+                : 'edit-proj-closed'
+            }
+            isOpen={isEditProjectModalOpen}
+            project={activeProject}
+            onClose={() => setIsEditProjectModalOpen(false)}
+            onSave={updateProject}
           />
 
           <DeleteProjectModal

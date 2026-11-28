@@ -14,6 +14,7 @@ import {
   ChevronDown,
   CircleCheck,
   CircleDashed,
+  Pencil,
   Trash2,
 } from 'lucide-react';
 import { useLang } from '../context/LangContext.jsx';
@@ -21,6 +22,7 @@ import { useLang } from '../context/LangContext.jsx';
 export default function StatusSelect({
   status,
   onChange,
+  onEdit,
   onDelete,
   projectTitle = '',
   disabled = false,
@@ -63,14 +65,12 @@ export default function StatusSelect({
         className={`status-select ${isActive ? 'active' : 'inactive'} is-readonly`}
         aria-label={`${t('status.changeFor', { project: projectTitle })}: ${statusLabel}`}
       >
-        <span className="status-select-readonly-icon" aria-hidden="true">
-          {isActive ? (
-            <CircleCheck size={13} strokeWidth={1.5} />
-          ) : (
-            <CircleDashed size={13} strokeWidth={1.5} />
-          )}
-        </span>
-        <span className="status-select-readonly-text font-mono-label">
+        {isActive ? (
+          <CircleCheck size={13} strokeWidth={1.5} aria-hidden="true" />
+        ) : (
+          <CircleDashed size={13} strokeWidth={1.5} aria-hidden="true" />
+        )}
+        <span className="status-select-label">
           {statusLabel}
         </span>
       </span>
@@ -95,6 +95,12 @@ export default function StatusSelect({
     }
   };
 
+  const handleEditClick = (event) => {
+    event.stopPropagation();
+    setIsOpen(false);
+    onEdit?.();
+  };
+
   const handleDeleteClick = (event) => {
     event.stopPropagation();
     setIsOpen(false);
@@ -110,23 +116,22 @@ export default function StatusSelect({
       onClick={stopBubble}
       onMouseDown={stopBubble}
     >
+      {/* Pill trigger aligning leading status icon, uppercase mono label, and chevron */}
       <button
         type="button"
-        className="status-select-trigger font-mono-label"
+        className="status-select-trigger"
         aria-label={`${t('status.changeFor', { project: projectTitle })}: ${statusLabel}`}
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-controls={menuId}
         onClick={handleToggleMenu}
       >
-        <span className="status-select-readonly-icon" aria-hidden="true">
-          {isActive ? (
-            <CircleCheck size={13} strokeWidth={1.5} />
-          ) : (
-            <CircleDashed size={13} strokeWidth={1.5} />
-          )}
-        </span>
-        <span>{statusLabel}</span>
+        {isActive ? (
+          <CircleCheck size={13} strokeWidth={1.5} aria-hidden="true" />
+        ) : (
+          <CircleDashed size={13} strokeWidth={1.5} aria-hidden="true" />
+        )}
+        <span className="status-select-label">{statusLabel}</span>
         <ChevronDown
           size={12}
           strokeWidth={1.5}
@@ -150,7 +155,7 @@ export default function StatusSelect({
             onClick={(event) => handleSelectStatus(event, 'active')}
           >
             <CircleCheck size={14} strokeWidth={1.5} aria-hidden="true" />
-            <span>{t('status.active')}</span>
+            <span className="status-dropdown-item-label">{t('status.active')}</span>
             {isActive && (
               <Check
                 size={13}
@@ -169,7 +174,7 @@ export default function StatusSelect({
             onClick={(event) => handleSelectStatus(event, 'inactive')}
           >
             <CircleDashed size={14} strokeWidth={1.5} aria-hidden="true" />
-            <span>{t('status.inactive')}</span>
+            <span className="status-dropdown-item-label">{t('status.inactive')}</span>
             {!isActive && (
               <Check
                 size={13}
@@ -180,18 +185,31 @@ export default function StatusSelect({
             )}
           </button>
 
-          {onDelete && (
+          {(onEdit || onDelete) && (
             <>
               <div className="status-dropdown-divider" role="separator" />
-              <button
-                type="button"
-                role="menuitem"
-                className="status-dropdown-item is-danger"
-                onClick={handleDeleteClick}
-              >
-                <Trash2 size={14} strokeWidth={1.5} aria-hidden="true" />
-                <span>{t('status.deleteProject')}</span>
-              </button>
+              {onEdit && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="status-dropdown-item"
+                  onClick={handleEditClick}
+                >
+                  <Pencil size={14} strokeWidth={1.5} aria-hidden="true" />
+                  <span className="status-dropdown-item-label">{t('status.editProject')}</span>
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="status-dropdown-item is-danger"
+                  onClick={handleDeleteClick}
+                >
+                  <Trash2 size={14} strokeWidth={1.5} aria-hidden="true" />
+                  <span className="status-dropdown-item-label">{t('status.deleteProject')}</span>
+                </button>
+              )}
             </>
           )}
         </div>

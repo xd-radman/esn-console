@@ -18,6 +18,17 @@
     --font-serif: 'Newsreader', Georgia, 'Times New Roman', serif;
     --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
+    /* Shared page container width & responsive gutter locking left/right alignment site-wide */
+    --page-max-width: 1440px;
+    --page-gutter: clamp(1.25rem, 3vw, 2.5rem);
+
+    /* Subtle readability-tuned typography scale (+1px across body, controls, and mono labels) */
+    --text-body: 1rem;
+    --text-secondary: 0.9375rem;
+    --text-control: 0.9375rem;
+    --text-mono-label: 0.8125rem;
+    --text-mono-micro: 0.75rem;
+
     /* Corner radii for Bento tiles, interactive controls, and status pills */
     --radius-bento: 14px;
     --radius-control: 7px;

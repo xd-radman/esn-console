@@ -1,18 +1,19 @@
 /**
- * ProjectCard.jsx — Equal-Width Bento Directory Card with Stretched Link
- * Renders a 320px-tall Swiss × Bento project tile containing:
- * - Top bar: JetBrains Mono project code chip + interactive `StatusSelect` pill
- * - Body: `lucide-react` project icon, category tag, Newsreader title (`<Link>`), and Inter subtitle
- * - Footer: Session count, Response count, and directional arrow cue
+ * ProjectCard.jsx — Overhauled Metric Bento Directory Card
+ * Renders a compact Swiss × Bento project tile (`min-height: 210px`) with:
+ * - Top row: square `lucide-react` project icon + monospace code pill on the left,
+ *   and the interactive `StatusSelect` pill on the right, centered on one axis
+ * - Body: Newsreader linked title directly above a 2-line clamped Inter description
+ * - Metric Footer: hairline divider, two stacked metric blocks (`SESSIONS` &
+ *   `RESPONSES`) on the left, and a directional `ArrowRight` cue on the far right
  * Uses the stretched-link pattern (`.card-link::after`) plus card `onClick` guard
- * so the entire tile navigates to `/project/:id` while `StatusSelect` remains independent.
+ * so the full tile navigates to `/project/:id` while `StatusSelect` stays independent.
  */
 
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  ArrowUpRight,
+  ArrowRight,
   Award,
-  CalendarRange,
   Compass,
   FolderKanban,
   Globe,
@@ -40,6 +41,7 @@ const PROJECT_ICONS = {
 export default function ProjectCard({
   project,
   onStatusChange,
+  onEditProject,
   onDeleteProject,
   canEditStatus = true,
 }) {
@@ -67,14 +69,25 @@ export default function ProjectCard({
       className={`bento-card project-card ${project.status === 'inactive' ? 'is-inactive' : ''}`}
       onClick={handleCardClick}
     >
-      {/* Top row: monospace project code tag and independent Active/Inactive dropdown */}
+      {/* Top row: square project icon + monospace code pill paired with StatusSelect */}
       <header className="project-card-header">
-        <span className="mono-tag project-code-tag">{project.code}</span>
+        <div className="project-card-identity">
+          <span className="project-card-icon" aria-hidden="true">
+            <IconComponent size={18} strokeWidth={1.5} />
+          </span>
+          <span className="mono-tag project-code-tag">{project.code}</span>
+        </div>
+
         <StatusSelect
           status={project.status}
           projectTitle={copy.title}
           disabled={!canEditStatus}
           onChange={(nextStatus) => onStatusChange?.(project.id, nextStatus)}
+          onEdit={
+            canEditStatus && onEditProject
+              ? () => onEditProject(project)
+              : undefined
+          }
           onDelete={
             canEditStatus && onDeleteProject
               ? () => onDeleteProject(project)
@@ -83,17 +96,8 @@ export default function ProjectCard({
         />
       </header>
 
-      {/* Main content region: icon badge, category label, linked editorial heading, and subtitle */}
-      <div className="project-card-content">
-        <div className="project-card-identity">
-          <span className="project-card-icon" aria-hidden="true">
-            <IconComponent size={20} strokeWidth={1.5} />
-          </span>
-          <span className="font-mono-label project-card-category">
-            {copy.category}
-          </span>
-        </div>
-
+      {/* Main body: linked editorial heading and 2-line clamped description */}
+      <div className="project-card-body">
         <h2 className="font-editorial project-card-title">
           <Link to={targetPath} className="card-link">
             {copy.title}
@@ -103,27 +107,22 @@ export default function ProjectCard({
         <p className="project-card-subtitle">{copy.subtitle}</p>
       </div>
 
-      {/* Hairline footer displaying tabular session/response totals and hover arrow */}
-      <footer className="project-card-footer hairline-top">
+      {/* Metric footer: stacked Sessions/Responses counts on left and ArrowRight cue on far right */}
+      <footer className="project-card-footer">
         <dl className="project-card-metrics tabular-nums">
           <div className="project-metric">
-            <dt className="font-mono-label">{t('card.sessions')}</dt>
-            <dd>
-              <CalendarRange size={13} strokeWidth={1.5} aria-hidden="true" />
-              <span>{project.sessionsCount}</span>
-            </dd>
+            <dt className="project-metric-label">{t('card.sessions')}</dt>
+            <dd className="project-metric-value">{project.sessionsCount}</dd>
           </div>
 
           <div className="project-metric">
-            <dt className="font-mono-label">{t('card.responses')}</dt>
-            <dd>
-              <span>{project.responsesCount}</span>
-            </dd>
+            <dt className="project-metric-label">{t('card.responses')}</dt>
+            <dd className="project-metric-value">{project.responsesCount}</dd>
           </div>
         </dl>
 
         <span className="project-card-cta" aria-hidden="true">
-          <ArrowUpRight size={17} strokeWidth={1.5} />
+          <ArrowRight size={16} strokeWidth={1.5} />
         </span>
       </footer>
     </article>

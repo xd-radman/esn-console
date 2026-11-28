@@ -69,6 +69,16 @@ function buildUniqueProjectSlug(rawTitle, existingProjects = []) {
 }
 
 /**
+ * Normalizes an optional user-provided custom project code (uppercase alphanumeric, max 5 chars).
+ */
+function sanitizeCustomProjectCode(rawCode) {
+  return String(rawCode ?? '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 5);
+}
+
+/**
  * Generates a unique 2-letter-initial Swiss project code (`ESN-XX-NN`).
  */
 function buildUniqueProjectCode(rawTitle, existingProjects = []) {
@@ -394,7 +404,7 @@ async function fetchAllWorkspaceTables() {
 
 export function DataProvider({ children }) {
   const { user, hasPermission, loading: authLoading } = useAuth();
-  const { t } = useLang();
+  const { lang, t } = useLang();
   const { showToast } = useToast();
   const userId = user?.id ?? null;
   const canViewWorkspace = hasPermission('view_workspace');
@@ -553,6 +563,7 @@ export function DataProvider({ children }) {
   const createProject = useCallback(
     async ({
       title,
+      code: customCodeInput = '',
       subtitle = '',
       status = 'active',
       iconKey = 'messages-square',
@@ -575,7 +586,8 @@ export function DataProvider({ children }) {
         }));
 
       const slug = buildUniqueProjectSlug(trimmedTitle, baseProjects);
-      const code = buildUniqueProjectCode(trimmedTitle, baseProjects);
+      const customCode = sanitizeCustomProjectCode(customCodeInput);
+      const code = customCode || buildUniqueProjectCode(trimmedTitle, baseProjects);
       const starterGraphs = buildStarterGraphsForNewProject(activeColumns);
 
       const enCopy = {
@@ -737,6 +749,110 @@ export function DataProvider({ children }) {
 
   // Backward-compatible alias for `createProject`
   const addProject = createProject;
+
+  // Update project metadata (title, code, subtitle, status, icon) while preserving config fields
+  const updateProject = useCallback(
+    async (projectId, { title, code: customCodeInput, subtitle = '', status, iconKey }) => {
+      if (!canManageProjects) {
+        showToast(t('toast.permissionDenied'), 'error');
+        return null;
+      }
+
+      const target = resolveProject(projectId);
+      if (!supabase || !target) {
+        return null;
+      }
+
+      const trimmedTitle = String(title ?? '').trim();
+      if (!trimmedTitle) {
+        return null;
+      }
+
+      const trimmedSubtitle = String(subtitle ?? '').trim();
+      const otherProjects = baseProjects.filter((project) => project.id !== target.id);
+      let nextCode = target.code;
+      if (customCodeInput !== undefined) {
+        const customCode = sanitizeCustomProjectCode(customCodeInput);
+        nextCode = customCode || buildUniqueProjectCode(trimmedTitle, otherProjects);
+      }
+      const nextStatus = status === 'inactive' ? 'inactive' : 'active';
+      const nextIconKey = iconKey || target.iconKey || 'messages-square';
+
+      // Update active language copy and keep the other language in sync if both previously matched
+      const prevEn = target.en ?? { title: target.id, subtitle: '', category: 'ESN Project' };
+      const prevTr = target.tr ?? prevEn;
+      const titlesMatched = prevEn.title === prevTr.title;
+      const subtitlesMatched = prevEn.subtitle === prevTr.subtitle;
+
+      const nextEn =
+        lang === 'tr'
+          ? {
+              ...prevEn,
+              title: titlesMatched ? trimmedTitle : prevEn.title,
+              subtitle: subtitlesMatched ? trimmedSubtitle : prevEn.subtitle,
+            }
+          : {
+              ...prevEn,
+              title: trimmedTitle,
+              subtitle: trimmedSubtitle,
+            };
+
+      const nextTr =
+        lang === 'tr'
+          ? {
+              ...prevTr,
+              title: trimmedTitle,
+              subtitle: trimmedSubtitle,
+            }
+          : {
+              ...prevTr,
+              title: titlesMatched ? trimmedTitle : prevTr.title,
+              subtitle: subtitlesMatched ? trimmedSubtitle : prevTr.subtitle,
+            };
+
+      // Preserve all existing config keys (`columns`, `defaultKpis`, `defaultGraphs`, `predictor`, etc.)
+      const nextConfig = {
+        ...(target.config ?? {}),
+        en: nextEn,
+        tr: nextTr,
+      };
+
+      const { data: updatedRow, error } = await supabase
+        .from('projects')
+        .update({
+          code: nextCode,
+          status: nextStatus,
+          icon_key: nextIconKey,
+          config: nextConfig,
+        })
+        .eq('id', target.dbId)
+        .select('*')
+        .single();
+
+      if (error) {
+        reportWriteError(error);
+        showToast(t('modal.projectUpdateError'), 'error');
+        return null;
+      }
+
+      const mapped = mapProjectRow(updatedRow);
+      setBaseProjects((prev) =>
+        prev.map((project) => (project.id === target.id ? mapped : project))
+      );
+      showToast(t('modal.projectUpdatedToast', { title: trimmedTitle }), 'success');
+      return mapped;
+    },
+    [
+      canManageProjects,
+      resolveProject,
+      baseProjects,
+      lang,
+      reportWriteError,
+      setBaseProjects,
+      showToast,
+      t,
+    ]
+  );
 
   // Optimistically toggle `'active' | 'inactive'` status and persist to `public.projects`
   const updateProjectStatus = useCallback(
@@ -1683,6 +1799,7 @@ export function DataProvider({ children }) {
       dismissActionError,
       createProject,
       addProject,
+      updateProject,
       deleteProject,
       updateProjectStatus,
       updateProjectColumns,
@@ -1711,6 +1828,7 @@ export function DataProvider({ children }) {
       dismissActionError,
       createProject,
       addProject,
+      updateProject,
       deleteProject,
       updateProjectStatus,
       updateProjectColumns,
